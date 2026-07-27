@@ -1,0 +1,20 @@
+{
+  "FFN": {
+    "adversarial_auroc": 0.5944121408699551,
+    "adversarial_auroc_std": 0.06240612901698362,
+    "entropy_head_r2_under_adversarial_pressure": -0.7078321933746338,
+    "n_permutations": 200,
+    "perm_mean": 0.5006873277692074,
+    "perm_std": 0.03062407831781856,
+    "p_value": 0.004975124378109453
+  },
+  "Attn": {
+    "adversarial_auroc": 0.6134277388816372,
+    "adversarial_auroc_std": 0.054209575454758484,
+    "entropy_head_r2_under_adversarial_pressure": -1.4353466033935547,
+    "n_permutations": 200,
+    "perm_mean": 0.5007818091320227,
+    "perm_std": 0.0314766832454902,
+    "p_value": 0.004975124378109453
+  }
+}

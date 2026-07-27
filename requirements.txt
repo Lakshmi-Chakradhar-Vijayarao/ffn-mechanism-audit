@@ -1,0 +1,12 @@
+# Added post-final-audit: no dependency version file existed for this
+# project despite results depending on specific library versions.
+# Versions below are what was actually used to produce this paper's
+# results (local Apple Silicon runs, verified via `import <pkg>;
+# print(pkg.__version__)`).
+numpy==2.4.3
+scipy==1.15.1
+scikit-learn==1.6.1
+torch==2.11.0
+transformers==5.2.0
+datasets==4.8.5
+joblib==1.4.2

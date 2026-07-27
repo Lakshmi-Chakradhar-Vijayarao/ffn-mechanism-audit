@@ -1,0 +1,214 @@
+{
+  "entropy_only_control": {
+    "delta_name": "entropy_only_feature0",
+    "n_original": 534,
+    "n_matched": 492,
+    "retention_pct": 92.1,
+    "difficulty_label_corr_before": {
+      "r": 0.04539770288564211,
+      "p": 0.2950296188097839
+    },
+    "difficulty_label_corr_after": {
+      "r": 0.009056853184036751,
+      "p": 0.8411803962959453
+    },
+    "original_unmatched": {
+      "ffn_auroc": 0.6053109713487073,
+      "ffn_std": 0.05570833696292911,
+      "attn_auroc": 0.616486689608797,
+      "attn_std": 0.04271655358845677
+    },
+    "difficulty_matched": {
+      "ffn_auroc": 0.6084714702207414,
+      "ffn_std": 0.04424729341200739,
+      "ffn_splits": 5,
+      "attn_auroc": 0.6101740941274468,
+      "attn_std": 0.02851348022427243,
+      "attn_splits": 5
+    },
+    "permutation_test": {
+      "FFN": {
+        "observed_auroc": 0.6084714702207414,
+        "n_permutations": 500,
+        "perm_mean": 0.49843282299042063,
+        "perm_std": 0.03433253537216254,
+        "p_value": 0.001996007984031936
+      },
+      "Attn": {
+        "observed_auroc": 0.6101740941274468,
+        "n_permutations": 500,
+        "perm_mean": 0.495072436484798,
+        "perm_std": 0.03498264022433169,
+        "p_value": 0.001996007984031936
+      }
+    },
+    "bin_report": [
+      [
+        0,
+        22,
+        32,
+        22
+      ],
+      [
+        1,
+        27,
+        26,
+        26
+      ],
+      [
+        2,
+        29,
+        24,
+        24
+      ],
+      [
+        3,
+        27,
+        27,
+        27
+      ],
+      [
+        4,
+        24,
+        29,
+        24
+      ],
+      [
+        5,
+        28,
+        25,
+        25
+      ],
+      [
+        6,
+        26,
+        28,
+        26
+      ],
+      [
+        7,
+        29,
+        24,
+        24
+      ],
+      [
+        8,
+        24,
+        29,
+        24
+      ],
+      [
+        9,
+        30,
+        24,
+        24
+      ]
+    ]
+  },
+  "full_6feature_composite_control": {
+    "delta_name": "full_6feature_composite_oof_prob",
+    "n_original": 534,
+    "n_matched": 462,
+    "retention_pct": 86.5,
+    "difficulty_label_corr_before": {
+      "r": 0.02410827923290438,
+      "p": 0.578292870520665
+    },
+    "difficulty_label_corr_after": {
+      "r": -0.0037812754343513055,
+      "p": 0.9353977759749333
+    },
+    "original_unmatched": {
+      "ffn_auroc": 0.6053109713487073,
+      "ffn_std": 0.05570833696292911,
+      "attn_auroc": 0.616486689608797,
+      "attn_std": 0.04271655358845677
+    },
+    "difficulty_matched": {
+      "ffn_auroc": 0.6255138157100913,
+      "ffn_std": 0.05101920986464908,
+      "ffn_splits": 5,
+      "attn_auroc": 0.6252765153038652,
+      "attn_std": 0.09257163134694373,
+      "attn_splits": 5
+    },
+    "permutation_test": {
+      "FFN": {
+        "observed_auroc": 0.6255138157100913,
+        "n_permutations": 500,
+        "perm_mean": 0.5008807987772996,
+        "perm_std": 0.03573890875365701,
+        "p_value": 0.001996007984031936
+      },
+      "Attn": {
+        "observed_auroc": 0.6252765153038652,
+        "n_permutations": 500,
+        "perm_mean": 0.501711647830109,
+        "perm_std": 0.03399471247916802,
+        "p_value": 0.001996007984031936
+      }
+    },
+    "bin_report": [
+      [
+        0,
+        25,
+        29,
+        25
+      ],
+      [
+        1,
+        25,
+        28,
+        25
+      ],
+      [
+        2,
+        21,
+        32,
+        21
+      ],
+      [
+        3,
+        31,
+        23,
+        23
+      ],
+      [
+        4,
+        22,
+        31,
+        22
+      ],
+      [
+        5,
+        28,
+        25,
+        25
+      ],
+      [
+        6,
+        29,
+        25,
+        25
+      ],
+      [
+        7,
+        33,
+        20,
+        20
+      ],
+      [
+        8,
+        30,
+        23,
+        23
+      ],
+      [
+        9,
+        22,
+        32,
+        22
+      ]
+    ]
+  }
+}

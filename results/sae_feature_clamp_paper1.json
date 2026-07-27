@@ -1,0 +1,10 @@
+{
+  "n_samples": 534,
+  "d_sae": 24576,
+  "n_significant_bh_fdr": 0,
+  "best_feature_idx": null,
+  "best_feature_p": null,
+  "random_control_feature_idx": null,
+  "baseline_hall_rate": null,
+  "results_per_alpha": []
+}

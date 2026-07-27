@@ -1,0 +1,36 @@
+{
+  "n_samples": 500,
+  "hall_rate": 0.952,
+  "n_significant_bh_fdr": 331,
+  "best_feature_idx": 24338,
+  "best_feature_p": 4.758427470226433e-11,
+  "single_feature_auroc": 0.56140581232493,
+  "single_feature_average_precision": 0.14269444444444446,
+  "positive_class_prior": 0.048,
+  "precision_recall_operating_points": [
+    {
+      "target_recall": 0.5,
+      "actual_recall": 1.0,
+      "precision": 0.048,
+      "threshold": 0.0
+    },
+    {
+      "target_recall": 0.75,
+      "actual_recall": 1.0,
+      "precision": 0.048,
+      "threshold": 0.0
+    },
+    {
+      "target_recall": 0.9,
+      "actual_recall": 1.0,
+      "precision": 0.048,
+      "threshold": 0.0
+    },
+    {
+      "target_recall": 0.95,
+      "actual_recall": 1.0,
+      "precision": 0.048,
+      "threshold": 0.0
+    }
+  ]
+}

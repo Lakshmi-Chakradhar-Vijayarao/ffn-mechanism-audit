@@ -1,0 +1,220 @@
+{
+  "pythia": {
+    "n_original": 605,
+    "n_matched": 540,
+    "retention_pct": 89.3,
+    "difficulty_label_corr_before": {
+      "r": -0.03486302958844269,
+      "p": 0.3919955890827962
+    },
+    "difficulty_label_corr_after": {
+      "r": 0.002050920537876327,
+      "p": 0.9620759197038324
+    },
+    "original_unmatched": {
+      "ffn_auroc": 0.6181954887218044,
+      "ffn_std": 0.0440803953053374,
+      "attn_auroc": 0.6099450549450549,
+      "attn_std": 0.03397571435736022
+    },
+    "difficulty_matched": {
+      "ffn_auroc": 0.6327160493827161,
+      "ffn_std": 0.05128325355063426,
+      "ffn_splits": 5,
+      "attn_auroc": 0.6093278463648835,
+      "attn_std": 0.022094631086357466,
+      "attn_splits": 5
+    },
+    "permutation_test": {
+      "FFN": {
+        "observed_auroc": 0.6327160493827161,
+        "n_permutations": 500,
+        "perm_mean": 0.5010119341563787,
+        "perm_std": 0.031658792319011135,
+        "p_value": 0.001996007984031936
+      },
+      "Attn": {
+        "observed_auroc": 0.6093278463648835,
+        "n_permutations": 500,
+        "perm_mean": 0.5019685871056241,
+        "perm_std": 0.030652906182594267,
+        "p_value": 0.001996007984031936
+      }
+    },
+    "bin_report": [
+      [
+        0,
+        30,
+        31,
+        30
+      ],
+      [
+        1,
+        34,
+        26,
+        26
+      ],
+      [
+        2,
+        25,
+        36,
+        25
+      ],
+      [
+        3,
+        31,
+        29,
+        29
+      ],
+      [
+        4,
+        26,
+        34,
+        26
+      ],
+      [
+        5,
+        26,
+        35,
+        26
+      ],
+      [
+        6,
+        28,
+        32,
+        28
+      ],
+      [
+        7,
+        24,
+        37,
+        24
+      ],
+      [
+        8,
+        31,
+        29,
+        29
+      ],
+      [
+        9,
+        27,
+        34,
+        27
+      ]
+    ],
+    "model": "EleutherAI/pythia-410m",
+    "peak_ffn_layer": 11,
+    "peak_attn_layer": 4,
+    "n_checked": 817
+  },
+  "qwen05": {
+    "n_original": 514,
+    "n_matched": 454,
+    "retention_pct": 88.3,
+    "difficulty_label_corr_before": {
+      "r": -0.043635892710139484,
+      "p": 0.32346820184786024
+    },
+    "difficulty_label_corr_after": {
+      "r": 0.005396874479175248,
+      "p": 0.9087015284869966
+    },
+    "original_unmatched": {
+      "ffn_auroc": 0.5313249096445544,
+      "ffn_std": 0.06715745586860147,
+      "attn_auroc": 0.5511525370670765,
+      "attn_std": 0.041114009223471776
+    },
+    "difficulty_matched": {
+      "ffn_auroc": 0.5276521739130435,
+      "ffn_std": 0.04337806597911982,
+      "ffn_splits": 5,
+      "attn_auroc": 0.5281825013419217,
+      "attn_std": 0.03198063877809864,
+      "attn_splits": 5
+    },
+    "permutation_test": {
+      "FFN": {
+        "observed_auroc": 0.5276521739130435,
+        "n_permutations": 500,
+        "perm_mean": 0.5006041266774021,
+        "perm_std": 0.03469388992105146,
+        "p_value": 0.22954091816367264
+      },
+      "Attn": {
+        "observed_auroc": 0.5281825013419217,
+        "n_permutations": 500,
+        "perm_mean": 0.4994762898550725,
+        "perm_std": 0.034725662666631865,
+        "p_value": 0.2055888223552894
+      }
+    },
+    "bin_report": [
+      [
+        0,
+        26,
+        26,
+        26
+      ],
+      [
+        1,
+        25,
+        26,
+        25
+      ],
+      [
+        2,
+        30,
+        21,
+        21
+      ],
+      [
+        3,
+        21,
+        31,
+        21
+      ],
+      [
+        4,
+        30,
+        21,
+        21
+      ],
+      [
+        5,
+        27,
+        24,
+        24
+      ],
+      [
+        6,
+        27,
+        25,
+        25
+      ],
+      [
+        7,
+        27,
+        24,
+        24
+      ],
+      [
+        8,
+        17,
+        34,
+        17
+      ],
+      [
+        9,
+        23,
+        29,
+        23
+      ]
+    ],
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "peak_ffn_layer": 8,
+    "peak_attn_layer": 17,
+    "n_checked": 817
+  }
+}
