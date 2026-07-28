@@ -337,8 +337,8 @@ This paper's own confound-hunting is not an isolated instance -- the
 chat-template rerun that reverses Qwen0.5B's component comparison
 (§3.3), and the difficulty-matched control that turns out to test a
 confound weaker than assumed (§3.7), both fit a broader pattern also
-observed in three anonymous concurrent submissions by the same authors
-(identifying citations withheld for double-blind review; summarized here
+observed in three concurrently-submitted anonymous manuscripts
+(citations withheld for double-blind review; summarized here
 without attribution). A geometric certificate for hallucination
 detectability finds its near-saturated forced-choice AUROCs are
 substantially explained by answer-length surface features rather than
@@ -449,10 +449,9 @@ L17=0.5625). Qwen's \emph{Fisher-separability} result (Attn J=1.251 vs.
 FFN J=1.179) is a different metric from AUROC and is not used here to
 determine which component "wins" on this architecture.
 
-**Consistency check: the "within CV
-SD, not distinguishable from a tie" caveat applied to Qwen's 0.0032
-margin must be applied uniformly, not only where it happens to undercut
-the strongest-looking result.** Pythia's FFN-vs-Attn margin
+**The same "within CV
+SD, not distinguishable from a tie" standard applies to Pythia's margin
+as well.** Pythia's FFN-vs-Attn margin
 (0.6181$-$0.6115$=$0.0066) is also well within its own per-layer
 cross-validation SD (FFN $0.0442$, Attn $0.0345$) -- less than a fifth
 of either SD. GPT-2's own per-layer CV SD confirms the same pattern
@@ -884,7 +883,7 @@ $\|W_{\text{dec},j}\|_2 = 1$ for every column $j$} (re-normalized after
 each gradient step), minimizing $\mathcal{L} = \|x - \hat{x}\|_2^2 +
 \lambda \|f(x)\|_1$.
 
-**Correction: the unit-norm decoder
+**The unit-norm decoder
 constraint is not optional.** Without it, the $\ell_1$ penalty is
 ill-posed. The model can shrink $f(x)$ towards zero while inflating
 $\|W_{\text{dec},j}\|$ to compensate. This reduces the penalty without
@@ -1308,11 +1307,11 @@ finding. FFN shows a directionally consistent but individually
 non-significant numerical majority across three architectures, under a
 bare-template first pass. A layer-pooled test is not statistically
 valid here, due to within-architecture autocorrelation, regardless of
-the one-/two-sided labeling correction made in this revision. The
+whether the one- or two-sided p-value is used. The
 honestly poolable fact from that pass is that 3/3 architectures show a
 numerical majority -- too small an $n$ to test formally.
 
-Closing the Qwen0.5B chat-template confound this revision identified
+Correcting for the Qwen0.5B chat-template confound (\S3.3)
 drops that count to 2/3. It also flips the single best-discriminating
 component to Attention, on two of three architectures (GPT-2 and
 properly-templated Qwen0.5B), by the paper's primary AUROC metric, with
