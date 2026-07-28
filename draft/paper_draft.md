@@ -246,8 +246,8 @@ established that FFN sublayers can override retrieved context during
 RAG hallucination -- "Knowledge FFN" over-retrieval. Follow-up work
 (ParamMute, NeurIPS 2025; SEReDeEP, arXiv 2505.07528) refines this mechanism without
 leaving the RAG regime. Both rely on benchmarks that supply retrieved
-context by construction. Two further ReDeEP-lineage works, added in the
-final-audit pass, remain in this same RAG-scoped regime. FACTUM (arXiv
+context by construction. Two further ReDeEP-lineage works
+remain in this same RAG-scoped regime. FACTUM (arXiv
 2601.05866) reframes RAG citation hallucination as a scale-dependent
 coordination failure between Attention ("reading") and FFN
 ("recalling") pathways. It introduces pathway-alignment scores as a
@@ -456,7 +456,7 @@ L17=0.5625). An earlier draft's "two of three" claim substituted Qwen's
 different metric) for its AUROC result to reach that count. This was a
 metric-mixing error, now corrected.
 
-**Consistency check, added post-review (fourth round): the "within CV
+**Consistency check: the "within CV
 SD, not distinguishable from a tie" caveat applied to Qwen's 0.0032
 margin must be applied uniformly, not only where it happens to undercut
 the strongest-looking result.** Pythia's FFN-vs-Attn margin
@@ -485,7 +485,7 @@ This is genuinely out-of-distribution usage for an instruction-tuned
 model, and a more parsimonious explanation for its weak/reversed
 results than any story about scale.
 
-**Closing the confound, post-review (fourth round): we reran
+**Closing the confound: we reran
 Qwen2.5-0.5B-Instruct with its proper chat template**, rather than
 leaving this as an open caveat
 (`code/02_cross_arch_component_probe.py qwen05chat`, identical
@@ -541,8 +541,7 @@ Tested at L8/L9, alpha in {20, 40}, against a random-direction control and
 an attention-sublayer-patch control, on all 81 hallucinated test-split
 prompts.
 
-**Construct-validity check on this test set, added post-review (fourth
-round): what fraction of these 81 "hallucinated" baseline completions
+**Construct-validity check on this test set: what fraction of these 81 "hallucinated" baseline completions
 are confident false claims versus degenerate repetition loops?** We
 scanned each baseline completion for a repeated 4-8 word phrase
 occurring 3 or more times (e.g. "I think it's the people who make the
@@ -561,7 +560,7 @@ semantic correction. This $n=81$ test cannot separate these two effects
 post-hoc on its own -- restricting to only the genuinely confident,
 non-repetitive false completions, at adequate power, is the direct
 follow-up this finding motivates, and is run below at the dataset's
-maximum $n=228$ (see the "Closed, elite-review follow-up" paragraph
+maximum $n=228$ (see the paragraph below
 restricting to the 107 non-degenerate prompts).
 
 | Layer | Alpha | FFN-found flip rate | FFN-random flip rate | Attn-found flip rate | McNemar p (found vs. random) | McNemar p (FFN-found vs. Attn-found) |
@@ -574,7 +573,7 @@ restricting to the 107 non-degenerate prompts).
 The found-direction FFN patch beats the random-direction control in
 flip-to-correct rate, in all four tested configurations. But the
 effect does not reach significance at n=81 (McNemar p ranges 0.27-1.0).
-**Power, added post-review (third round):** the number of discordant
+**Power:** the number of discordant
 pairs (prompts where found and random disagree) in these four
 comparisons is 13, 19, 15, and 19 respectively. At these
 discordant-pair counts, an exact McNemar test requires roughly 75-85%
@@ -634,7 +633,7 @@ fourth is signal" and "the fourth is a false positive at this power."
 We report both readings rather than selecting the one that best fits
 the null.
 
-**Closed, final-audit pass: this test is no longer $n=81$.** The
+**Scaling up: this test is no longer $n=81$.** The
 $n=81$ figure above was a hard ceiling of the original 70/30 train/test
 split on GPT-2's 534-item labeled pool (268 hallucinated total). We
 re-ran the identical test with a leaner 15/85 train/test split (40
@@ -664,9 +663,9 @@ resolves as noise, not signal. Baseline re-labeling confirms all 228
 test prompts as genuinely hallucinated under fresh scoring (228/228),
 ruling out any labeling-drift explanation for the null.
 
-**Closed, elite-review follow-up: the repetition-loop construct-validity
-issue flagged for the original $n=81$ test was never re-checked at
-$n=228$, until now.** We regenerated the 228 baseline completions
+**The repetition-loop construct-validity
+issue flagged for the original $n=81$ test, re-checked at
+$n=228$.** We regenerated the 228 baseline completions
 (identical greedy decode, no patched intervention) and re-applied the
 same repetition-loop criterion (a 4-8 word phrase repeated 3+ times).
 $121/228$ (53.1\%, Wilson 95\% CI [46.6\%, 59.4\%]) are degenerate
@@ -687,7 +686,7 @@ across the full pool -- and this strengthens \S3.4's causal-null
 finding on GPT-2 itself, independent of
 and prior to the Pythia/Qwen extension below.
 
-**Closed, post-review (round 6): the causal test above was only ever
+**Extending beyond GPT-2: the causal test above was only ever
 run on GPT-2. We extended it to Pythia-410M and Qwen2.5-0.5B-Instruct
 (chat-templated), rather than leave "is this GPT-2-specific?" as an
 open question.** Methodology is identical: difference-of-means
@@ -728,8 +727,8 @@ step this particular null motivates.
 
 ### 3.5 ROME-style causal tracing: a stronger causal test (GPT-2)
 
-**Added, final-audit pass, responding directly to an elite-reviewer
-critique that additive mean-shift steering (\S3.4) is a weak causal
+**A stronger causal test is warranted: additive mean-shift steering
+(\S3.4) is a comparatively weak causal
 instrument.** We replace it here with causal tracing (Meng et al.
 2022, "Locating and Editing Factual Associations in GPT"), the
 field's standard method for localizing causal effect, adapted to
@@ -801,7 +800,7 @@ vs.\ FFN L8$=0.6053$) -- a stronger, independent causal method now
 points the same direction as the paper's passive-probe evidence,
 rather than rescuing an FFN-specific causal story.
 
-**Closed, elite-review follow-up: we raised $n_{\text{valid}}$ from 45
+**Raising power: we raised $n_{\text{valid}}$ from 45
 to the maximum the labeled pool supports (67), pre-registering the
 joint (not per-family) correction as primary before rerunning --
 and it does not resolve Attn L9 into significance. If anything, a
@@ -823,8 +822,7 @@ finding as likely noise around a per-family-only threshold, not a real
 effect suppressed by low power -- and reinforces, rather than
 complicates, this paper's overall causal-null story.
 
-**Closed, final-audit
-pass: this ROME-style test is no longer GPT-2-only.** We extend it to
+**Extending beyond GPT-2 again: this ROME-style test is no longer GPT-2-only.** We extend it to
 Pythia-410M and Qwen2.5-0.5B-Instruct
 (`code/09_multi_arch_rome_style_causal_tracing.py`,
 `results/multi_arch_rome_style_causal_tracing.json`), reusing this
@@ -879,7 +877,7 @@ captures. Sparse autoencoders (SAEs) are designed to recover exactly
 this kind of structure. We specify the following protocol as the
 natural next experiment; Step 1 (training our own SAE) was not run, for
 reasons given there, but Steps 2-4 were later run using a substitute
-for Step 1's output -- see the "Closed, final-audit pass" paragraph
+for Step 1's output -- see the paragraph
 after Step 4 below:
 
 **Step 1 -- train an SAE on FFN sublayer output.** For layer $L \in
@@ -894,7 +892,7 @@ $\|W_{\text{dec},j}\|_2 = 1$ for every column $j$} (re-normalized after
 each gradient step), minimizing $\mathcal{L} = \|x - \hat{x}\|_2^2 +
 \lambda \|f(x)\|_1$.
 
-**Correction, added post-review (fourth round): the unit-norm decoder
+**Correction: the unit-norm decoder
 constraint is not optional.** Without it, the $\ell_1$ penalty is
 ill-posed. The model can shrink $f(x)$ towards zero while inflating
 $\|W_{\text{dec},j}\|$ to compensate. This reduces the penalty without
@@ -910,8 +908,7 @@ standard 2026 practice, and a real implementation should use them.
 feature $j \in \{1, \ldots, m\}$, run a two-sample test comparing
 $f_j(x)$ on correct-example FFN activations against hallucinated-example
 activations, using the same train-split prompts as the original
-mean-difference direction. **Correction, added post-review (fourth
-round): Benjamini-Hochberg FDR control operates on $p$-values, not on
+mean-difference direction. **Correction: Benjamini-Hochberg FDR control operates on $p$-values, not on
 the effect size (Cohen's $d_j$) directly.** Ranking by $|d_j|$ and then
 "applying BH" was underspecified in an earlier draft. SAE feature
 activations are zero-inflated: most features fire on a small fraction
@@ -932,7 +929,7 @@ coordinate at its original value -- a \emph{clamp}, not a free
 direction. Inject $x' = x + \Delta \hat{x}$ into the FFN sublayer output
 during generation.
 
-**Correction, added post-review (fourth round): a clamp to a specific
+**Correction: a clamp to a specific
 target is not compatible with an additional free scalar $\alpha$.** An
 earlier draft's $x' = x + \alpha(\Delta\hat{x})$ over- or under-shoots
 the clamped target unless $\alpha=1$ by construction. So $\alpha$ is
@@ -961,7 +958,7 @@ That is untested. The honest reading of \S3.4 is that a single linear
 direction, at this sample size, shows no measurable FFN-specific effect
 either way.
 
-**Closed, final-audit pass: we ran Steps 2-4 of this protocol, using a
+**Running Steps 2-4 in practice: we ran Steps 2-4 of this protocol, using a
 genuinely pretrained, publicly released SAE rather than training our
 own (Step 1's from-scratch training, at the scale and hyperparameter
 search a real implementation needs, is infeasible within this project's
@@ -1075,7 +1072,7 @@ matching: FFN~L8 AUROC~$=0.6255\pm0.0510$, Attn~L3
 AUROC~$=0.6253\pm0.0926$ -- if anything slightly higher, not lower,
 under the stronger control.
 
-**Significance, corrected (round-5 review): a label-permutation test
+**Significance, corrected: a label-permutation test
 replaces the invalid fold-std z-test.** This test runs 500 shuffles of
 the matched-set labels, refits the identical CV pipeline on each
 shuffle, and computes a one-sided empirical $p$ as the fraction of
@@ -1115,7 +1112,7 @@ whatever information predicts difficulty. The result is a probe whose
 AUROC, if still above chance, cannot be explained by $\delta(q)$
 leaking through $z$.
 
-**Closed, elite-review follow-up: we ran this adversarial protocol,
+**We ran this adversarial protocol,
 rather than leaving it specified but unrun.** A small shared encoder
 ($z\in\mathbb{R}^{64}$, one hidden layer) feeds a hallucination head and,
 through the gradient-reversal layer above ($\lambda=1$), an
@@ -1141,7 +1138,7 @@ discard exactly that information.
 
 ## 4. Discussion and Limitations
 
-**Data and code availability, elite-review follow-up.** All code,
+**Data and code availability.** All code,
 cached result JSONs, and the paper source are publicly available at
 `https://github.com/Lakshmi-Chakradhar-Vijayarao/ffn-mechanism-audit`.
 Not every result in this paper reruns from this repository alone. The seven
@@ -1329,11 +1326,7 @@ story -- rather than what it positively establishes.
 
 ## References
 
-Added, final-audit pass: this paper previously cited every source only
-inline (author/year/arXiv-ID mentions scattered through the text), with
-no consolidated bibliography -- not submittable in that state, by this
-project's own standard (see the companion agentic-failures paper's
-identical fix). Full citations below, compiled from exactly the
+Full citations below, compiled from exactly the
 bibliographic detail already verified in-text or in
 `related_work/related_work_notes.md`; entries with no author list
 recorded anywhere in this project are cited by title only rather than
