@@ -132,6 +132,26 @@ whether the label disagreement itself is uniform across conditions.
 
 ## 1. Introduction
 
+Why should a reader outside this specific mechanism's lineage care about
+this paper? Not because it discovers a new mechanism -- it doesn't, and
+says so throughout. The reason is methodological and general: this
+paper is a worked example of testing whether a causal-mechanistic claim
+generalizes outside the regime it was discovered in, using a specific
+discipline -- a construct-validity check on the outcome metric itself,
+run before any causal claim is trusted -- that is reusable well beyond
+FFN sublayers or hallucination. Concretely, before this paper's causal
+patching experiment is allowed to speak to "does FFN activity cause
+hallucination," it must first survive the question "is the underlying
+flip-to-correct metric even measuring semantic correction, or is over
+half of it repetition-breaking on degenerate completions?" (\S3.4 finds
+the latter, for 51.9-53.1% of baseline "hallucinated" completions). Any
+researcher running a causal intervention on an LLM and reporting a
+flip-rate metric inherits this same risk, independent of which
+component or behavior is being tested. That transferable discipline,
+not the specific FFN finding, is this paper's most durable contribution,
+and it is why we believe a careful negative result belongs in a venue
+that weighs correctness over novelty.
+
 Fluent text and factual correctness are distinct properties of language
 model output. ReDeEP (Sun et al., ICLR 2025) localized one mechanism by
 which they diverge in retrieval-augmented generation. FFN sublayers can
