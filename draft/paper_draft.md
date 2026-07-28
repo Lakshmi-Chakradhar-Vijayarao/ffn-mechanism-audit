@@ -82,7 +82,16 @@ discrimination better than the example's own -- clears the joint
 threshold ($p=0.00086$). More data did not vindicate the one
 borderline FFN-favoring signal this paper produced; it reversed
 direction instead, reinforcing rather than complicating the overall
-causal null. Extending ROME tracing to Pythia-410M and
+causal null. We flag this reversal itself as diagnostic, not just its
+outcome: a single borderline effect that flips sign between a low-$n$
+and a higher-$n$, more-strictly-corrected pass is at least as consistent
+with both passes being underpowered draws from a genuinely null
+underlying effect as it is with the second pass having found the
+"true" direction. We do not have a third, independent replication at
+even higher $n$ to distinguish these, and we do not claim the
+higher-$n$ anti-specific-FFN result is itself a stable finding rather
+than one more stopping point in a still-noisy series. Extending ROME
+tracing to Pythia-410M and
 Qwen2.5-0.5B-Instruct shows no surviving effect at either -- a clean
 null contrasting with GPT-2's own narrow, per-family-only effect.
 
