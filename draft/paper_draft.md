@@ -191,9 +191,8 @@ it falls short of the original hypothesis.
    depth on GPT-2's 12 layers) via 6 converging methods -- triangulating rigor, not a
    qualitatively new discovery (mid-layer hallucination localization is
    established prior art, engaged directly in related work). A seventh
-   method (DLA magnitude) was originally miscited as also converging on
-   L9; corrected below (\S3.1), it actually peaks at L10/L11 and is
-   excluded from this count.
+   method (DLA magnitude) is addressed separately (\S3.1): it actually
+   peaks at L10/L11, not L9, and is excluded from this count.
 2. FFN-vs-Attention component decomposition testing whether ReDeEP's
    RAG-scoped FFN mechanism extends to closed-book (no-retrieval) QA. We
    find a numerical FFN majority on 3/3 architectures in the
@@ -333,23 +332,24 @@ used throughout -- both the original whole-residual steering and the new
 FFN-targeted patching -- descends directly from Inference-Time
 Intervention (Li et al. 2023, arXiv 2306.03341).
 
-**A recurring meta-pattern across this project's companion studies.**
+**A recurring meta-pattern this paper's own confound-hunting fits.**
 This paper's own confound-hunting is not an isolated instance -- the
 chat-template rerun that reverses Qwen0.5B's component comparison
 (§3.3), and the difficulty-matched control that turns out to test a
-confound weaker than assumed (§3.7), both fit a broader pattern. Three
-companion studies from the same project independently converge on the
-same structural lesson. A geometric certificate for hallucination
+confound weaker than assumed (§3.7), both fit a broader pattern also
+observed in three anonymous concurrent submissions by the same authors
+(identifying citations withheld for double-blind review; summarized here
+without attribution). A geometric certificate for hallucination
 detectability finds its near-saturated forced-choice AUROCs are
 substantially explained by answer-length surface features rather than
 truthfulness: a trivial 6-feature classifier reaches AUROC 0.977 on the
 identical task. An agentic-failure taxonomy finds a full-vector
 hidden-state "early-warning" signal collapses to chance on one model
 once step-1 difficulty is controlled for, and survives only weakly on
-the other. A leakage-taxonomy audit finds that even a carefully-designed
-synthetic severity estimate needed four independent rounds of
-correction, before a training-budget confound, a random-seed confound,
-and a miscalibrated difficulty target were all simultaneously resolved.
+the other. A leakage-taxonomy audit finds that a carefully-designed
+synthetic severity estimate required jointly resolving a
+training-budget confound, a random-seed confound, and a miscalibrated
+difficulty target before it stabilized.
 
 Read together, the four studies support a single claim broader than any
 one of them. Passive linear and geometric probes on LLM hidden states
@@ -363,11 +363,10 @@ model families, tasks, and probing methodologies.
 
 ### 3.1 Layer localization (GPT-2, 6 converging methods, plus a corrected 7th)
 
-**Final-audit fix: these seven numbers previously had no backing
-artifact in this repo.** They were computed entirely in the unshipped
-mech-int sibling project and only quoted here as numbers. All seven are
-now reproducible directly from this repo, without external
-dependencies. The small (<10KB each) per-method result summaries are
+**Reproducibility.** All seven numbers below are
+reproducible directly from this repo, without external
+dependencies on the unshipped mech-int sibling project where they were
+originally computed. The small (<10KB each) per-method result summaries are
 vendored at `results/vendored_mech_int/` (copied from mech-int's own
 `results/logs/*.npy`, verified byte-identical via md5 where an
 in-project copy already existed). `code/00_verify_vendored_mechint_numbers.py`
@@ -385,9 +384,8 @@ peak L3 (0.6165). Steering: peak improvement at L9. Gold-token logit
 lens: divergence at L8. A seventh method, DLA magnitude, is addressed
 separately below and does not join this convergence once corrected.
 
-**Elite-review follow-up: two of these six are weaker or more
-selectively-reported than "converges on L8-9" implies, stated
-plainly.** The steering method's "peak improvement" at L9 is $0.0015$
+**Two of these six methods are weaker or more
+selectively-reported than "converges on L8-9" implies.** The steering method's "peak improvement" at L9 is $0.0015$
 AUROC points ($0.5759\to0.5774$), the argmax over a 13-layer
 $\times$ 4-alpha (52-cell) grid
 (`results/vendored_mech_int/steering_layer_sweep.npy`) -- against
@@ -406,9 +404,8 @@ noise-level grid-search artifact and a metric choice that agrees with
 the other four only under one of two available scorings for that
 method.
 
-**DLA correction, stated plainly, not as an editorial note.** The
-original mech-int project mislabeled L9 as having the "largest absolute
-DLA." In the same underlying data, L10 (+0.90) and L11 (+0.71) are
+**DLA magnitude does not support an L9 peak.** L9 does not have the
+largest absolute DLA in the underlying data; L10 (+0.90) and L11 (+0.71) are
 actually larger. L8-9 is supported by the convergence of the other 6
 methods above, not by DLA magnitude. The L8 FFN over-retrieval DLA
 figure reported in §3.2 below is an in-sample, non-cross-validated mean
