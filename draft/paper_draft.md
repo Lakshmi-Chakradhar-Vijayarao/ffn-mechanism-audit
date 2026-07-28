@@ -532,6 +532,13 @@ anti-correlates with the real AUROC curve on GPT-2 (r=-0.178). With only
 corroboration. We do not treat it as independent validation of anything
 in this paper and do not discuss it further.)*
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/ffn-attn-comparison.pdf}
+\caption{Peak AUROC for FFN vs.\ Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation (as reported in \S3.2-\S3.3). The margin between components is within one CV~SD of overlap in three of four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template -- visually, no condition shows a peak-AUROC gap that survives its own measurement noise.}
+\label{fig:ffn-attn-comparison}
+\end{figure}
+
 ### 3.4 Causal verification: FFN-sublayer patching (GPT-2)
 
 [Real data: `results/ffn_causal_patch_results.json`.] Difference-of-means
@@ -1159,6 +1166,20 @@ state this plainly rather than let a reader discover it: full
 end-to-end reproduction of \S3.4, \S3.7, and \S4's SAE-gating result
 from raw data requires two additional private repositories not released
 with this paper.
+
+**Reproducibility map, for a reviewer checking one specific number.** Rather than requiring a search through the text for which script produced which result, the table below maps each major claim directly to its script and cached result file.
+
+| Claim | Section | Script | Cached result |
+|---|---|---|---|
+| Layer localization (7 converging methods) | \S3.1 | `code/00_verify_vendored_mechint_numbers.py` | `results/*.json` (per-method) |
+| FFN vs. Attention component decomposition | \S3.2 | `code/02_cross_arch_component_probe.py` | `results/cross_arch_component_probe_*.json` |
+| Qwen chat-template reversal | \S3.3 | `code/02_cross_arch_component_probe.py qwen05chat` | `results/cross_arch_component_probe_qwen05chat.json` |
+| Difficulty-matched control | \S3.3 | `code/06_difficulty_matched_control.py`, `code/11_multi_arch_difficulty_matched_control.py` | `results/difficulty_matched_control.json`, `results/multi_arch_difficulty_matched_control.json` |
+| FFN-sublayer causal patching (main null) | \S3.4 | `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py`, `code/14_causal_patch_scaled_degeneration_filter.py` | `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`, `results/ffn_causal_patch_scaled_degeneration_filtered.json` |
+| ROME-style causal tracing | \S3.5 | `code/08_rome_style_causal_tracing.py`, `code/09_multi_arch_rome_style_causal_tracing.py`, `code/18_rome_style_causal_tracing_scaled.py` | `results/rome_style_causal_tracing.json`, `results/multi_arch_rome_style_causal_tracing.json`, `results/rome_style_causal_tracing_scaled.json` |
+| Adversarial gradient-reversal probe | \S3.6 | `code/17_gradient_reversal_adversarial_probe.py` | `results/gradient_reversal_adversarial_probe.json` |
+| SAE feature clamp | \S3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
+| Label-validity audit (Jaccard vs. LLM judge) | \S3.7 | `code/16_llm_judge_label_noise.py` | `results/llm_judge_label_noise.json` |
 
 - The "FFN dominates" framing is only a numerical majority, and only in
   the bare-template first pass. Per-architecture binomial tests are
