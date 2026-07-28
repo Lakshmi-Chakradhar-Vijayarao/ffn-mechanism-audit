@@ -313,12 +313,11 @@ we flag its absence explicitly rather than let the paper's internal
 surface-baseline comparison (previous paragraph) imply completeness
 against the wider detection literature it does not test against.
 
-**Sparsity and steering method provenance.** This citation was wrong in
-an earlier draft, and the correction matters for what §3.1's result is
-evidence of. The 100/768-dimension sparse probe result (§3.1) was
-previously attributed to "A Single Direction of Truth" (arXiv
-2507.23221), as SAE-sparsity evidence that dense probes match or beat
-SAE probes. That paper does not make this comparison at all. It uses a
+**Sparsity and steering method provenance.** The 100/768-dimension sparse probe result (§3.1) is
+correctly attributed as follows, distinct from a superficially similar
+paper it should not be confused with: "A Single Direction of Truth"
+(arXiv 2507.23221) does not make the dense-vs-SAE-probe comparison at
+all. It uses a
 dense linear residual probe and localizes its signal to sparse
 late-layer MLP activity via gradient$\times$activation attribution -- a
 relevant parallel to this paper's own FFN/sparsity findings, but not
@@ -419,8 +418,7 @@ of a mechanism, pending a held-out replication.
 ### 3.2 FFN vs. Attention component decomposition (GPT-2)
 
 On GPT-2, FFN wins 8/12 layers (two-sided binomial p=0.39; one-sided
-p=0.19; neither significant -- an earlier draft mislabeled 0.39 as the
-one-sided value). Peak FFN layer is L8 (AUROC 0.6053); peak Attn layer
+p=0.19; neither significant). Peak FFN layer is L8 (AUROC 0.6053); peak Attn layer
 is L3 (AUROC 0.6165). **The single best-discriminating component on
 GPT-2 is Attention, not FFN** -- a tension with the "FFN dominates"
 framing that must be stated plainly. At L8, FFN direct logit
@@ -431,11 +429,10 @@ but unconfirmed "over-retrieval" signature.
 ### 3.3 Cross-architecture data (GPT-2, Pythia-410M, Qwen2.5-0.5B-Instruct)
 
 [Full version: `draft/cross_architecture_section.md`, real Kaggle data,
-N=605 Pythia / N=513 Qwen0.5B -- now corrected, see note below.] FFN
+N=605 Pythia / N=513 Qwen0.5B.] FFN
 wins a numerical majority of layers on all three architectures (66.7%,
-66.7%, 58.3%). **Correction (second review round):** an earlier draft
-reported these per-architecture p-values (GPT-2 0.39, Pythia 0.15, Qwen
-0.54) as one-sided. They are two-sided. The correct one-sided values are
+66.7%, 58.3%). The per-architecture p-values (GPT-2 0.39, Pythia 0.15, Qwen
+0.54) are two-sided. The corresponding one-sided values are
 0.19, 0.076, and 0.27 -- still individually non-significant.
 
 Pooled across all 60 layers, 38/60 FFN wins gives a one-sided p=0.026,
@@ -451,10 +448,9 @@ On the paper's primary metric, empirical AUROC, Attention is the single
 best-discriminating component on **one** of three architectures
 (GPT-2), not two. Pythia's peak AUROC favors FFN (L11=0.6181 vs. Attn
 L4=0.6115). Qwen0.5B's peak AUROC also favors FFN (L8=0.5657 vs. Attn
-L17=0.5625). An earlier draft's "two of three" claim substituted Qwen's
-\emph{Fisher-separability} result (Attn J=1.251 vs. FFN J=1.179, a
-different metric) for its AUROC result to reach that count. This was a
-metric-mixing error, now corrected.
+L17=0.5625). Qwen's \emph{Fisher-separability} result (Attn J=1.251 vs.
+FFN J=1.179) is a different metric from AUROC and is not used here to
+determine which component "wins" on this architecture.
 
 **Consistency check: the "within CV
 SD, not distinguishable from a tie" caveat applied to Qwen's 0.0032
@@ -611,7 +607,7 @@ regime. This may explain why found and random directions become
 indistinguishable at L8/alpha=40 specifically (0.148 = 0.148... vs.
 random 0.136).
 
-**Addition (second review round):** a non-trivial fraction of
+A non-trivial fraction of
 interventions in every condition produce a degenerate/unparseable
 completion rather than a clean correct-or-still-wrong answer (label
 $-1$ in the per-sample data, `results/ffn_causal_patch_results.json`).
@@ -693,44 +689,34 @@ across the full pool -- and this strengthens \S3.4's causal-null
 finding on GPT-2 itself, independent of
 and prior to the Pythia/Qwen extension below.
 
-**Extending beyond GPT-2: the causal test above was only ever
-run on GPT-2. We extended it to Pythia-410M and Qwen2.5-0.5B-Instruct
-(chat-templated), rather than leave "is this GPT-2-specific?" as an
-open question.** Methodology is identical: difference-of-means
+**Extending beyond GPT-2.** We ran the same causal
+test on Pythia-410M and Qwen2.5-0.5B-Instruct
+(chat-templated): difference-of-means
 direction on the FFN sublayer at each architecture's own established
 peak layer (Pythia L11, Qwen0.5B-chat L4, from \S3.3), found-vs-random
-control, McNemar exact test. We reuse the FFN/Attn component vectors
+control, McNemar exact test, reusing the FFN/Attn component vectors
 already cached from the cross-architecture probe
 (\texttt{code/07\_multi\_arch\_causal\_patch.py}).
 
-**The honest result is that both extensions are too underpowered to
-support any claim, for two different reasons.** On Pythia (baseline
-hallucination rate 64.5\%): at $\alpha=10$, $n=22$ valid pairs, found
-beats random (18.2\% vs.\ 4.5\% flip rate, $p=0.25$, not significant).
-At $\alpha=20$, $n$ collapses to 7 and the ranking reverses (14.3\% vs.\
-42.9\%). At $\alpha=40$, every completion degenerates ($n=0$) --
-Pythia's generation collapses under this intervention strength even
-more completely than GPT-2's did.
-
-On Qwen0.5B-chat (baseline hallucination rate 51.1\%): valid pairs are
-$n=2$, $1$, and $0$ at $\alpha=10,20,40$ respectively. This is not
-merely underpowered but uninformative. This instruction-tuned model's
+Both extensions are too underpowered to
+support any claim. On Pythia (baseline hallucination rate 64.5\%), valid
+pairs collapse from $n=22$ at $\alpha=10$ (found vs.\ random: 18.2\% vs.\
+4.5\% flip rate, $p=0.25$) to $n=7$ at $\alpha=20$ (ranking reverses:
+14.3\% vs.\ 42.9\%) to $n=0$ at $\alpha=40$ (every completion
+degenerates). On Qwen0.5B-chat (baseline hallucination rate 51.1\%),
+valid pairs are $n=2$, $1$, and $0$ at $\alpha=10,20,40$ -- uninformative
+rather than merely underpowered, since this instruction-tuned model's
 chat-style responses rarely match TruthfulQA's terse reference-answer
-strings closely enough to clear the word-overlap labeling threshold,
-even at baseline. That leaves almost no baseline-hallucinated,
-validly-labeled prompts to test flips on in the first place.
+strings closely enough to clear the word-overlap labeling threshold even
+at baseline, leaving almost no validly-labeled prompts to test.
 
-**We do not read either extension as evidence for or against the GPT-2
-finding.** Pythia's data is consistent with the same noisy,
-no-significant-effect pattern GPT-2 shows at low $\alpha$, and the same
-degeneration at high $\alpha$. Qwen0.5B-chat's labeling-threshold
-mismatch is itself an instructive, disclosed limitation: applying a
-word-overlap label designed for terse completions to a chat-tuned
-model's fuller responses, not a property of the causal question being
-tested. A repeat of the Qwen0.5B-chat test with a labeling threshold
-(or an LLM-judge label, as used in a companion paper in this project)
-calibrated to instruction-tuned response style is the concrete next
-step this particular null motivates.
+Neither extension supports or contradicts the GPT-2 finding. Pythia's
+pattern (noisy, no significant effect at low $\alpha$; degeneration at
+high $\alpha$) is consistent with GPT-2's. Qwen0.5B-chat's failure is a
+labeling-threshold mismatch, not evidence about the causal question
+itself -- a repeat with a threshold (or LLM-judge label, as used in a
+companion paper in this project) calibrated to instruction-tuned
+response style is the concrete next step this null motivates.
 
 ### 3.5 ROME-style causal tracing: a stronger causal test (GPT-2)
 
@@ -881,11 +867,13 @@ near-monosemantic features, rather than the dominant directions of
 variance. If so, additive steering along the dense mean-difference
 direction will dilute it with everything else the direction also
 captures. Sparse autoencoders (SAEs) are designed to recover exactly
-this kind of structure. We specify the following protocol as the
-natural next experiment; Step 1 (training our own SAE) was not run, for
-reasons given there, but Steps 2-4 were later run using a substitute
-for Step 1's output -- see the paragraph
-after Step 4 below:
+this kind of structure.
+
+**Proposed protocol.** We specify the following four-step protocol as the
+natural next experiment. Step 1 (training our own SAE) was not run, for
+reasons given there; Steps 2-4 were run using a substitute
+for Step 1's output, with results reported afterward in "What we ran,
+and what we found" below.
 
 **Step 1 -- train an SAE on FFN sublayer output.** For layer $L \in
 \{8, 9\}$, collect FFN sublayer output activations $x \in \mathbb{R}^d$
@@ -915,9 +903,9 @@ standard 2026 practice, and a real implementation should use them.
 feature $j \in \{1, \ldots, m\}$, run a two-sample test comparing
 $f_j(x)$ on correct-example FFN activations against hallucinated-example
 activations, using the same train-split prompts as the original
-mean-difference direction. **Correction: Benjamini-Hochberg FDR control operates on $p$-values, not on
-the effect size (Cohen's $d_j$) directly.** Ranking by $|d_j|$ and then
-"applying BH" was underspecified in an earlier draft. SAE feature
+mean-difference direction. Benjamini-Hochberg FDR control operates on $p$-values, not on
+the effect size (Cohen's $d_j$) directly, so ranking by $|d_j|$ alone is not sufficient for
+FDR control. SAE feature
 activations are zero-inflated: most features fire on a small fraction
 of inputs, violating the equal-variance assumption behind a naive
 $t$-test. So we use a Mann-Whitney $U$ test per feature instead (robust
@@ -936,10 +924,10 @@ coordinate at its original value -- a \emph{clamp}, not a free
 direction. Inject $x' = x + \Delta \hat{x}$ into the FFN sublayer output
 during generation.
 
-**Correction: a clamp to a specific
-target is not compatible with an additional free scalar $\alpha$.** An
-earlier draft's $x' = x + \alpha(\Delta\hat{x})$ over- or under-shoots
-the clamped target unless $\alpha=1$ by construction. So $\alpha$ is
+A clamp to a specific
+target is not compatible with an additional free scalar $\alpha$: $x' = x + \alpha(\Delta\hat{x})$
+over- or under-shoots
+the clamped target unless $\alpha=1$ by construction, so $\alpha$ is
 dropped for this clamp variant. A separate, \emph{steering} variant may
 instead define $\Delta f$ as the raw per-feature mean-difference
 direction and retain a free $\alpha$ to scale it -- this tests whether
@@ -965,11 +953,11 @@ That is untested. The honest reading of \S3.4 is that a single linear
 direction, at this sample size, shows no measurable FFN-specific effect
 either way.
 
-**Running Steps 2-4 in practice: we ran Steps 2-4 of this protocol, using a
+**What we ran, and what we found.** We ran Steps 2-4 of this protocol, using a
 genuinely pretrained, publicly released SAE rather than training our
 own (Step 1's from-scratch training, at the scale and hyperparameter
 search a real implementation needs, is infeasible within this project's
-compute and time budget).** We substitute
+compute and time budget). We substitute
 \texttt{jbloom/GPT2-Small-SAEs-Reformatted}'s layer-8 SAE
 (\texttt{blocks.8.hook\_resid\_pre}, $d_{\text{sae}}=24{,}576$, 32$\times$
 expansion, trained on 300M tokens of OpenWebText) -- a disclosed
@@ -1019,8 +1007,8 @@ outcomes.
 
 ### 3.7 Pre-registered protocol: dissociating difficulty from hallucination signal
 
-Round-3 review identified this as the single most important missing
-experiment (\S4). The $\approx$0.03 AUROC margin over a surface-feature
+This is the single most important missing
+experiment for dissociating difficulty from hallucination signal (\S4). The $\approx$0.03 AUROC margin over a surface-feature
 baseline (0.605 vs.\ 0.576) is small enough that a generalized
 question-difficulty or effort signal remains a live, undissociated
 alternative to a hallucination-specific one. **We ran this control,
@@ -1029,8 +1017,7 @@ using data already in hand from the parent mech-int project
 `code/06_difficulty_matched_control.py`), rather than leaving it as a
 specified-but-unrun protocol.**
 
-**Round-5 review correctly noted two further flaws in the original
-version of this control, both fixed below.** (a) Matching on a single
+**This control has two further limitations, both addressed below.** (a) Matching on a single
 entropy feature does not control for the other five features feeding
 the 0.576 surface baseline, so we add a second, stronger control
 matched on the full 6-feature composite score. (b) The original
