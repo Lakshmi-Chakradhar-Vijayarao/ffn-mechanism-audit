@@ -48,10 +48,11 @@ throughout), consistently biased toward calling completions
 hallucinated that the word-overlap heuristic called correct. Rather than
 leave this as an unresolved caveat, we reran the decisive causal test
 (§3.4) end to end under the validated label, at nearly double the
-sample size ($n=467$): the causal null does not just survive, it
-sharpens -- flip rates for FFN-found, FFN-random, and Attn-found alike
-collapse to 1.3-3.0\%, with no configuration distinguishable from any
-other. The passive component-comparison picture is more mixed under the
+sample size ($n=467$): the causal null does not weaken, it is
+corroborated by two signatures at once -- flip rates for FFN-found,
+FFN-random, and Attn-found alike collapse to a 1.3-3.0\% floor, with no
+configuration distinguishable from any other even at that floor. The
+passive component-comparison picture is more mixed under the
 validated label: absolute AUROCs rise substantially (to 0.66-0.75) and
 FFN's numerical majority is restored on Qwen0.5B-chat, but which
 component leads remains architecture-dependent either way.
@@ -112,11 +113,15 @@ paper's most durable contribution.
    trials) (§3.2-3.3).
 3. Identification of an instruction-tuning/template confound on Qwen0.5B
    and its correction: rerunning with the proper chat template flips
-   both of Qwen0.5B's component-comparison metrics to Attention-favoring,
-   changing the honest architecture count to 2/3 (§3.3).
+   both of Qwen0.5B's component-comparison metrics to Attention-favoring
+   under the Jaccard label, changing the honest architecture count to
+   2/3 -- though re-probing under a validated label (§3.3) restores
+   FFN's majority, so this reversal is itself label-sensitive.
 4. A targeted FFN-sublayer causal-patching experiment showing zero
    measurable FFN-vs-Attention specificity (McNemar $p=1.000$
-   throughout) at an adequately powered sample size (§3.4).
+   throughout), confirmed rather than weakened when the same test is
+   rerun end to end under a validated label at nearly double the sample
+   size (§3.4).
 
 ## 2. Related Work
 
@@ -365,10 +370,15 @@ judge-hallucinated test prompts (nearly double the $n=228$ used above).
 Under this validated label, flip-to-correct rates collapse to
 1.3-3.0\% for FFN-found, FFN-random, and Attn-found alike at every
 layer/alpha, with no configuration distinguishable from any other
-(McNemar $p\geq0.29$ throughout). This is a cleaner, higher-powered null
-than the Jaccard-labeled result above (which shows much higher but
-equally undifferentiated flip rates, 33-42\% across all three
-conditions) -- not a weaker one. The gap between the two labels'
+(McNemar $p\geq0.29$ throughout; 11-22 discordant pairs per
+configuration -- fewer than the 27-46 above, since the much lower
+absolute flip rate leaves fewer prompts where found and random disagree
+at all). This is not a higher-powered null in the discordant-pairs
+sense; it is a null corroborated by two different signatures at once --
+a floor-level absolute flip rate, and zero separation between
+conditions even at that floor -- under the Jaccard-labeled result above
+(which shows much higher but equally undifferentiated flip rates,
+33-42\% across all three conditions). The gap between the two labels'
 absolute flip rates is itself informative: a large fraction of what
 Jaccard counts as "flipped to correct" is apparently satisfied by
 superficial word overlap with the reference that a validated judge does
@@ -574,11 +584,17 @@ baseline does not explain the judge label's structure (chance-level
 AUROC), meaning it is not simply rewarding shorter or blander
 completions. Given this, we reran the paper's decisive causal test under
 the validated label rather than leave the concern unresolved (§3.4): the
-causal null holds, and strengthens, at nearly double the original
-sample size. This paper's "correct" label should still be read as
-"cleared a word-overlap threshold," not as "an independent judge would
-also call this correct" -- but the paper's central causal claim no
-longer depends on that distinction mattering.
+causal null holds, corroborated by a floor-level flip rate and zero
+separation between conditions at that floor, at nearly double the
+original sample size. This paper's "correct" label should still be read
+as "cleared a word-overlap threshold," not as "an independent judge
+would also call this correct" -- but the paper's central causal claim no
+longer depends on that distinction mattering. One residual limitation:
+the same judge model both defines the found-direction's train split and
+scores every generated output in §3.4's validated-label test, so that
+result's validity rests on the judge's own accuracy, which we have
+checked only by manual spot-reading and a chance-level surface-feature
+control, not an independent second judge or human annotation.
 
 **No inference-economy claim.** This paper localizes a signal and tests
 a causal intervention; it does not propose an early-exit, routing, or
@@ -602,15 +618,19 @@ bare-template first pass; the layer-pooled test is not statistically
 valid regardless of one- or two-sided scoring, due to within-architecture
 autocorrelation. Correcting the Qwen0.5B chat-template confound (§3.3)
 drops the architecture-level count to 2/3 and flips the single
-best-discriminating component to Attention on two of three architectures.
+best-discriminating component to Attention on two of three architectures
+under the Jaccard label -- though re-probing under the validated label
+(§3.3) restores FFN's majority on Qwen0.5B-chat specifically, so this
+particular reversal should be read as label-sensitive, not settled.
 A direct causal test shows no measurable FFN-specificity ($p=1.000$
 throughout), extending rather than contradicting an independent finding
 that activation interventions fail to causally correct hallucinated
 answers at this model scale. This null does not depend on trusting the
 paper's word-overlap label: relabeling every completion with an
 independent LLM judge and rerunning the causal test end to end at nearly
-double the sample size leaves the null intact and, if anything, sharper
--- the strongest single piece of evidence in this paper, precisely
+double the sample size leaves the null intact, corroborated by both a
+floor-level flip rate and zero separation between conditions at that
+floor -- the strongest single piece of evidence in this paper, precisely
 because it is the one result shown to survive the paper's own most
 serious methodological objection.
 
