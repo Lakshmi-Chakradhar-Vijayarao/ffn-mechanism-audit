@@ -535,8 +535,9 @@ adversarially trained to discard exactly that information.
 ## 4. Discussion and Limitations
 
 **Data and code availability.** All code, cached result JSONs, and the
-paper source are public at
-`https://github.com/Lakshmi-Chakradhar-Vijayarao/ffn-mechanism-audit`.
+paper source are included in the anonymized supplementary material for
+double-blind review, and will be released as a public GitHub repository
+under the authors' name upon publication.
 Every result that consumes only already-cached `results/*.json` artifacts
 is self-contained. Three scripts additionally require an unshipped
 sibling repository to *rerun from scratch* (as opposed to re-verifying
