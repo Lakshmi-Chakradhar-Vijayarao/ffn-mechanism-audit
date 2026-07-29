@@ -41,14 +41,20 @@ survives correction, and it favors Attention, not FFN. A sparse-feature
 by instrument mismatch rather than a clean absence of mechanism.
 
 All of this rests on a Jaccard word-overlap hallucination label whose
-validity we audited directly: an independent LLM judge agrees with only
-52\% of GPT-2 labels (Cohen's $\kappa=0.04$, next to chance), with a
-sharply asymmetric error pattern (98\% agreement on hallucinated calls,
-6\% on correct calls). This bears most on absolute AUROC magnitudes; the
-paper's comparative findings (the template reversal, the causal null)
-compare two conditions under the identical label scheme and are more
-robust to uniform label noise, though we have not verified the noise is
-in fact uniform.
+validity we audited directly, on all three architectures: an independent
+LLM judge agrees with only 52-58\% of labels (Cohen's $\kappa=0.03$-$0.14$
+across GPT-2, Pythia, and both Qwen0.5B variants, next to chance
+throughout), consistently biased toward calling completions
+hallucinated that the word-overlap heuristic called correct. Rather than
+leave this as an unresolved caveat, we reran the decisive causal test
+(§3.4) end to end under the validated label, at nearly double the
+sample size ($n=467$): the causal null does not just survive, it
+sharpens -- flip rates for FFN-found, FFN-random, and Attn-found alike
+collapse to 1.3-3.0\%, with no configuration distinguishable from any
+other. The passive component-comparison picture is more mixed under the
+validated label: absolute AUROCs rise substantially (to 0.66-0.75) and
+FFN's numerical majority is restored on Qwen0.5B-chat, but which
+component leads remains architecture-dependent either way.
 
 The ReDeEP mechanism does not cleanly extend to closed-book confabulation
 at this scale. The paper's most transferable contribution is
@@ -261,6 +267,25 @@ from 33.3\% (L8/24, bare template) to 16.7\% (L4/24, chat template) --
 one more respect in which the original numbers described an artifact of
 prompting, not a property of the model.
 
+**Re-probing under a validated label.** Given the word-overlap label's
+validity concerns (§4), we relabeled every completion on all three
+architectures with the same LLM judge used throughout this paper and
+reran this component probe under both labels for direct comparison
+(`code/24_llm_judge_score_all_architectures.py`,
+`results/llm_judge_relabel_summary.json`). Absolute AUROCs rise
+substantially under the validated label (Pythia $0.615\to0.735$/$0.749$
+FFN/Attn peak; Qwen0.5B-bare $0.566\to0.713$/$0.699$; Qwen0.5B-chat
+$0.570$/$0.599\to0.660$/$0.641$), and FFN's numerical majority is
+restored on Qwen0.5B-chat specifically (11/24 layers under Jaccard,
+a minority, to 18/24 under the validated label, a majority) --
+the template-reversal finding above is thus itself sensitive to which
+label is used. Which component peaks, however, remains
+architecture-dependent under the validated label exactly as it was
+before (Attention still peaks on Pythia; FFN still peaks on both Qwen0.5B
+variants), so this re-check strengthens the case that a real, larger
+signal than the noisy label suggested exists, without resolving the
+paper's core FFN-vs-Attention specificity question either way.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.75\textwidth]{figures/ffn-attn-comparison.pdf}
@@ -326,6 +351,32 @@ word-overlap labeling threshold even at baseline. Neither extension
 supports or contradicts the GPT-2 finding; Pythia's pattern is consistent
 with GPT-2's, and Qwen0.5B-chat's failure is a labeling-threshold
 mismatch, not evidence about the causal question itself.
+
+**Validating the null against the label itself.** The most serious
+objection to every result above is that the Jaccard label defining both
+the test set and the flip-to-correct outcome is unreliable (§4 quantifies
+this at $\kappa=0.04$ on GPT-2). We addressed this directly rather than
+leaving it as a caveat: an independent LLM judge relabeled all 534 of
+GPT-2's original completions ($\kappa=0.03$ against Jaccard, consistent
+with the GPT-2-only audit), and we reran the identical causal-patching
+protocol -- found-direction computed from a judge-labeled train split,
+patched generation, every output scored by the same judge -- on all 467
+judge-hallucinated test prompts (nearly double the $n=228$ used above).
+Under this validated label, flip-to-correct rates collapse to
+1.3-3.0\% for FFN-found, FFN-random, and Attn-found alike at every
+layer/alpha, with no configuration distinguishable from any other
+(McNemar $p\geq0.29$ throughout). This is a cleaner, higher-powered null
+than the Jaccard-labeled result above (which shows much higher but
+equally undifferentiated flip rates, 33-42\% across all three
+conditions) -- not a weaker one. The gap between the two labels'
+absolute flip rates is itself informative: a large fraction of what
+Jaccard counts as "flipped to correct" is apparently satisfied by
+superficial word overlap with the reference that a validated judge does
+not accept as genuinely correct, consistent with this paper's own
+repetition-loop and degenerate-output findings elsewhere in this
+section. Full methodology and per-configuration numbers:
+`kaggle_kernels/paper1-causal-patch-judge-label/`,
+`results/causal_patch_judge_label_results.json`.
 
 ### 3.5 ROME-style causal tracing: a stronger causal test
 
@@ -501,19 +552,33 @@ with this paper.
 | ROME-style causal tracing | §3.5 | `code/08_rome_style_causal_tracing.py`, `code/09_multi_arch_rome_style_causal_tracing.py`, `code/18_rome_style_causal_tracing_scaled.py` | `results/rome_style_causal_tracing.json`, `results/multi_arch_rome_style_causal_tracing.json`, `results/rome_style_causal_tracing_scaled.json` |
 | Adversarial gradient-reversal probe | §3.7 | `code/17_gradient_reversal_adversarial_probe.py` | `results/gradient_reversal_adversarial_probe.json` |
 | SAE feature clamp | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
-| Label-validity audit | §4 | `code/16_llm_judge_label_noise.py` | `results/llm_judge_label_noise.json` |
+| Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
+| Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
 
 **Label validity.** All results rest on a Jaccard word-overlap label,
 surface-form divergence rather than verified factual incorrectness. We
-quantified this directly on GPT-2: an independent LLM judge
-(Qwen2.5-3B-Instruct) scored a 100-item stratified sample with only 52\%
-raw agreement and Cohen's $\kappa=0.04$ (`code/16_llm_judge_label_noise.py`).
-The disagreement is sharply asymmetric, not symmetric noise -- 98\%
-agreement on Jaccard-hallucinated calls, 6\% on Jaccard-correct calls --
-so this paper's "correct" label on GPT-2 should be read as "cleared a
-word-overlap threshold," not as "an independent judge would also call
-this correct." This audit covers GPT-2 only; whether the same asymmetry
-holds for Pythia-410M or Qwen2.5-0.5B is untested.
+quantified this on all three architectures with an independent LLM judge
+(Qwen2.5-3B-Instruct): a 100-item stratified GPT-2 sample gives 52\% raw
+agreement, Cohen's $\kappa=0.04$; full relabeling of every completion on
+Pythia, Qwen0.5B-bare, and Qwen0.5B-chat gives $\kappa=0.032$, $0.141$,
+and $0.084$ respectively -- next to chance throughout, not a GPT-2-specific
+artifact. The disagreement is consistently biased in one direction: the
+judge calls far more completions hallucinated than the word-overlap
+heuristic does (GPT-2: 98\% agreement on Jaccard-hallucinated calls, 6\%
+on Jaccard-correct calls), and manual reading of disagreement cases
+confirms the judge is usually right -- word-overlap frequently credits
+completions that share surface words with the reference but state a
+different specific fact (e.g., naming the wrong person or film), or that
+are degenerate repetition loops, as "correct." A trivial length/lexical
+baseline does not explain the judge label's structure (chance-level
+AUROC), meaning it is not simply rewarding shorter or blander
+completions. Given this, we reran the paper's decisive causal test under
+the validated label rather than leave the concern unresolved (§3.4): the
+causal null holds, and strengthens, at nearly double the original
+sample size. This paper's "correct" label should still be read as
+"cleared a word-overlap threshold," not as "an independent judge would
+also call this correct" -- but the paper's central causal claim no
+longer depends on that distinction mattering.
 
 **No inference-economy claim.** This paper localizes a signal and tests
 a causal intervention; it does not propose an early-exit, routing, or
@@ -541,7 +606,13 @@ best-discriminating component to Attention on two of three architectures.
 A direct causal test shows no measurable FFN-specificity ($p=1.000$
 throughout), extending rather than contradicting an independent finding
 that activation interventions fail to causally correct hallucinated
-answers at this model scale.
+answers at this model scale. This null does not depend on trusting the
+paper's word-overlap label: relabeling every completion with an
+independent LLM judge and rerunning the causal test end to end at nearly
+double the sample size leaves the null intact and, if anything, sharper
+-- the strongest single piece of evidence in this paper, precisely
+because it is the one result shown to survive the paper's own most
+serious methodological objection.
 
 We report this candidly as a modest, largely null-leaning contribution.
 Closed-book FFN over-retrieval is a plausible but empirically unconfirmed

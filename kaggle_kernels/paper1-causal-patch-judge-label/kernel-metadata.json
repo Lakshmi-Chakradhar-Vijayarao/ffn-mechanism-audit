@@ -1,0 +1,15 @@
+{
+  "id": "chakradharvijayarao/paper1-causal-patch-judge-label",
+  "title": "paper1-causal-patch-judge-label",
+  "code_file": "run_causal_patch_judge_label.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

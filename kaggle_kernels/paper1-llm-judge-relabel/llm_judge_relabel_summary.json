@@ -1,0 +1,41 @@
+{
+  "pythia": {
+    "n_valid": 605,
+    "agreement": 0.5454545454545454,
+    "cohen_kappa": 0.031571778648304294,
+    "jaccard_ffn_wins": 16,
+    "jaccard_num_layers": 24,
+    "jaccard_peak_ffn_auroc": 0.6181,
+    "jaccard_peak_attn_auroc": 0.6115,
+    "judge_ffn_wins": 18,
+    "judge_num_layers": 24,
+    "judge_peak_ffn_auroc": 0.7353,
+    "judge_peak_attn_auroc": 0.7494
+  },
+  "qwen05": {
+    "n_valid": 513,
+    "agreement": 0.5750487329434698,
+    "cohen_kappa": 0.14125777470628886,
+    "jaccard_ffn_wins": 14,
+    "jaccard_num_layers": 24,
+    "jaccard_peak_ffn_auroc": 0.5657,
+    "jaccard_peak_attn_auroc": 0.5625,
+    "judge_ffn_wins": 20,
+    "judge_num_layers": 24,
+    "judge_peak_ffn_auroc": 0.7127,
+    "judge_peak_attn_auroc": 0.6992
+  },
+  "qwen05chat": {
+    "n_valid": 433,
+    "agreement": 0.49653579676674364,
+    "cohen_kappa": 0.08419357342440226,
+    "jaccard_ffn_wins": 11,
+    "jaccard_num_layers": 24,
+    "jaccard_peak_ffn_auroc": 0.5704,
+    "jaccard_peak_attn_auroc": 0.5988,
+    "judge_ffn_wins": 18,
+    "judge_num_layers": 24,
+    "judge_peak_ffn_auroc": 0.6603,
+    "judge_peak_attn_auroc": 0.6412
+  }
+}
