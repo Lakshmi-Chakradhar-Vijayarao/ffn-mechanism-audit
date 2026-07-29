@@ -176,18 +176,15 @@ descends from Inference-Time Intervention (Li et al. 2023, arXiv
 
 **A recurring meta-pattern.** This paper's own confound-hunting -- the
 chat-template reversal (§3.3), the difficulty-matched control that turns
-out to test a weaker-than-assumed confound (§3.7) -- fits a broader
-pattern also observed in three concurrently-submitted anonymous
-manuscripts (citations withheld for double-blind review): a geometric
-certificate finds a near-saturated hallucination benchmark substantially
-explained by answer length; an agentic-failure taxonomy finds a
-hidden-state "early-warning" signal collapses to chance once difficulty
-is controlled for; a leakage-taxonomy audit finds a severity estimate
-required jointly resolving three independent confounds before
-stabilizing. Passive linear and geometric probes on LLM hidden states are
-pervasively vulnerable to superficial confounds that are easy to
-overlook and consistently shrink or eliminate the apparent signal once
-tested directly.
+out to test a weaker-than-assumed confound (§3.7) -- is not an isolated
+case. Related, independently-conducted work in adjacent areas of LLM
+interpretability and evaluation has repeatedly found that an initially
+plausible signal or severity estimate substantially weakens or changes
+character once a specific, previously-unexamined confound is directly
+tested, rather than merely acknowledged as possible. Passive linear and
+geometric probes on LLM hidden states are pervasively vulnerable to
+superficial confounds that are easy to overlook and consistently shrink
+or eliminate the apparent signal once tested directly.
 
 ## 3. Methods and Results
 
