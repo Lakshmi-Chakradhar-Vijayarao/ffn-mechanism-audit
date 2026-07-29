@@ -214,6 +214,35 @@ computes two divergence-layer estimates from the same run: the plain
 correct-vs-hallucinated divergence peaks at layer 1, not layer 8; only
 the gold-token variant peaks at L8, which is the one reported above.
 
+**Re-checking layer localization under the validated label.** Since §4
+shows the Jaccard label agrees with an independent LLM judge only
+52\% of the time on GPT-2 ($\kappa=0.04$), we reran the four methods that
+consume only cached activations -- dense probe, sparse L1 probe,
+token-position probe, and DLA -- with the same full-534-sample judge
+label used throughout this validation effort
+(`code/29_gpt2_full_validated_relabel_rerun.py`, reusing the vendored
+mech-int probing code unmodified against the same cached
+`activations.pkl`, only the label array swapped). The peak layer shifts
+under the validated label rather than staying at L8-9: dense probe peaks
+at L7 ($0.6444$, up from L9's $0.5827$); sparse L1 probe also peaks at L7,
+now far sparser (19/768 active dims, 98\% sparse, vs.\ 100/768, 87\%
+sparse under Jaccard), CV AUROC $0.6260$; token-position probe peaks at
+L6 last-token ($0.6961$, up from L8's $0.6036$); DLA's largest FFN
+difference moves from L10 ($+0.90$) to L11 ($+1.81$). Absolute AUROCs
+rise under the validated label here exactly as they do for the other
+three architectures in §3.2, but the peak layer itself is not stable
+across labels -- L8-9 is a property of the Jaccard label's specific
+noise pattern, not a label-independent fact about where GPT-2 localizes
+this signal. **This localization result must be read together with the
+class-imbalance caveat in §3.2**: the validated label leaves only 27/534
+(5.1\%) of GPT-2 samples "correct," and cross-validated AUROC at this
+imbalance is substantially noisier (e.g.\ the token-position probe's peak
+SD is not separately reported here, but see §3.2's paired FFN/Attn SDs
+for the same 27/507 split, which roughly double under the validated
+label) -- so the specific new peak layers above should be read as
+suggestive of instability in the Jaccard-based localization, not as a
+newly-established, precise alternative localization.
+
 ### 3.2 FFN vs. Attention component decomposition (GPT-2)
 
 On GPT-2, FFN wins 8/12 layers (two-sided binomial $p=0.39$; one-sided
@@ -274,19 +303,46 @@ validity concerns (§4), we relabeled every completion on all three
 architectures with the same LLM judge used throughout this paper and
 reran this component probe under both labels for direct comparison
 (`code/24_llm_judge_score_all_architectures.py`,
-`results/llm_judge_relabel_summary.json`). Absolute AUROCs rise
-substantially under the validated label (Pythia $0.615\to0.735$/$0.749$
-FFN/Attn peak; Qwen0.5B-bare $0.566\to0.713$/$0.699$; Qwen0.5B-chat
-$0.570$/$0.599\to0.660$/$0.641$), and FFN's numerical majority is
-restored on Qwen0.5B-chat specifically (11/24 layers under Jaccard,
-a minority, to 18/24 under the validated label, a majority) --
+`results/llm_judge_relabel_summary.json`), and separately extended the
+same check to GPT-2 itself
+(`code/29_gpt2_full_validated_relabel_rerun.py`, all 534 samples).
+Absolute AUROCs rise substantially under the validated label on every
+architecture (GPT-2 $0.605$/$0.617\to0.698$/$0.717$ FFN/Attn peak;
+Pythia $0.615\to0.735$/$0.749$; Qwen0.5B-bare $0.566\to0.713$/$0.699$;
+Qwen0.5B-chat $0.570$/$0.599\to0.660$/$0.641$), and FFN's numerical
+majority is restored on Qwen0.5B-chat specifically (11/24 layers under
+Jaccard, a minority, to 18/24 under the validated label, a majority) --
 the template-reversal finding above is thus itself sensitive to which
 label is used. Which component peaks, however, remains
 architecture-dependent under the validated label exactly as it was
-before (Attention still peaks on Pythia; FFN still peaks on both Qwen0.5B
-variants), so this re-check strengthens the case that a real, larger
-signal than the noisy label suggested exists, without resolving the
-paper's core FFN-vs-Attention specificity question either way.
+before (Attention still peaks on Pythia and now on GPT-2; FFN still peaks
+on both Qwen0.5B variants), and GPT-2's own FFN-vs-Attn layer-count
+majority reverses further in Attention's favor (8/12 layers FFN under
+Jaccard, a majority, to 2/12 under the validated label, now a clear
+Attention majority) -- so this re-check strengthens the case that a
+real, larger signal than the noisy label suggested exists, without
+resolving the paper's core FFN-vs-Attention specificity question either
+way.
+
+**A class-imbalance caveat that applies to every validated-label number
+above.** The judge label is not just different from Jaccard, it is
+severely imbalanced toward "hallucinated": GPT-2 27/534 correct (5.1\%),
+Pythia 29/605 (4.8\%), Qwen0.5B-bare 63/513 (12.3\%), Qwen0.5B-chat
+73/433 (16.9\%) -- confirmed directly from each architecture's judge
+confusion matrix. Cross-validated AUROC at this level of imbalance is
+substantially noisier: on GPT-2, the FFN/Attn peak AUROC standard
+deviations roughly double under the validated label relative to Jaccard
+(FFN $0.0557\to0.1115$; Attn $0.0427\to0.1253$), so GPT-2's own
+$0.698$/$0.717$ margin ($0.019$) is well within one SD of either peak,
+not a more confident finding than the Jaccard-label near-tie it
+reverses. The rising absolute AUROCs and the layer-majority reversals
+above are real properties of the validated-label re-analysis, not
+artifacts of a coding error, but they should be read as suggestive of a
+real, currently under-characterized effect of label quality on this
+probe, not as tighter estimates than the Jaccard-label numbers they
+revise -- a larger, class-balanced validated-label sample would be needed
+to state the post-correction peak margins with the same confidence the
+original Jaccard-label numbers (wrongly) conveyed.
 
 \begin{figure}[h]
 \centering
@@ -384,6 +440,34 @@ repetition-loop and degenerate-output findings elsewhere in this
 section. Full methodology and per-configuration numbers:
 `kaggle_kernels/paper1-causal-patch-judge-label/`,
 `results/causal_patch_judge_label_results.json`.
+
+**A dosage-mismatch check on the FFN-vs-Attention comparison itself.**
+The same $\alpha$ is added to both sublayers' output in every configuration
+above, which is only a fair FFN-vs-Attention comparison if the two
+sublayers' typical output norms are comparable -- otherwise the same
+$\alpha$ is a different *relative* perturbation to each, and an apparent
+lack of an Attention effect could be an artifact of Attention being
+relatively under-perturbed rather than evidence the FFN locus matters more.
+We measured this directly (`code/26_ffn_attn_dosage_diagnostic.py`,
+$n=100$ TruthfulQA prompts, last-token output norms, no training or
+generation needed): GPT-2's FFN output norm is *larger* than its Attention
+output norm at both tested layers (L8: $31.2$ vs.\ $14.8$, ratio $2.11\times$;
+L9: $53.8$ vs.\ $16.6$, ratio $3.23\times$). At the tested $\alpha$ values,
+this means the same nominal $\alpha$ is the *relatively larger* push to
+Attention, not FFN -- at L9/$\alpha{=}20$, for instance, the Attention
+intervention moves that sublayer's output by $\approx120\%$ of its typical
+norm, versus $\approx37\%$ for the equivalent FFN intervention. The
+dosage asymmetry this creates runs in the direction that should make an
+Attention effect, if one existed, *easier* to detect, not harder -- so it
+does not explain the observed FFN-vs-Attention non-difference away; if
+anything, it strengthens it, since the relatively more-perturbed condition
+(Attention) still shows no differentiation from FFN or from a random
+direction. We do not conclude from this that the two interventions are
+dosage-matched in some deeper sense (norm is a coarse proxy for
+functional perturbation size, and we did not attempt a relative-alpha
+rescaling and rerun); we report it as a directly-relevant check that
+resolves the most obvious way this null could have been an artifact of an
+unfair comparison, rather than leaving the concern unaddressed.
 
 ### 3.5 ROME-style causal tracing: a stronger causal test
 
@@ -529,6 +613,33 @@ could not make: the signal is not explained by difficulty leaking through
 the representation, since it survives even when the representation is
 adversarially trained to discard exactly that information.
 
+**Attempting the same difficulty-matched control under the validated
+label: inconclusive, not confirmatory or disconfirmatory.** We reran the
+entropy- and composite-matched controls on GPT-2 with the same validated
+judge label used elsewhere in this section
+(`code/30_difficulty_matched_control_judge_label.py`). The severe class
+imbalance noted in §3.2 (only 27/534 judge-labeled correct) collides
+directly with this control's per-bin matching procedure: with at most
+1-4 correct samples per difficulty decile, the matched set retains only
+54/534 samples (10.1\%, versus $\approx90\%$ under Jaccard above) --
+27 per class, split five ways for cross-validation, roughly 5 per fold.
+At this $n$, the two difficulty proxies give **inconsistent** answers: the
+entropy-only match shows both components significantly above chance (FFN
+$0.7840$, $p=0.0060$; Attn $0.7187$, $p=0.0200$ against a 500-shuffle
+floor), while the stronger 6-feature composite match shows both at or
+below chance and non-significant (FFN $0.3987$, $p=0.82$; Attn $0.3680$,
+$p=0.89$). We do not read either result as informative about whether the
+FFN/Attention signal survives a difficulty confound under the validated
+label: a 5-per-fold CV probe is not powered to distinguish a real effect
+from noise in either direction, and the retention collapse itself is a
+direct, mechanical consequence of the label's class imbalance rather
+than a property of the underlying difficulty-matching question. The
+difficulty-dissociation result above should therefore be read as
+established only under the Jaccard label; whether it holds under a
+validated label remains genuinely untested, not weakly confirmed or
+weakened, pending a larger validated-label sample with enough correct
+completions to support matching.
+
 ## 4. Discussion and Limitations
 
 **Data and code availability.** All code, cached result JSONs, and the
@@ -562,6 +673,10 @@ with this paper.
 | SAE feature clamp | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
 | Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
 | Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
+| FFN/Attn dosage-mismatch diagnostic | §3.4 | `code/26_ffn_attn_dosage_diagnostic.py` | `results/ffn_attn_dosage_diagnostic.json` |
+| GPT-2 full-534 judge relabel | §3.1, §3.2, §3.7 | `kaggle_kernels/paper1-gpt2-full-judge-relabel/` | `results/gpt2_full_534_judge_labels.json` |
+| GPT-2 layer localization + component probe under validated label | §3.1, §3.2 | `code/29_gpt2_full_validated_relabel_rerun.py` | `results/gpt2_full_validated_relabel_rerun.json` |
+| GPT-2 difficulty-matched control under validated label | §3.7 | `code/30_difficulty_matched_control_judge_label.py` | `results/difficulty_matched_control_judge_label.json` |
 
 **Label validity.** All results rest on a Jaccard word-overlap label,
 surface-form divergence rather than verified factual incorrectness. We
@@ -584,7 +699,14 @@ completions. Given this, we reran the paper's decisive causal test under
 the validated label rather than leave the concern unresolved (§3.4): the
 causal null holds, corroborated by a floor-level flip rate and zero
 separation between conditions at that floor, at nearly double the
-original sample size. This paper's "correct" label should still be read
+original sample size. We extended this same validated-label relabeling
+to all 534 of GPT-2's completions (not just the 100-item audit sample,
+$\kappa=0.042$, consistent) and reran layer localization, component
+decomposition, and the difficulty-matched control under it as well
+(§3.1, §3.2, §3.7); the validated label there is severely imbalanced
+toward "hallucinated" (27/534 correct, 5.1\%), which we flag explicitly
+wherever it affects how much weight a resulting number should carry.
+This paper's "correct" label should still be read
 as "cleared a word-overlap threshold," not as "an independent judge
 would also call this correct" -- but the paper's central causal claim no
 longer depends on that distinction mattering. One residual limitation:
