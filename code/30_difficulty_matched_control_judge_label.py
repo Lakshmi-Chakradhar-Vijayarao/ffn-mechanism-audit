@@ -17,7 +17,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
 ROOT = Path(__file__).resolve().parent.parent
 VENDORED = ROOT / "results" / "surface_baseline"
-MECH_INT = Path("/Users/chakrivijayarao/Desktop/mech-int/data/processed")
+MECH_INT = Path("~/Desktop/mech-int/data/processed").expanduser()
 
 spec = importlib.util.spec_from_file_location("dmc06", ROOT / "code" / "06_difficulty_matched_control.py")
 dmc06 = importlib.util.module_from_spec(spec)

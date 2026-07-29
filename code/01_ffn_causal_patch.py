@@ -64,7 +64,7 @@ from datasets import load_dataset
 # not just data, so it cannot be fully vendored -- env var override added).
 ROOT = Path(__file__).resolve().parent.parent
 VENDORED = ROOT / "results" / "vendored_mech_int"
-MECH_INT_ROOT = Path(os.environ.get("MECH_INT_ROOT", "/Users/chakrivijayarao/Desktop/mech-int"))
+MECH_INT_ROOT = Path(os.environ.get("MECH_INT_ROOT", "~/Desktop/mech-int")).expanduser()
 sys.path.insert(0, str(MECH_INT_ROOT))
 
 from src.model.load_model import load_gpt2  # noqa: E402

@@ -33,7 +33,7 @@ from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parent.parent
 VENDORED = ROOT / "results" / "surface_baseline"
-MECH_INT = os.environ.get("MECH_INT_ROOT", "/Users/chakrivijayarao/Desktop/mech-int/data/processed")
+MECH_INT = os.path.expanduser(os.environ.get("MECH_INT_ROOT", "~/Desktop/mech-int/data/processed"))
 
 PEAK_FFN_LAYER = 8
 PEAK_ATTN_LAYER = 3

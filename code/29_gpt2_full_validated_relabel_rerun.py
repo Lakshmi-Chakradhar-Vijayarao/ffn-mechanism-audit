@@ -27,7 +27,7 @@ from pathlib import Path
 
 import numpy as np
 
-MECH_INT = Path("/Users/chakrivijayarao/Desktop/mech-int")
+MECH_INT = Path("~/Desktop/mech-int").expanduser()
 sys.path.insert(0, str(MECH_INT / "src"))
 
 ROOT = Path(__file__).resolve().parent.parent

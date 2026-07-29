@@ -32,7 +32,7 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.metrics import make_scorer, roc_auc_score
 from scipy.stats import norm
 
-# Fixed post-final-audit: was hardcoded to "/Users/chakrivijayarao/Desktop/MECH-INT"
+# Fixed post-final-audit: was hardcoded to "~/Desktop/MECH-INT"
 # (uppercase) against the real directory "mech-int" (lowercase) -- silently
 # correct only on macOS's case-insensitive default filesystem, would break
 # on Linux. features.npy/labels.npy are small and already vendored into
@@ -41,7 +41,7 @@ from scipy.stats import norm
 # remains a genuine external dependency on the mech-int sibling project.
 ROOT = Path(__file__).resolve().parent.parent
 VENDORED = ROOT / "results" / "surface_baseline"
-MECH_INT = os.environ.get("MECH_INT_ROOT", "/Users/chakrivijayarao/Desktop/mech-int/data/processed")
+MECH_INT = os.path.expanduser(os.environ.get("MECH_INT_ROOT", "~/Desktop/mech-int/data/processed"))
 B = 10          # difficulty bins
 PEAK_FFN_LAYER = 8
 PEAK_ATTN_LAYER = 3

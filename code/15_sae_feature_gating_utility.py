@@ -25,8 +25,8 @@ from sklearn.metrics import roc_auc_score, precision_recall_curve, average_preci
 
 ROOT = Path(__file__).resolve().parent.parent
 HIDDEN_STATES_PATH = Path(
-    "/Users/chakrivijayarao/Desktop/geom-proof/results/hidden_states/15_hidden_states_gpt2_117m.npz"
-)
+    "~/Desktop/geom-proof/results/hidden_states/15_hidden_states_gpt2_117m.npz"
+).expanduser()
 LAYER = 8
 FDR_ALPHA = 0.05
 

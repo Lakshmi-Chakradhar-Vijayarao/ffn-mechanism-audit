@@ -48,11 +48,11 @@ VENDORED = ROOT / "results" / "vendored_mech_int"
 # already vendored into this repo; the external path remains as a
 # fallback for anything not vendored (e.g. the 2.9GB activations.pkl
 # this file's docstring describes but does not itself load).
-GEOM_PROOF_ROOT = Path(os.environ.get("GEOM_PROOF_ROOT", "/Users/chakrivijayarao/Desktop/geom-proof"))
+GEOM_PROOF_ROOT = Path(os.environ.get("GEOM_PROOF_ROOT", "~/Desktop/geom-proof")).expanduser()
 sys.path.insert(0, str(GEOM_PROOF_ROOT))
 from src.fisher import fisher_ratio, auroc_bound  # noqa: E402
 
-MECH_INT_ROOT = Path(os.environ.get("MECH_INT_ROOT", "/Users/chakrivijayarao/Desktop/mech-int"))
+MECH_INT_ROOT = Path(os.environ.get("MECH_INT_ROOT", "~/Desktop/mech-int")).expanduser()
 OUT_DIR = ROOT / "results"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

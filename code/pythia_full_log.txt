@@ -1,5 +1,0 @@
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-`torch_dtype` is deprecated! Use `dtype` instead!
-Loading weights:   0%|          | 0/292 [00:00<?, ?it/s]Loading weights:   0%|          | 1/292 [00:00<03:05,  1.57it/s]Loading weights:  46%|████▌     | 134/292 [00:00<00:00, 239.81it/s]Loading weights:  70%|███████   | 205/292 [00:01<00:00, 222.50it/s]Loading weights:  87%|████████▋ | 253/292 [00:01<00:00, 210.89it/s]Loading weights:  99%|█████████▉| 290/292 [00:01<00:00, 203.48it/s]Loading weights: 100%|██████████| 292/292 [00:01<00:00, 187.65it/s]
-/Users/chakrivijayarao/.pyenv/versions/3.10.13/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d '

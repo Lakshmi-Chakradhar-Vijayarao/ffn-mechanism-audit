@@ -32,7 +32,7 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MECH_INT_ROOT = Path("/Users/chakrivijayarao/Desktop/mech-int")
+MECH_INT_ROOT = Path("~/Desktop/mech-int").expanduser()
 OUT_DIR = Path(__file__).resolve().parent.parent / "results"
 JUDGE_MODEL = "Qwen/Qwen2.5-3B-Instruct"
 
