@@ -30,9 +30,13 @@ composite) and an adversarially-trained gradient-reversal probe rule out
 a generic question-difficulty confound as the explanation for the
 residual signal on GPT-2 and Pythia, though the same control does not
 replicate on Qwen2.5-0.5B. A direct causal test -- patching the FFN
-sublayer specifically during generation, at an adequately powered
-$n=228$ -- shows zero measurable FFN-specificity against an
-Attention-patch control (McNemar $p=1.000$ throughout), consistent with
+sublayer specifically during generation, with a genuinely
+Attention-derived direction (nearly orthogonal to the FFN direction,
+cosine similarity $-0.05$ to $-0.06$) patched into the Attention sublayer
+as the actual component-specificity control, at $n=467$ under an
+independently validated label -- shows zero measurable FFN-specificity
+against this Attention control (McNemar $p=0.08$-$1.00$ across four
+tested configurations, none significant), consistent with
 an independent finding that residual-stream steering fails to correct
 hallucinations at this scale. A stronger causal method (ROME-style
 tracing) finds only one effect anywhere across three architectures that
@@ -42,7 +46,8 @@ by instrument mismatch rather than a clean absence of mechanism.
 
 All of this rests on a Jaccard word-overlap hallucination label whose
 validity we audited directly, on all three architectures: an independent
-LLM judge agrees with only 52-58\% of labels (Cohen's $\kappa=0.03$-$0.14$
+LLM judge agrees with only 49.7-57.5\% of labels (below chance on
+Qwen0.5B-chat specifically) (Cohen's $\kappa=0.03$-$0.14$
 across GPT-2, Pythia, and both Qwen0.5B variants, next to chance
 throughout), consistently biased toward calling completions
 hallucinated that the word-overlap heuristic called correct. Rather than
@@ -118,10 +123,11 @@ paper's most durable contribution.
    2/3 -- though re-probing under a validated label (§3.3) restores
    FFN's majority, so this reversal is itself label-sensitive.
 4. A targeted FFN-sublayer causal-patching experiment showing zero
-   measurable FFN-vs-Attention specificity (McNemar $p=1.000$
-   throughout), confirmed rather than weakened when the same test is
-   rerun end to end under a validated label at nearly double the sample
-   size (§3.4).
+   measurable FFN-vs-Attention specificity, using a genuinely
+   Attention-derived direction (nearly orthogonal to the FFN direction)
+   as the actual component-specificity control -- McNemar
+   $p=0.08$-$1.00$ across four tested configurations at $n=467$ under an
+   independently validated label, none significant (§3.4).
 
 ## 2. Related Work
 
@@ -154,8 +160,9 @@ matched 6-feature surface baseline (0.605 vs.\ 0.576,
 $=0.5756\pm0.0684$) and find a directionally consistent, weak margin. Our
 FFN-sublayer causal-patching experiment (§3.4) directly tests whether a
 component-targeted intervention does better than their generic
-residual-stream result; it does not (McNemar $p=1.000$) -- an independent
-replication of their null at the component level.
+residual-stream result; it does not (McNemar $p=0.08$-$1.00$, none
+significant) -- an independent replication of their null at the
+component level.
 
 **Black-box detection.** Semantic entropy (Kuhn et al. 2023) and
 SelfCheckGPT (Manakul et al. 2023) operate purely on output text and
@@ -313,14 +320,21 @@ Qwen0.5B-chat $0.570$/$0.599\to0.660$/$0.641$), and FFN's numerical
 majority is restored on Qwen0.5B-chat specifically (11/24 layers under
 Jaccard, a minority, to 18/24 under the validated label, a majority) --
 the template-reversal finding above is thus itself sensitive to which
-label is used. Which component peaks, however, remains
+label is used. **The full layer-majority picture, stated completely
+rather than selectively:** under the validated label, FFN's numerical
+majority actually *rises* on three of four architectures (Pythia
+$16/24\to18/24$; Qwen0.5B-bare $14/24\to20/24$; Qwen0.5B-chat
+$11/24\to18/24$) and only GPT-2 moves the other way, reversing further
+toward Attention ($8/12\to2/12$). At the architecture level this leaves
+FFN holding a layer-count majority on 3 of 4 architectures under the
+validated label, unchanged in count from Jaccard's 2 of 3 but with
+different member architectures (GPT-2 flips out of FFN's majority as
+Qwen0.5B-chat flips in) -- neither a clean strengthening nor a clean
+reversal of the original picture. Which component peaks, however, remains
 architecture-dependent under the validated label exactly as it was
 before (Attention still peaks on Pythia and now on GPT-2; FFN still peaks
-on both Qwen0.5B variants), and GPT-2's own FFN-vs-Attn layer-count
-majority reverses further in Attention's favor (8/12 layers FFN under
-Jaccard, a majority, to 2/12 under the validated label, now a clear
-Attention majority) -- so this re-check strengthens the case that a
-real, larger signal than the noisy label suggested exists, without
+on both Qwen0.5B variants) -- so this re-check strengthens the case that
+a real, larger signal than the noisy label suggested exists, without
 resolving the paper's core FFN-vs-Attention specificity question either
 way.
 
@@ -372,18 +386,36 @@ additive intervention "flipping" the output to a reference-matching
 string is, for roughly half this test set, at least as consistent with
 breaking a repetition loop as with correcting a hallucinated claim.
 
-**Result, at adequate power.** At the maximum supportable $n=228$ (27-46
-discordant pairs per configuration -- enough that a real, moderate effect
-should be visible if one existed), all four McNemar tests are decisively
-non-significant ($p=0.522, 0.868, 1.000, 0.659$ at L8/$\alpha{=}20$,
-L8/$\alpha{=}40$, L9/$\alpha{=}20$, L9/$\alpha{=}40$). Restricting further
-to the 107 prompts confirmed non-degenerate, the null holds if anything
-more uniformly ($p=1.000, 1.000, 1.000, 0.503$) -- ruling out the one
-remaining construct-validity explanation for the null. **A direct
-FFN-found-vs-Attention-found comparison gives McNemar $p=1.000$ in every
-configuration at every sample size tested**: patching Attention produces
-indistinguishable flip rates from patching FFN, a negative result on
-FFN-specificity given the data collected. (The original, underpowered
+**Result, at adequate power -- for the FFN-vs-random comparison only.**
+At the maximum supportable $n=228$ (27-46 discordant pairs per
+configuration -- enough that a real, moderate effect should be visible
+if one existed), all four FFN-found-vs-FFN-random McNemar tests are
+decisively non-significant ($p=0.522, 0.868, 1.000, 0.659$ at
+L8/$\alpha{=}20$, L8/$\alpha{=}40$, L9/$\alpha{=}20$, L9/$\alpha{=}40$).
+Restricting further to the 107 prompts confirmed non-degenerate, the
+null holds if anything more uniformly ($p=1.000, 1.000, 1.000, 0.503$)
+-- ruling out the one remaining construct-validity explanation for this
+comparison. **An earlier version of this section additionally claimed "a
+direct FFN-found-vs-Attention-found comparison gives McNemar $p=1.000$ in
+every configuration at every sample size tested." This claim was never
+actually computed and has been removed.** `code/01_ffn_causal_patch.py`
+and its scaled variants (`code/10`, `code/14`) save an
+\texttt{attn\_found\_flip\_rate} but never compute a McNemar test against
+it anywhere in the saved output
+(\texttt{results/ffn\_causal\_patch\_scaled\_results.json} contains only the
+FFN-found-vs-FFN-random $b$/$c$/$p$ values quoted above). More seriously,
+the "Attn-found" condition in every one of these scripts patches the SAME
+FFN-derived direction into the Attention sublayer's output, not a
+direction derived from Attention's own activations -- so even a properly
+computed FFN-vs-Attn McNemar test on this data would not have been a
+genuine test of FFN-vs-Attention component specificity, only a test of
+"does the FFN-derived direction change behavior more when injected before
+vs.\ after the MLP sublayer within the same block." The genuine test,
+with an Attention-derived direction actually computed from Attention's
+own activations, is reported below and should be treated as this paper's
+only valid component-specificity causal result; this paragraph's scope is
+now limited to the FFN-found-vs-FFN-random comparison, which remains
+correctly computed and non-significant. (The original, underpowered
 $n=81$ pass showed a directionally consistent found-beats-random effect,
 13-19 discordant pairs per configuration, that did not reach significance
 given the 75-85\% split needed at that $n$; one configuration,
@@ -416,58 +448,107 @@ the test set and the flip-to-correct outcome is unreliable (§4 quantifies
 this at $\kappa=0.04$ on GPT-2). We addressed this directly rather than
 leaving it as a caveat: an independent LLM judge relabeled all 534 of
 GPT-2's original completions ($\kappa=0.03$ against Jaccard, consistent
-with the GPT-2-only audit), and we reran the identical causal-patching
-protocol -- found-direction computed from a judge-labeled train split,
-patched generation, every output scored by the same judge -- on all 467
-judge-hallucinated test prompts (nearly double the $n=228$ used above).
-Under this validated label, flip-to-correct rates collapse to
-1.3-3.0\% for FFN-found, FFN-random, and Attn-found alike at every
-layer/alpha, with no configuration distinguishable from any other
-(McNemar $p\geq0.29$ throughout; 11-22 discordant pairs per
-configuration -- fewer than the 27-46 above, since the much lower
-absolute flip rate leaves fewer prompts where found and random disagree
-at all). This is not a higher-powered null in the discordant-pairs
-sense; it is a null corroborated by two different signatures at once --
-a floor-level absolute flip rate, and zero separation between
-conditions even at that floor -- under the Jaccard-labeled result above
-(which shows much higher but equally undifferentiated flip rates,
-33-42\% across all three conditions). The gap between the two labels'
-absolute flip rates is itself informative: a large fraction of what
-Jaccard counts as "flipped to correct" is apparently satisfied by
-superficial word overlap with the reference that a validated judge does
-not accept as genuinely correct, consistent with this paper's own
-repetition-loop and degenerate-output findings elsewhere in this
-section. Full methodology and per-configuration numbers:
-`kaggle_kernels/paper1-causal-patch-judge-label/`,
-`results/causal_patch_judge_label_results.json`.
+with the GPT-2-only audit), and we reran the causal-patching
+protocol -- found-direction computed from a judge-labeled train split
+($n=18$ judge-correct, $n=40$ judge-hallucinated -- the small correct-class
+count is a direct consequence of the severe class imbalance disclosed in
+§3.2, and is itself a caveat on how stable this direction estimate can
+be), patched generation, every output scored by the same judge -- on all
+467 judge-hallucinated test prompts (nearly double the $n=228$ used
+above). FFN-found-vs-FFN-random flip-to-correct rates collapse to
+1.3-3.0\% at every layer/alpha under the validated label, with no
+configuration distinguishable from its random-direction control
+(McNemar $p\geq0.52$ throughout).
 
-**A dosage-mismatch check on the FFN-vs-Attention comparison itself.**
-The same $\alpha$ is added to both sublayers' output in every configuration
-above, which is only a fair FFN-vs-Attention comparison if the two
-sublayers' typical output norms are comparable -- otherwise the same
-$\alpha$ is a different *relative* perturbation to each, and an apparent
-lack of an Attention effect could be an artifact of Attention being
-relatively under-perturbed rather than evidence the FFN locus matters more.
-We measured this directly (`code/26_ffn_attn_dosage_diagnostic.py`,
-$n=100$ TruthfulQA prompts, last-token output norms, no training or
-generation needed): GPT-2's FFN output norm is *larger* than its Attention
-output norm at both tested layers (L8: $31.2$ vs.\ $14.8$, ratio $2.11\times$;
-L9: $53.8$ vs.\ $16.6$, ratio $3.23\times$). At the tested $\alpha$ values,
-this means the same nominal $\alpha$ is the *relatively larger* push to
-Attention, not FFN -- at L9/$\alpha{=}20$, for instance, the Attention
-intervention moves that sublayer's output by $\approx120\%$ of its typical
-norm, versus $\approx37\%$ for the equivalent FFN intervention. The
-dosage asymmetry this creates runs in the direction that should make an
-Attention effect, if one existed, *easier* to detect, not harder -- so it
-does not explain the observed FFN-vs-Attention non-difference away; if
-anything, it strengthens it, since the relatively more-perturbed condition
-(Attention) still shows no differentiation from FFN or from a random
-direction. We do not conclude from this that the two interventions are
-dosage-matched in some deeper sense (norm is a coarse proxy for
-functional perturbation size, and we did not attempt a relative-alpha
-rescaling and rerun); we report it as a directly-relevant check that
-resolves the most obvious way this null could have been an artifact of an
-unfair comparison, rather than leaving the concern unaddressed.
+**The corrected FFN-vs-Attention component-specificity test.** The
+comparison this section previously reported as "McNemar $p=1.000$ in
+every configuration" for FFN-found vs.\ Attention-found was never
+actually a test of Attention specificity (previous paragraph, and
+Appendix discussion above): the "Attention" arm always injected the
+FFN-derived direction at the Attention sublayer's site, not a direction
+derived from Attention's own activations. We fixed this by computing a
+genuine Attention-derived direction -- identical difference-of-means
+methodology to the FFN direction, just extracting last-token Attention
+sublayer output instead of FFN output, from the same judge-labeled train
+split -- and rerunning the full protocol with this real direction injected
+at the Attention site
+(`kaggle_kernels/paper1-causal-patch-real-attn-direction/`,
+`results/causal_patch_real_attn_direction_results.json`). The two
+directions are nearly orthogonal (cosine similarity $-0.054$ at L8,
+$-0.056$ at L9), confirming they are genuinely different directions, not
+an accidental near-duplicate. On this actually-valid test, at the same
+$n=467$ judge-hallucinated prompts: FFN-found vs.\ Attention-found gives
+McNemar $p=0.167$ (L8/$\alpha{=}20$), $0.607$ (L8/$\alpha{=}40$), $1.000$
+(L9/$\alpha{=}20$), $0.077$ (L9/$\alpha{=}40$) -- not significant at any
+configuration, and the smallest (L9/$\alpha{=}40$, $p=0.077$) would not
+survive even a mild multiple-comparison correction across the four
+configurations tested. Attention-found is also indistinguishable from
+its own random-direction control at every configuration ($p=0.84, 0.50,
+1.00, 0.18$), just as FFN-found is from FFN-random. The same test
+rerun under the original Jaccard label (same prompts and patches, scored
+by the cheaper heuristic instead) gives FFN-vs-Attention $p=0.439,
+0.355, 0.747, 0.399$ -- also uniformly non-significant. **The null this
+paper reports -- no measurable causal difference between patching FFN
+and patching Attention -- survives being tested properly, with a
+genuinely component-specific intervention on each side, under both
+labels.** This is a materially different, and now defensible, basis for
+the same conclusion the uncorrected version of this test claimed to
+support; Appendix A-equivalent detail on exactly what was wrong with the
+earlier version, and why, is documented in this section rather than
+relegated to an appendix, since it bears directly on this paper's single
+most load-bearing claim.
+
+We do not carry forward the previous version's interpretive claim about
+the gap between Jaccard's and the judge's absolute flip rates (33-42\%
+vs.\ 1.3-3.0\%) reflecting "superficial word overlap" specifically: 226
+of these 467 judge-hallucinated test prompts (48.4\%) were already
+Jaccard-labeled *correct* at baseline, before any patching, so a
+substantial share of Jaccard's higher "flip-to-correct" rate reflects
+prompts that did not need to flip at all, not a cleanly interpretable
+gap between the two labels' sensitivity to superficial correctness. The
+judge-labeled test set, by construction (selected as judge-hallucinated),
+does not have this problem, and is the version of this comparison we
+rely on. Full methodology and per-configuration numbers:
+`kaggle_kernels/paper1-causal-patch-judge-label/` (original,
+non-component-specific test, retained for the FFN-found-vs-FFN-random
+result and superseded for the FFN-vs-Attention comparison),
+`kaggle_kernels/paper1-causal-patch-real-attn-direction/` (the corrected
+component-specificity test), `results/causal_patch_judge_label_results.json`,
+`results/causal_patch_real_attn_direction_results.json`.
+
+**A dosage-mismatch check on the FFN-vs-Attention comparison itself,
+corrected after a review caught two errors in an earlier version.** The
+same $\alpha$ is added to both sublayers' output in every configuration
+above; whether this is a fair comparison depends on what that $\alpha$
+is actually competing with. An earlier version of this diagnostic
+(1) measured on bare TruthfulQA questions rather than the
+"Q: \{question\}\textbackslash nA:" formatted prompts the causal test
+actually patches, and (2) normalized $\alpha$ against each sublayer's
+own raw output norm -- the wrong denominator, since
+\texttt{patched\_generate}'s hook replaces that output with
+$(\text{out}+\alpha\cdot\text{direction})$ and this combined value is
+then added into the residual stream by the transformer block's own
+forward code; the quantity the intervention actually competes with, at
+the point it enters the computation, is the residual stream's own norm
+at that layer, which both the FFN-site and Attention-site hooks add into
+almost identically (both accumulate the same embedding-plus-all-prior-layers
+history, differing only by one attention-sublayer contribution at layer
+8-9, small relative to eight-plus layers of accumulation). Correcting
+both errors (`code/26_ffn_attn_dosage_diagnostic.py`, $n=100$
+correctly-formatted prompts): residual-stream norm is $124.7$ (L8) and
+$166.0$ (L9), giving a relative perturbation of $16.0\%$/$12.0\%$ of the
+residual stream at $\alpha=20$ and $32.1\%$/$24.1\%$ at $\alpha=40$ --
+\emph{identical for both the FFN-site and Attention-site interventions},
+not the $2$-$3\times$ asymmetry the uncorrected version reported (which
+also shrinks to $1.3$-$1.5\times$ on the correct prompts alone, before
+even fixing the denominator). There is therefore no dosage asymmetry
+between the two arms to explain the observed FFN-vs-Attention
+non-difference away in either direction; both intervention sites receive
+the same relative push into the residual stream. This does not by
+itself validate the FFN-vs-Attention causal test's design -- the
+Attention arm's more serious problem, that it never used a genuinely
+Attention-derived direction, is addressed next -- but it rules out
+dosage imbalance specifically as a confound.
 
 ### 3.5 ROME-style causal tracing: a stronger causal test
 
@@ -546,7 +627,7 @@ axes at once: wrong hookpoint (residual stream, not FFN-sublayer output)
 and wrong training distribution (general text, not
 TruthfulQA-hallucination-specific). **0 of 24,576 features survive FDR
 on this paper's own 534-example dataset**
-(`kaggle_kernels/sae-feature-causal-clamp/run_sae_feature_clamp.py`), so
+(`code/15_sae_feature_gating_utility.py`, `results/sae_feature_clamp_paper1.json`), so
 the causal clamp step was never reached. This is a genuine null one
 stage earlier than §3.4's causal test, but bounded by instrument
 mismatch, not a clean absence-of-mechanism result: either axis of
@@ -617,7 +698,11 @@ adversarially trained to discard exactly that information.
 label: inconclusive, not confirmatory or disconfirmatory.** We reran the
 entropy- and composite-matched controls on GPT-2 with the same validated
 judge label used elsewhere in this section
-(`code/30_difficulty_matched_control_judge_label.py`). The severe class
+(`code/30_difficulty_matched_control_judge_label.py`). This control probes
+the Jaccard-label peak layers (FFN L8, Attn L3) inherited unchanged from
+§3.1-3.2's Jaccard analysis, not the validated label's own shifted peaks
+(FFN L5, Attn L6) -- a layer mismatch we did not correct for, disclosed
+here rather than left unremarked. The severe class
 imbalance noted in §3.2 (only 27/534 judge-labeled correct) collides
 directly with this control's per-bin matching procedure: with at most
 1-4 correct samples per difficulty decile, the matched set retains only
@@ -673,6 +758,7 @@ with this paper.
 | SAE feature clamp | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
 | Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
 | Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
+| Corrected FFN-vs-Attention component-specificity test (real Attention direction) | §3.4 | `kaggle_kernels/paper1-causal-patch-real-attn-direction/` | `results/causal_patch_real_attn_direction_results.json` |
 | FFN/Attn dosage-mismatch diagnostic | §3.4 | `code/26_ffn_attn_dosage_diagnostic.py` | `results/ffn_attn_dosage_diagnostic.json` |
 | GPT-2 full-534 judge relabel | §3.1, §3.2, §3.7 | `kaggle_kernels/paper1-gpt2-full-judge-relabel/` | `results/gpt2_full_534_judge_labels.json` |
 | GPT-2 layer localization + component probe under validated label | §3.1, §3.2 | `code/29_gpt2_full_validated_relabel_rerun.py` | `results/gpt2_full_validated_relabel_rerun.json` |
@@ -742,8 +828,12 @@ best-discriminating component to Attention on two of three architectures
 under the Jaccard label -- though re-probing under the validated label
 (§3.3) restores FFN's majority on Qwen0.5B-chat specifically, so this
 particular reversal should be read as label-sensitive, not settled.
-A direct causal test shows no measurable FFN-specificity ($p=1.000$
-throughout), extending rather than contradicting an independent finding
+A direct causal test, using a genuinely Attention-derived direction
+(nearly orthogonal to the FFN direction) as the actual
+component-specificity control rather than the FFN direction injected at
+a different site, shows no measurable FFN-specificity (McNemar
+$p=0.08$-$1.00$ across four tested configurations, none significant),
+extending rather than contradicting an independent finding
 that activation interventions fail to causally correct hallucinated
 answers at this model scale. This null does not depend on trusting the
 paper's word-overlap label: relabeling every completion with an

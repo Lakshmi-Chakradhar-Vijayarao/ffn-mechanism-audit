@@ -10,36 +10,40 @@
   ],
   "results": {
     "L8": {
-      "mlp_norm_mean": 31.217104358673097,
-      "mlp_norm_std": 2.881883855831763,
-      "attn_norm_mean": 14.826928272247315,
-      "attn_norm_std": 2.682444363028607,
-      "ratio_mlp_over_attn": 2.105433019265664,
+      "mlp_sublayer_output_norm_mean": 34.792455921173094,
+      "attn_sublayer_output_norm_mean": 26.12717699050903,
+      "wrong_denominator_ratio_mlp_over_attn": 1.331657680958483,
+      "residual_stream_norm_mean": 124.67612174987794,
+      "residual_stream_norm_std": 4.673818109200941,
       "per_alpha": {
         "20.0": {
-          "relative_perturbation_mlp": 0.64067441266196,
-          "relative_perturbation_attn": 1.3488970630171264
+          "relative_perturbation_to_residual_stream": 0.16041564109704576,
+          "relative_perturbation_wrong_denominator_mlp": 0.5748372591263072,
+          "relative_perturbation_wrong_denominator_attn": 0.7654864514166688
         },
         "40.0": {
-          "relative_perturbation_mlp": 1.28134882532392,
-          "relative_perturbation_attn": 2.697794126034253
+          "relative_perturbation_to_residual_stream": 0.3208312821940915,
+          "relative_perturbation_wrong_denominator_mlp": 1.1496745182526145,
+          "relative_perturbation_wrong_denominator_attn": 1.5309729028333376
         }
       }
     },
     "L9": {
-      "mlp_norm_mean": 53.795644721984864,
-      "mlp_norm_std": 4.351115162419259,
-      "attn_norm_mean": 16.633494205474854,
-      "attn_norm_std": 2.8622143034610685,
-      "ratio_mlp_over_attn": 3.2341758176269555,
+      "mlp_sublayer_output_norm_mean": 45.086458396911624,
+      "attn_sublayer_output_norm_mean": 29.716970920562744,
+      "wrong_denominator_ratio_mlp_over_attn": 1.5171956293066842,
+      "residual_stream_norm_mean": 165.98439422607422,
+      "residual_stream_norm_std": 5.7522662979494665,
       "per_alpha": {
         "20.0": {
-          "relative_perturbation_mlp": 0.37177730843007306,
-          "relative_perturbation_attn": 1.2023931804669805
+          "relative_perturbation_to_residual_stream": 0.1204932553644747,
+          "relative_perturbation_wrong_denominator_mlp": 0.44359217182092925,
+          "relative_perturbation_wrong_denominator_attn": 0.6730161042813735
         },
         "40.0": {
-          "relative_perturbation_mlp": 0.7435546168601461,
-          "relative_perturbation_attn": 2.404786360933961
+          "relative_perturbation_to_residual_stream": 0.2409865107289494,
+          "relative_perturbation_wrong_denominator_mlp": 0.8871843436418585,
+          "relative_perturbation_wrong_denominator_attn": 1.346032208562747
         }
       }
     }
