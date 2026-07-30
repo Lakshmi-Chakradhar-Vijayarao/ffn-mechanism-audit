@@ -92,6 +92,25 @@ follow-up has tested this. We test it directly on GPT-2, replicate on
 Pythia-410M and Qwen2.5-0.5B-Instruct, and probe it causally via targeted
 FFN-sublayer activation patching.
 
+We use **closed-book FFN over-retrieval** as a precise, testable label for
+this question, not a new mechanism we claim to discover: does an FFN
+sublayer's activity carry a measurably stronger, more direct relationship
+to hallucination than an Attention sublayer's, when there is no retrieved
+context for either component to override? Two independent signatures
+would jointly constitute a positive result: (a) a *passive* signature --
+FFN-derived hidden-state features detect hallucination with reliably
+higher AUROC than Attention-derived features at the two components'
+respective peak layers (§3.2-3.3); and (b) an *active* signature --
+patching an FFN-derived direction into the FFN sublayer during generation
+corrects more hallucinations than an equivalent, genuinely
+Attention-derived direction patched into the Attention sublayer (§3.4).
+Neither signature alone is conclusive on its own terms: a passive AUROC
+gap could still reflect a correlate rather than a cause, and a causal
+null could still reflect an underpowered or mis-specified direction
+rather than a true absence of effect. That is why this paper reports
+both, plus two further causal probes (§3.5-3.6) and two confound controls
+(§3.7), rather than treating either signature alone as decisive.
+
 The number of methods applied to what is ultimately one question is
 deliberate: a passive layer-majority signal this small (a few points of
 AUROC) admits several mundane alternative explanations -- an uncontrolled
@@ -1006,10 +1025,12 @@ power to exclude a moderate effect remains limited, and we do not claim
 more than that.
 
 We report this candidly as a modest, largely null-leaning contribution.
-Closed-book FFN over-retrieval is a plausible but empirically unconfirmed
-extension of ReDeEP. The paper's main value is in what it honestly rules
-out -- clean FFN-specific causal control, a clean scale story -- rather
-than what it positively establishes.
+Closed-book FFN over-retrieval (§1's operational definition: a passive
+AUROC signature plus an active causal-patching signature) is a plausible
+but empirically unconfirmed extension of ReDeEP -- neither signature was
+observed reliably on any architecture tested. The paper's main value is
+in what it honestly rules out -- clean FFN-specific causal control, a
+clean scale story -- rather than what it positively establishes.
 
 ## References
 
