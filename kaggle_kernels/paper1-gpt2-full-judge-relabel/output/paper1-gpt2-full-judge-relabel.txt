@@ -1,0 +1,20 @@
+Device: cuda
+Loaded 534 GPT-2 (prompt, completion) pairs
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading judge model Qwen/Qwen2.5-3B-Instruct...
+`torch_dtype` is deprecated! Use `dtype` instead!
+Fetching 2 files: 100%|██████████| 2/2 [00:23<00:00, 11.87s/it]
+Loading weights: 100%|██████████| 434/434 [00:03<00:00, 140.56it/s, Materializing param=model.norm.weight]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+  judged 50/534
+  judged 100/534
+  judged 150/534
+  judged 200/534
+  judged 250/534
+  judged 300/534
+  judged 350/534
+  judged 400/534
+  judged 450/534
+  judged 500/534
+Done: n_valid=534/534 (unmatched=0), correct=27 hallucinated=507, agreement_with_jaccard=0.5225, kappa=0.0417
+Saved /kaggle/working/gpt2_full_534_judge_labels.json

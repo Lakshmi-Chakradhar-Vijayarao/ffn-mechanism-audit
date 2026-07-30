@@ -1,0 +1,96 @@
+======================================================================
+STARTING MODEL: pythia
+======================================================================
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights: 100%|██████████| 292/292 [00:00<00:00, 570.91it/s, Materializing param=gpt_neox.layers.23.post_attention_layernorm.weight]
+Loaded EleutherAI/pythia-410m on cuda  layers=24  hidden=1024
+Generating + labeling completions for pythia...
+  generated+labeled 100/817  (kept 74)
+  generated+labeled 300/817  (kept 224)
+  generated+labeled 400/817  (kept 300)
+  generated+labeled 600/817  (kept 438)
+  generated+labeled 700/817  (kept 511)
+  generated+labeled 800/817  (kept 590)
+Kept 605/817  correct=282  hallucinated=323
+Extracting FFN/Attn component outputs for 605 samples...
+Probing FFN vs Attn at each of 24 layers...
+  L0   FFN=0.5871  Attn=0.5682  dominant=FFN
+  L1   FFN=0.5754  Attn=0.5445  dominant=FFN
+  L2   FFN=0.5996  Attn=0.5921  dominant=FFN
+  L3   FFN=0.5445  Attn=0.5783  dominant=Attn
+  L4   FFN=0.5568  Attn=0.6115  dominant=Attn
+  L5   FFN=0.5863  Attn=0.5434  dominant=FFN
+  L6   FFN=0.6084  Attn=0.5910  dominant=FFN
+  L7   FFN=0.5816  Attn=0.5762  dominant=FFN
+  L8   FFN=0.5737  Attn=0.5638  dominant=FFN
+  L9   FFN=0.5454  Attn=0.6069  dominant=Attn
+  L10  FFN=0.5895  Attn=0.5659  dominant=FFN
+  L11  FFN=0.6181  Attn=0.5755  dominant=FFN
+  L12  FFN=0.5741  Attn=0.5705  dominant=FFN
+  L13  FFN=0.5695  Attn=0.5669  dominant=FFN
+  L14  FFN=0.5595  Attn=0.5087  dominant=FFN
+  L15  FFN=0.5986  Attn=0.5199  dominant=FFN
+  L16  FFN=0.5761  Attn=0.5877  dominant=Attn
+  L17  FFN=0.5325  Attn=0.5924  dominant=Attn
+  L18  FFN=0.5921  Attn=0.5476  dominant=FFN
+  L19  FFN=0.5547  Attn=0.5893  dominant=Attn
+  L20  FFN=0.5525  Attn=0.5748  dominant=Attn
+  L21  FFN=0.5397  Attn=0.5877  dominant=Attn
+  L22  FFN=0.5914  Attn=0.5633  dominant=FFN
+  L23  FFN=0.5531  Attn=0.5414  dominant=FFN
+FFN dominates in 16/24 layers
+FFN peak: L11 (0.6181)
+Attn peak: L4 (0.6115)
+Computing Fisher J / AUROC-bound per layer (FFN vs Attn geometry)...
+FFN geometrically dominates in 14/24 layers (peak L10, J=1.3353)
+Attn geometric peak: L2 (J=1.3332)
+Saved: /kaggle/working/results/cross_arch_component_probe_pythia.json
+Saved raw features: /kaggle/working/results/cross_arch_raw_features_pythia.npz
+======================================================================
+STARTING MODEL: qwen05
+======================================================================
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 542.81it/s, Materializing param=model.norm.weight]
+Loaded Qwen/Qwen2.5-0.5B-Instruct on cuda  layers=24  hidden=896
+Generating + labeling completions for qwen05...
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+  generated+labeled 100/817  (kept 64)
+  generated+labeled 200/817  (kept 132)
+  generated+labeled 300/817  (kept 201)
+  generated+labeled 400/817  (kept 268)
+  generated+labeled 800/817  (kept 501)
+Kept 513/817  correct=253  hallucinated=260
+Extracting FFN/Attn component outputs for 513 samples...
+Probing FFN vs Attn at each of 24 layers...
+  L0   FFN=0.4889  Attn=0.5274  dominant=Attn
+  L1   FFN=0.5261  Attn=0.5230  dominant=FFN
+  L2   FFN=0.5294  Attn=0.5574  dominant=Attn
+  L3   FFN=0.4897  Attn=0.4881  dominant=FFN
+  L4   FFN=0.5115  Attn=0.4993  dominant=FFN
+  L5   FFN=0.5124  Attn=0.5418  dominant=Attn
+  L6   FFN=0.5256  Attn=0.5171  dominant=FFN
+  L7   FFN=0.5345  Attn=0.5459  dominant=Attn
+  L8   FFN=0.5657  Attn=0.5285  dominant=FFN
+  L9   FFN=0.5235  Attn=0.5256  dominant=Attn
+  L10  FFN=0.5128  Attn=0.5080  dominant=FFN
+  L11  FFN=0.5324  Attn=0.5527  dominant=Attn
+  L12  FFN=0.5654  Attn=0.5507  dominant=FFN
+  L13  FFN=0.5426  Attn=0.5335  dominant=FFN
+  L14  FFN=0.5281  Attn=0.5142  dominant=FFN
+  L15  FFN=0.5576  Attn=0.5138  dominant=FFN
+  L16  FFN=0.5035  Attn=0.5042  dominant=Attn
+  L17  FFN=0.4969  Attn=0.5625  dominant=Attn
+  L18  FFN=0.5234  Attn=0.5289  dominant=Attn
+  L19  FFN=0.5314  Attn=0.5377  dominant=Attn
+  L20  FFN=0.5534  Attn=0.5147  dominant=FFN
+  L21  FFN=0.5195  Attn=0.4861  dominant=FFN
+  L22  FFN=0.5407  Attn=0.4737  dominant=FFN
+  L23  FFN=0.5526  Attn=0.5300  dominant=FFN
+FFN dominates in 14/24 layers
+FFN peak: L8 (0.5657)
+Attn peak: L17 (0.5625)
+Computing Fisher J / AUROC-bound per layer (FFN vs Attn geometry)...
+FFN geometrically dominates in 13/24 layers (peak L12, J=1.1793)
+Attn geometric peak: L12 (J=1.2511)
+Saved: /kaggle/working/results/cross_arch_component_probe_qwen05.json
+Saved raw features: /kaggle/working/results/cross_arch_raw_features_qwen05.npz
