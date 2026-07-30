@@ -1,0 +1,36 @@
+{
+  "alphas": [
+    2.5,
+    5.0,
+    10.0
+  ],
+  "layer": 8,
+  "n_prompts": 60,
+  "results": {
+    "ffn_common_alpha2.5": {
+      "n_flip": 30,
+      "flip_rate": 0.5
+    },
+    "ffn_common_alpha5.0": {
+      "n_flip": 27,
+      "flip_rate": 0.45
+    },
+    "ffn_common_alpha10.0": {
+      "n_flip": 31,
+      "flip_rate": 0.5166666666666667
+    },
+    "attn_common_alpha2.5": {
+      "n_flip": 30,
+      "flip_rate": 0.5
+    },
+    "attn_common_alpha5.0": {
+      "n_flip": 29,
+      "flip_rate": 0.48333333333333334
+    },
+    "attn_common_alpha10.0": {
+      "n_flip": 25,
+      "flip_rate": 0.4166666666666667
+    }
+  },
+  "note": "Flip rate scored against Jaccard word-overlap label (not the LLM judge), to keep this sweep local/fast; a scope trade-off, disclosed in the paper text."
+}

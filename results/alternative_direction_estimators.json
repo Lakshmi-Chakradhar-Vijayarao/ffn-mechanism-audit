@@ -1,0 +1,102 @@
+{
+  "8": {
+    "ffn_diff_of_means": {
+      "auroc": 0.08333333333333333,
+      "bootstrap_ci_95": [
+        0.0,
+        0.3333333333333333
+      ],
+      "n_test": 11
+    },
+    "ffn_logistic_regression": {
+      "auroc": 0.08333333333333333,
+      "bootstrap_ci_95": [
+        0.0,
+        0.33333333333333337
+      ],
+      "n_test": 11
+    },
+    "ffn_lda": {
+      "auroc": 0.041666666666666664,
+      "bootstrap_ci_95": [
+        0.0,
+        0.2222222222222222
+      ],
+      "n_test": 11
+    },
+    "attn_diff_of_means": {
+      "auroc": 0.08333333333333333,
+      "bootstrap_ci_95": [
+        0.0,
+        0.33333333333333337
+      ],
+      "n_test": 11
+    },
+    "attn_logistic_regression": {
+      "auroc": 0.08333333333333333,
+      "bootstrap_ci_95": [
+        0.0,
+        0.33333333333333337
+      ],
+      "n_test": 11
+    },
+    "attn_lda": {
+      "auroc": 0.041666666666666664,
+      "bootstrap_ci_95": [
+        0.0,
+        0.2222222222222222
+      ],
+      "n_test": 11
+    }
+  },
+  "9": {
+    "ffn_diff_of_means": {
+      "auroc": 0.0,
+      "bootstrap_ci_95": [
+        0.0,
+        0.0
+      ],
+      "n_test": 11
+    },
+    "ffn_logistic_regression": {
+      "auroc": 0.041666666666666664,
+      "bootstrap_ci_95": [
+        0.0,
+        0.2222222222222222
+      ],
+      "n_test": 11
+    },
+    "ffn_lda": {
+      "auroc": 0.16666666666666666,
+      "bootstrap_ci_95": [
+        0.0,
+        0.6547619047619049
+      ],
+      "n_test": 11
+    },
+    "attn_diff_of_means": {
+      "auroc": 0.125,
+      "bootstrap_ci_95": [
+        0.0,
+        0.5
+      ],
+      "n_test": 11
+    },
+    "attn_logistic_regression": {
+      "auroc": 0.125,
+      "bootstrap_ci_95": [
+        0.0,
+        0.5
+      ],
+      "n_test": 11
+    },
+    "attn_lda": {
+      "auroc": 0.125,
+      "bootstrap_ci_95": [
+        0.0,
+        0.5
+      ],
+      "n_test": 11
+    }
+  }
+}

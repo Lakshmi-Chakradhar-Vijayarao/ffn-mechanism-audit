@@ -1,0 +1,30 @@
+{
+  "last_layer_undecomposed_probe": {
+    "auroc_mean": 0.609551543389633,
+    "auroc_std": 0.1262572233664547
+  },
+  "generation_confidence_baselines": {
+    "mean_logprob": {
+      "auroc_mean": 0.611687051058047,
+      "auroc_std": 0.06428750672011412
+    },
+    "min_logprob": {
+      "auroc_mean": 0.5395224228305183,
+      "auroc_std": 0.056935386292394065
+    },
+    "mean_max_softmax": {
+      "auroc_mean": 0.6067249077848962,
+      "auroc_std": 0.07137027113094228
+    },
+    "min_max_softmax": {
+      "auroc_mean": 0.6429353523587654,
+      "auroc_std": 0.06532989603878685
+    },
+    "all_4_combined": {
+      "auroc_mean": 0.6345758105222286,
+      "auroc_std": 0.07737288071480755
+    }
+  },
+  "n_samples": 534,
+  "note": "All probes/baselines use the validated LLM-judge label (gpt2_full_534_judge_labels.json), n=534."
+}
