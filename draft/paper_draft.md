@@ -140,9 +140,11 @@ paper's most durable contribution.
    is established prior art). A seventh method (DLA magnitude) peaks at
    L10/L11 instead and is excluded from this count. **This convergence
    itself does not survive relabeling**: under the validated judge label,
-   the same six methods' peaks move to L7, L7, L6, and L11 respectively
-   (§3.1) -- L8-9 is a property of the Jaccard label's specific noise
-   pattern on this dataset, not a label-independent localization, and
+   the four of these methods rerun on the full 534-sample relabel (dense
+   probe, sparse L1 probe, token-position probe, and DLA) move to L7, L7,
+   L6, and L11 respectively (§3.1) -- L8-9 is a property of the Jaccard
+   label's specific noise pattern on this dataset, not a label-independent
+   localization, and
    this contribution should be read accordingly.
 2. FFN-vs-Attention component decomposition testing whether ReDeEP's
    RAG-scoped mechanism extends to closed-book QA: a numerical FFN
@@ -317,6 +319,56 @@ $0.011$ margin against SDs of $0.0557$/$0.0427$; Pythia's $0.0066$
 margin against $0.0442$/$0.0345$. **The honest, uniform statement is: the
 peak-component question is within measurement noise on all three
 architectures tested, not just Qwen.**
+
+**A paired test of the actual estimand, and a check for selection bias
+in "peak AUROC" itself.** The comparisons above are visual: two
+separately-estimated CV means checked against their own fold SDs, even
+though the FFN and Attention probes are fit on the *same* samples and
+folds -- they are paired, and the paper's real estimand is their
+difference, $\Delta=\text{AUROC}_{\text{FFN}}-\text{AUROC}_{\text{Attn}}$,
+which was never directly tested. Using already-cached raw per-sample
+features (Pythia and Qwen0.5B) and GPT-2's vendored mech-int activations
+(no new model inference for any architecture), we compute, for every
+layer on every architecture, out-of-fold predicted probabilities for
+both components from the same folds, and a BCa bootstrap 95\% CI on
+$\Delta$ over 2000 resamples of the samples themselves
+(`code/37_paired_component_delta_auroc.py`; this pools out-of-fold
+predictions into one AUROC per component rather than averaging five
+per-fold AUROCs, so the absolute point estimates below differ slightly
+from the mean-of-folds convention used elsewhere in this paper -- the
+CI is what is new here, not the point estimate). At each architecture's
+own naive FFN-peak layer: GPT-2 (L8) $\Delta=+0.067$, CI $[+0.012,
++0.122]$ (excludes zero); Pythia (L11) $\Delta=+0.047$, CI $[-0.002,
++0.100]$; Qwen0.5B (L20) $\Delta=+0.053$, CI $[-0.007,+0.113]$. At each
+architecture's own naive Attn-peak layer, the sign reverses as expected
+(Attn winning at its own peak): GPT-2 (L3) $\Delta=-0.085$, CI
+$[-0.137,-0.036]$; Pythia (L4) $\Delta=-0.113$, CI $[-0.162,-0.064]$;
+Qwen0.5B (L8) $\Delta=-0.032$, CI $[-0.084,+0.023]$. Averaged across
+*all* layers rather than only the peaks -- the summary least
+vulnerable to selection bias -- $\Delta$ is small on every architecture
+(GPT-2 $+0.0017\pm0.036$; Pythia $+0.0005\pm0.042$; Qwen0.5B
+$-0.0021\pm0.034$), and a layer-weighted pooled estimate across all
+three architectures gives $\Delta=-0.0003$ with between-architecture
+variance of only $3.9\times10^{-6}$ -- as close to a formal, properly
+pooled null result as this paper's data supports, replacing the earlier
+informal "3/3 architectures, too small to test."
+
+We also checked "peak AUROC" itself for winner's-curse-style selection
+bias, using nested cross-validation (select the peak layer on inner
+folds only, evaluate on a held-out outer fold). Nested-CV peaks are
+uniformly lower than the naive argmax peaks reported above -- GPT-2 FFN
+$0.643\to0.581$, GPT-2 Attn $0.632\to0.600$; Pythia FFN
+$0.632\to0.584$, Pythia Attn $0.666\to0.582$; Qwen0.5B FFN
+$0.563\to0.521$, Qwen0.5B Attn $0.570\to0.515$ -- confirming the
+selection bias this comparison is structurally exposed to. On GPT-2,
+this correction is large enough to flip which component is ahead: the
+naive comparison has FFN leading ($0.643$ vs.\ $0.632$), but the
+nested-CV-corrected comparison has Attention leading instead ($0.600$
+vs.\ $0.581$). We do not read this as evidence Attention "really" wins
+on GPT-2 -- the corrected margin is itself well within noise -- but it
+is a concrete demonstration that the peak-AUROC comparison this section
+otherwise relies on can select for the noisier, not the truer, of the
+two components on a given architecture.
 
 Qwen2.5-0.5B (~494M parameters, the largest model tested, not the
 smallest) shows the weakest and most equivocal signal, and was queried
@@ -690,16 +742,19 @@ instead of the example's own (`code/08_rome_style_causal_tracing.py`).
 **Result, at the maximum powered sample ($n_{\text{valid}}=67$, the
 dataset's supportable maximum, pre-registering the joint 24-test
 correction as primary).** FFN shows no specific restoration effect
-anywhere. Attention's strongest candidate (L9, own$-$shuffled $=+0.214$)
+anywhere. Attention's strongest candidate (L9, own$-$shuffled $=+0.151$)
 does not survive the joint Holm-Bonferroni threshold ($p=0.012$ vs.\
-$0.05/24=0.00208$) -- weaker than in the paper's original, lower-powered
-$n=45$ pass, where it had survived only a less conservative per-family
-(not joint) scoping. Instead, MLP L9 -- an *anti-specific* result, where a
+$0.05/24=0.00208$) -- attenuated from the paper's original, lower-powered
+$n=45$ pass, where the same cell was larger ($+0.214$, $p=0.0026$) and
+had survived only a less conservative per-family (not joint) scoping.
+Instead, MLP L9 -- an *anti-specific* result, where a
 mismatched example's activation restores discrimination *better* than
 the example's own -- clears the strict joint threshold
 ($p=0.00086$, own$-$shuffled $=-0.203$). More data did not vindicate the
-one borderline FFN-favoring signal this test produced; it reversed
-direction instead. We read this as consistent with the original Attn L9
+one borderline Attention-favoring signal this test produced; it did not
+reverse sign -- it stayed positive in both passes, shrinking from
+$+0.214$ to $+0.151$ while losing significance under the stricter joint
+correction. We read this as consistent with the original Attn L9
 finding being noise around a lenient-scoping threshold, not a real effect
 suppressed by low power, and it reinforces rather than complicates this
 paper's overall causal null. We do not claim the anti-specific MLP L9
@@ -751,14 +806,18 @@ axes at once: wrong hookpoint (residual stream, not FFN-sublayer output)
 and wrong training distribution (general text, not
 TruthfulQA-hallucination-specific). **0 of 24,576 features survive FDR
 on this paper's own 534-example dataset**
-(`code/15_sae_feature_gating_utility.py`, `results/sae_feature_clamp_paper1.json`), so
+(`results/sae_feature_clamp_paper1.json`; the generating script for this
+specific result predates the current numbered `code/` sequence and is
+not separately released -- the cached result is the sole surviving
+artifact), so
 the causal clamp step was never reached. This is a genuine null one
 stage earlier than §3.4's causal test, but bounded by instrument
 mismatch, not a clean absence-of-mechanism result: either axis of
 mismatch alone could explain zero surviving features without implying no
 sparse FFN-specific signal exists. Running the identical procedure on a
 companion paper's HaluEval dataset ($n=500$, same SAE, same layer) as a
-positive-control check of the pipeline itself finds 331/24,576 features
+positive-control check of the pipeline itself
+(`code/15_sae_feature_gating_utility.py`) finds 331/24,576 features
 survive FDR there (best $p=4.8\times10^{-11}$), confirming the GPT-2 null
 above is not a feature-selection bug. Yet even with a passively
 significant feature in hand, the causal clamp test on that dataset shows
@@ -874,12 +933,14 @@ with this paper.
 |---|---|---|---|
 | Layer localization (7 methods) | §3.1 | `code/00_verify_vendored_mechint_numbers.py` | `results/*.json` (per-method) |
 | FFN vs. Attention decomposition | §3.2 | `code/02_cross_arch_component_probe.py` | `results/cross_arch_component_probe_*.json` |
+| Paired ΔAUROC, nested-CV selection-bias check | §3.3 | `code/37_paired_component_delta_auroc.py` | `results/paired_component_delta_auroc.json` |
 | Qwen chat-template reversal | §3.3 | `code/02_cross_arch_component_probe.py qwen05chat` | `results/cross_arch_component_probe_qwen05chat.json` |
 | Difficulty-matched control | §3.7 | `code/06_difficulty_matched_control.py`, `code/11_multi_arch_difficulty_matched_control.py` | `results/difficulty_matched_control.json`, `results/multi_arch_difficulty_matched_control.json` |
 | FFN-sublayer causal patching | §3.4 | `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py`, `code/14_causal_patch_scaled_degeneration_filter.py` | `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`, `results/ffn_causal_patch_scaled_degeneration_filtered.json` |
 | ROME-style causal tracing | §3.5 | `code/08_rome_style_causal_tracing.py`, `code/09_multi_arch_rome_style_causal_tracing.py`, `code/18_rome_style_causal_tracing_scaled.py` | `results/rome_style_causal_tracing.json`, `results/multi_arch_rome_style_causal_tracing.json`, `results/rome_style_causal_tracing_scaled.json` |
 | Adversarial gradient-reversal probe | §3.7 | `code/17_gradient_reversal_adversarial_probe.py` | `results/gradient_reversal_adversarial_probe.json` |
-| SAE feature clamp | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
+| SAE feature clamp, GPT-2 null (0/24,576 survive FDR) | §3.6 | generating script not released (predates current `code/` numbering) | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
+| SAE feature clamp, companion-dataset positive control (331/24,576 survive FDR) | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_gating_utility.json` |
 | Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
 | Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
 | Corrected FFN-vs-Attention component-specificity test (real Attention direction) | §3.4 | `kaggle_kernels/paper1-causal-patch-real-attn-direction/` | `results/causal_patch_real_attn_direction_results.json` |
@@ -980,11 +1041,14 @@ compute-saving mechanism, and none of its AUROCs (0.53-0.62) are strong
 enough to gate anything at usable precision. We tested this directly on
 the one passively-significant signal this project produced (the SAE
 feature from §3.6's positive control, $p=4.8\times10^{-11}$):
-thresholding it as a single-feature classifier reaches AUROC$=0.5614$
-with precision flat at the 4.8\% base rate across every tested recall
-level (`code/15_sae_feature_gating_utility.py`) -- extreme statistical
-significance under simultaneous testing does not translate into any
-usable gating concentration.
+thresholding it as a single-feature classifier reaches AUROC$=0.5614$,
+but the feature's raw activation is at or near zero for nearly every
+sample: no threshold above zero clears even 50\% recall at any of the
+four target-recall operating points tested, so the PR-curve search
+collapses to "predict everything positive," giving precision pinned at
+the 4.8\% base rate throughout (`code/15_sae_feature_gating_utility.py`)
+-- extreme statistical significance under simultaneous testing does not
+translate into any usable gating concentration.
 
 ## 5. Conclusion
 
