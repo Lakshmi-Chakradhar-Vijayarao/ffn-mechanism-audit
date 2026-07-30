@@ -1,4 +1,4 @@
-# FFN Over-Retrieval Does Not Cleanly Extend to Closed-Book Confabulation: A Null Result on Component Specificity, Causal Control, and Template Invariance
+# FFN Over-Retrieval Does Not Cleanly Extend to Closed-Book Confabulation
 
 **Lakshmi Chakradhar Vijayarao**
 Independent Researcher
@@ -6,88 +6,43 @@ Independent Researcher
 
 ## Abstract
 
-ReDeEP (Sun et al., ICLR 2025, arXiv 2410.11414) established a "knowledge
-FFN" mechanism: feed-forward (FFN) sublayers can override retrieved
-context during hallucination in retrieval-augmented generation. We test
-whether the same asymmetry appears in pure closed-book generation, across
-three architectures spanning a ~4.3x parameter range: GPT-2 117M,
-Pythia-410M, and Qwen2.5-0.5B-Instruct.
+ReDeEP (Sun et al., ICLR 2025) established a "knowledge FFN" mechanism:
+feed-forward sublayers can override retrieved context during
+hallucination in retrieval-augmented generation. We test whether the
+same asymmetry appears in pure closed-book generation, across three
+architectures spanning a ~4.3x parameter range (GPT-2, Pythia-410M,
+Qwen2.5-0.5B-Instruct).
 
-FFN beats Attention as a hallucination-detection signal in a numerical
-majority of layers on all three architectures (66.7\%, 66.7\%, 58.3\%),
-but every per-architecture test is non-significant, and every
-peak-AUROC margin sits within that peak's own cross-validation noise --
-not reliably distinguishable from a tie on any architecture tested.
-Qwen2.5-0.5B (the largest model, at ~494M parameters) was initially
-queried with a bare `Q: ... A:` template rather than its chat template;
-correcting this reverses both of its component-comparison metrics
-(peak-AUROC leader and layer-majority) and drops the architecture-level
-FFN-majority count from 3/3 to 2/3 -- evidence the original result was a
-template artifact, not a scale effect.
+FFN beats Attention as a passive hallucination-detection signal on a
+numerical majority of layers on all three architectures, but no
+per-architecture test is significant, and every peak-AUROC margin sits
+within cross-validation noise. One architecture's result reverses
+entirely once a template artifact (bare prompt vs. chat template) is
+fixed -- evidence against a scale story. Two difficulty-matched controls
+and an adversarial probe rule out question-difficulty as a generic
+confound, though inconsistently across architectures.
 
-Two difficulty-matched controls (entropy-only and a stronger 6-feature
-composite) and an adversarially-trained gradient-reversal probe rule out
-a generic question-difficulty confound as the explanation for the
-residual signal on GPT-2 and Pythia, though the same control does not
-replicate on Qwen2.5-0.5B. A direct causal test -- patching the FFN
-sublayer specifically during generation, with a genuinely
-Attention-derived direction (nearly orthogonal to the FFN direction,
-cosine similarity $-0.05$ to $-0.06$) patched into the Attention sublayer
-as the actual component-specificity control, at $n=467$ under an
-independently validated label -- shows zero measurable FFN-specificity
-against this Attention control (McNemar $p=0.08$-$1.00$ across four
-tested configurations, none significant), consistent with
-an independent finding that residual-stream steering fails to correct
-hallucinations at this scale. A held-out direction-validity check and a
-20-draw random-direction ensemble, run subsequently, found neither
-direction clears chance-level held-out AUROC and the found direction's
-causal effect sits at the 40th-50th percentile of the random-direction
-distribution -- so this null is better read as a limitation of the
-instrument (an under-validated difference-of-means direction) than as
-positive evidence the two components are equally causal. A stronger
-causal method (ROME-style tracing) finds only one effect anywhere across
-three architectures that survives correction under the original label,
-and it favors Attention, not FFN; rerun under the validated label
-(power-limited to $n=17$ judge-correct candidates), no effect survives
-correction at all. A sparse-feature (SAE) intervention finds no
-passively-associated feature at all, bounded by instrument mismatch
-rather than a clean absence of mechanism.
+A direct causal test -- patching the FFN sublayer during generation,
+against a genuinely Attention-derived control direction, under an
+independently validated label -- shows zero measurable FFN-specificity.
+Five further checks (a held-out direction-validity gate, a
+permutation-based cosine null, a common-injection-site test, a
+random-direction ensemble, and two alternative direction estimators)
+converge on the same conclusion from a different angle: neither
+direction was ever shown to carry validated causal signal in the first
+place, so this null is a limitation of the instrument, not evidence the
+two components are equally causal. A stronger causal method (ROME-style
+tracing) finds no effect surviving correction under the validated label.
+A sparse-feature intervention finds no passively-associated feature at
+all.
 
-All of this rests on a Jaccard word-overlap hallucination label whose
-validity we audited directly, on all three architectures: an independent
-LLM judge agrees with only 49.7-57.5\% of labels (lowest, at 49.65\% raw
-agreement, on Qwen0.5B-chat, though Cohen's $\kappa$ there is still
-weakly positive at $0.084$ once the label marginals are accounted for --
-raw agreement below 50\% is not the same statement as below-chance
-agreement in the $\kappa$ sense) (Cohen's $\kappa=0.03$-$0.14$
-across GPT-2, Pythia, and both Qwen0.5B variants, next to chance
-throughout), consistently biased toward calling completions
-hallucinated that the word-overlap heuristic called correct. Rather than
-leave this as an unresolved caveat, we reran the decisive causal test
-(§3.4) end to end under the validated label, on nearly double the
-number of test prompts ($n=467$ vs.\ $n=228$). This is not the same as
-nearly doubled statistical power: the much lower absolute flip rate
-under the validated label means fewer prompts where any two conditions
-disagree, so the number of *informative* (discordant) pairs actually
-*fell*, from 27-46 to 9-22, and the test is correspondingly only
-powered to detect large effects (minimum detectable odds ratio
-3.75-8.0 across the four configurations; §3.4 reports the exact
-figures and confidence intervals). Within that power limit, flip rates
-for FFN-found, FFN-random, Attn-found, and Attn-random alike collapse
-to a 1.3-3.0\% floor, with no configuration's point estimate reaching
-significance after accounting for multiple comparisons. The
-passive component-comparison picture is more mixed under the
-validated label: absolute AUROCs rise substantially (to 0.66-0.75) and
-FFN's numerical majority is restored on Qwen0.5B-chat, but which
-component leads remains architecture-dependent either way.
-
-The ReDeEP mechanism does not cleanly extend to closed-book confabulation
-at this scale. The paper's most transferable contribution is
-methodological: a construct-validity check on an outcome metric, run
-before trusting a causal claim built on it, catches that 51.9-53.1\% of
-baseline "hallucinated" completions are degenerate repetition loops
-rather than confident false claims -- a discipline reusable well beyond
-this specific mechanism.
+The ReDeEP mechanism does not cleanly extend to closed-book
+confabulation at this scale. This paper's most transferable contribution
+is methodological: a six-question validity checklist for causal-patching
+studies, distilled from the process above, plus a construct-validity
+check that catches over half of baseline "hallucinated" completions as
+degenerate repetition loops rather than confident false claims -- a
+discipline reusable well beyond this specific mechanism.
 
 ## 1. Introduction
 
@@ -498,55 +453,30 @@ if one existed), all four FFN-found-vs-FFN-random McNemar tests are
 decisively non-significant ($p=0.522, 0.868, 1.000, 0.659$ at
 L8/$\alpha{=}20$, L8/$\alpha{=}40$, L9/$\alpha{=}20$, L9/$\alpha{=}40$).
 Restricting further to the 107 prompts confirmed non-degenerate, the
-null holds if anything more uniformly ($p=1.000, 1.000, 1.000, 0.503$)
--- ruling out the one remaining construct-validity explanation for this
-comparison. **An earlier version of this section additionally claimed "a
-direct FFN-found-vs-Attention-found comparison gives McNemar $p=1.000$ in
-every configuration at every sample size tested." This claim was never
-actually computed and has been removed.** `code/01_ffn_causal_patch.py`
-and its scaled variants (`code/10`, `code/14`) save an
-\texttt{attn\_found\_flip\_rate} but never compute a McNemar test against
-it anywhere in the saved output
-(\texttt{results/ffn\_causal\_patch\_scaled\_results.json} contains only the
-FFN-found-vs-FFN-random $b$/$c$/$p$ values quoted above). More seriously,
-the "Attn-found" condition in every one of these scripts patches the SAME
-FFN-derived direction into the Attention sublayer's output, not a
-direction derived from Attention's own activations -- so even a properly
-computed FFN-vs-Attn McNemar test on this data would not have been a
-genuine test of FFN-vs-Attention component specificity, only a test of
-"does the FFN-derived direction change behavior more when injected before
-vs.\ after the MLP sublayer within the same block." The genuine test,
-with an Attention-derived direction actually computed from Attention's
-own activations, is reported below and should be treated as this paper's
-only valid component-specificity causal result; this paragraph's scope is
-now limited to the FFN-found-vs-FFN-random comparison, which remains
-correctly computed and non-significant. (The original, underpowered
-$n=81$ pass showed a directionally consistent found-beats-random effect,
-13-19 discordant pairs per configuration, that did not reach significance
-given the 75-85\% split needed at that $n$; one configuration,
-L9/$\alpha{=}20$, was flagged there as possible signal, but resolves as
-noise at $n=228$, 7.5\% vs.\ 7.9\%, $p=1.000$.)
+null holds if anything more uniformly ($p=1.000, 1.000, 1.000, 0.503$).
+This comparison's scope is FFN-found-vs-FFN-random only: the
+"Attention" condition in this same script patches the FFN-derived
+direction at the Attention sublayer's site, not a direction derived from
+Attention's own activations, so it cannot support an FFN-vs-Attention
+component-specificity claim (Appendix B). The genuine version of that
+test, with a real Attention-derived direction, is reported below.
 
 A non-trivial fraction of interventions in every condition produce a
 degenerate/unparseable completion rather than a clean correct-or-wrong
-answer. An earlier version of this paragraph cited "19.8-29.6\% across
-conditions" -- this was in fact only the FFN-found arm at L8 from the
-original $n=81$ pass, not a range across the twelve $n=228$ conditions
-this paragraph is actually about. The correct $n=228$ range, computed
-across all twelve found/random/attn-found conditions at both layers and
-alphas, is $10.1\%$-$46.5\%$ (`results/ffn_causal_patch_scaled_results.json`),
-substantially wider than previously stated. Found and random directions
-are at broadly similar rates in most configurations but diverge sharply
-at L8/$\alpha{=}40$ (FFN-found $40.8\%$ vs.\ FFN-random $25.4\%$;
-Attn-found $46.5\%$) -- the found direction is, if anything, a
-\emph{stronger} disruptor of coherent generation than a random direction
-of equal norm at this configuration, consistent with much of the
-flip-rate signal being generic generation perturbation from any large
-additive intervention, not targeted semantic correction. Because
-unparseable completions are scored as not-flipped in every condition,
-this differential degeneration could mechanically penalize whichever
-arm degenerates more; we do not attempt a competing-risks correction
-here and flag this as an unresolved limitation of the outcome metric.
+answer, ranging $10.1\%$-$46.5\%$ across all twelve found/random/
+attn-found conditions at both layers and alphas
+(`results/ffn_causal_patch_scaled_results.json`). Found and random
+directions are at broadly similar rates in most configurations but
+diverge sharply at L8/$\alpha{=}40$ (FFN-found $40.8\%$ vs.\ FFN-random
+$25.4\%$) -- the found direction is, if anything, a \emph{stronger}
+disruptor of coherent generation than a random direction of equal norm
+at this configuration, consistent with much of the flip-rate signal
+being generic generation perturbation, not targeted semantic correction.
+Because unparseable completions are scored as not-flipped in every
+condition, this differential degeneration could mechanically penalize
+whichever arm degenerates more; we do not attempt a competing-risks
+correction here and flag this as an unresolved limitation of the outcome
+metric.
 
 **Extending beyond GPT-2.** The same test on Pythia-410M and
 Qwen2.5-0.5B-Instruct (chat-templated), at each architecture's own
@@ -630,30 +560,19 @@ rerun under the original Jaccard label (same prompts and patches, scored
 by the cheaper heuristic instead) gives FFN-vs-Attention $p=0.439,
 0.355, 0.747, 0.399$ -- also uniformly non-significant.
 
-**Reporting every test this file computes, not only the FFN-vs-Attention
-comparison.** The same Jaccard-labeled run also computes each arm
-against its own random-direction control, and three of these eight
-additional tests are nominally significant, all omitted from an earlier
-version of this section: at L8, Attention-found is beaten by its own
-random control ($p=0.021$, $\alpha{=}20$; $p=0.0043$, $\alpha{=}40$ --
-random flips more often than the Attention-derived direction does); at
-L9/$\alpha{=}20$, FFN-found beats its own random control ($p=0.0264$).
-None of these three would survive a Holm-Bonferroni correction across
-the 8 found-vs-random tests this run computes (smallest $p=0.0043\times8=0.0344$,
-which does survive; the next, $0.021\times7=0.147$, does not) -- so one
-of the three, the Attention-found-underperforms-random result at
-L8/$\alpha{=}40$, is nominally significant even after correction. We
-read this as consistent with, not contradicting, this section's overall
-picture: an Attention-derived direction performing \emph{worse} than a
-random direction of matched norm is not evidence of Attention
-specificity in the paper's favor, and is at least as consistent with
-generic large-perturbation disruption (§3.4's degeneracy discussion
-above) as with any targeted effect. The one result in the opposite
-direction (L9/$\alpha{=}20$ FFN-found beats FFN-random, $p=0.0264$,
-uncorrected) does not survive correction and is not replicated under the
-validated judge label at the same configuration ($p=1.000$) --
-consistent with this specific cell being Jaccard-label noise rather
-than a real, label-independent effect.
+**Each arm against its own random-direction control.** Of the eight
+found-vs-random tests this run computes (both components, both layers,
+both alphas), three are nominally significant: Attention-found is beaten
+by its own random control at L8 ($p=0.021$, $\alpha{=}20$; $p=0.0043$,
+$\alpha{=}40$), and FFN-found beats its own random control at
+L9/$\alpha{=}20$ ($p=0.0264$). Only the first survives Holm-Bonferroni
+correction across all eight tests. An Attention direction performing
+\emph{worse} than a random one is not evidence of Attention specificity
+-- it is at least as consistent with generic large-perturbation
+disruption (above) as with any targeted effect. The FFN result does not
+survive correction and does not replicate under the validated judge
+label at the same configuration ($p=1.000$), consistent with Jaccard
+noise rather than a real effect.
 
 **The null this
 paper reports -- no measurable causal difference between patching FFN
@@ -728,131 +647,61 @@ Attention arm's more serious problem, that it never used a genuinely
 Attention-derived direction, is addressed next -- but it rules out
 dosage imbalance specifically as a confound.
 
-**Direction validity, a permutation-based cosine null, a common-injection-site
-test, and a random-direction ensemble -- four checks a fresh audit
-identified as missing, run on the flagship configuration
-(`kaggle_kernels/paper1-causal-patch-tier1-validated/`).** The checks
-below do not simply reinforce the null reported above; they surface a
-more fundamental limitation of this specific instrument that the paper
-must disclose honestly rather than narrate past.
+**Eight further checks, run on the flagship configuration
+(`kaggle_kernels/paper1-causal-patch-tier1-validated/`), a fresh audit
+identified as missing.** These checks do not simply reinforce the null
+reported above; they surface a more fundamental limitation of this
+specific instrument that the paper must disclose honestly rather than
+narrate past.
 
-*Direction validity.* Before any direction is injected, does it actually
-separate correct from hallucinated activations on genuinely held-out
-data? We split the 58-prompt training pool into a direction-fit set (47)
-and a held-out validity set (11), estimated each direction on the
-former, and measured its scalar projection's AUROC on the latter. At
-neither tested layer does either direction clear chance: L8 FFN
-AUROC$=0.083$ (95\% CI $[0.0, 0.33]$), L8 Attn$=0.083$ ($[0.0, 0.33]$),
-L9 FFN$=0.0$ ($[0.0, 0.0]$), L9 Attn$=0.125$ ($[0.0, 0.5]$). The
-held-out set is small (n=11), so these point estimates trending *below*
-0.5 should not be read as evidence the directions are anti-predictive --
-but the CIs are consistent with chance throughout, and none establishes
-the directions carry validated discriminative signal before they are
-ever injected.
+*Direction validity -- the central finding of this round.* Before any
+direction is injected, does it actually separate correct from
+hallucinated activations on genuinely held-out data? We split the
+58-prompt training pool into a direction-fit set (47) and a held-out
+validity set (11), estimated each direction on the former, and measured
+its scalar projection's AUROC on the latter. At neither tested layer
+does either direction clear chance (L8 FFN/Attn AUROC$=0.083$/$0.083$,
+L9 FFN/Attn$=0.0$/$0.125$; all 95\% CIs consistent with chance). Two
+further checks confirm this is not an artifact of the estimator or the
+sample size: logistic-regression weights and Fisher LDA, fit on the
+identical split, do no better (all 12 layer/component/estimator
+combinations at or below AUROC $0.167$); and a formal power analysis
+(2000-simulation Monte Carlo at this exact $n{=}11$ split) shows this
+test only reaches 80\% power once the true held-out AUROC is
+$\approx0.95$ -- the observed estimates are far below anything this test
+could reliably confirm or rule out, so the null is uninformative by
+construction, not just "small $n$."
 
-*Permutation-based cosine null.* The paper's cosine-similarity diagnostic
-(§3.4 above, $-0.05$ to $-0.06$) was previously read as confirming the
-FFN and Attention directions are genuinely distinct. A 2000-permutation
-null (recomputing both directions from label-shuffled training data, no
-new model inference) puts this in context: observed cosine
-$-0.0058$ at L8 sits at $z=0.76$ against a null with mean $-0.057$,
-sd $0.067$; observed $-0.0051$ at L9 sits at $z=0.33$ against a null with
-mean $-0.028$, sd $0.069$. Both observed values are within 1 SD of the
-empirical null -- statistically indistinguishable from what two
-label-uninformed directions would produce.
-
-*Common-injection-site test.* The original Attention arm patches the
-attention sublayer's own output, which then passes through that block's
-own LayerNorm and MLP before leaving the block -- a different site than
-the FFN arm's patch, entangling "which component's direction" with
-"where in the block it is injected." We add two conditions patching both
-directions at a common site (the whole block's residual-stream output,
-after both attn and mlp have already been added): FFN-direction-at-common-site
-turns out to be mathematically identical to the existing FFN-native-site
-arm (the MLP's own output *is* the block's last operation before the
-residual add in GPT-2, so patching either point is the same
-intervention -- confirmed empirically: identical generations, byte for
-byte). The Attention arm's common-site version is a genuinely new
-comparison: FFN-vs-Attention at the common site gives McNemar
-$p=0.144$/$\mathbf{0.049}$/$0.791$/$0.607$ across L8$\alpha20$/L8$\alpha40$/L9$\alpha20$/L9$\alpha40$
--- one nominally significant cell that does not survive Holm correction
-across even these four common-site tests alone (threshold $0.05/4=0.0125$),
-let alone the paper's wider test family.
-
-*TOST equivalence bounds.* Rather than a single fixed bound, we searched
-for the smallest odds-ratio bound at which two one-sided exact tests on
-each cell's McNemar discordant pairs jointly establish equivalence. At
-the pre-registered OR$=2.0$ bound, no cell establishes equivalence. The
-actually-achievable bounds are OR$=7.1$/$7.9$/$2.85$/$3.9$ (native site)
-and OR$=7.1$/$10.9$/$3.9$/$4.25$ (common site) across the four
-configurations -- consistent with, and now more precisely quantifying,
-the $3.75$-$8.0$ minimum-detectable-odds-ratio range already reported
-above from the exact-binomial power calculation.
-
-*Competing-risks outcome table.* Splitting outcomes into flip/no-flip/degenerate
-(using the Jaccard label's own $-1$ as a degenerate-completion proxy, since
-the judge label had zero unparseable verdicts in this run) and testing
-condition-vs-outcome association via a $2\times3$ chi-square: native-site
-$p=0.223$/$0.347$/$0.983$/$0.374$, common-site $p=0.126$/$\mathbf{0.010}$/$0.956$/$0.092$
-across the four configurations -- again one nominally low value (common
-site, L8$\alpha40$) that would not survive correction across this
-expanded family either, and the chi-square approximation's minimum
-expected cell count ($6.5$-$9.0$) is only borderline reliable at this
-sample size.
-
-*Random-direction ensemble.* The strongest single check: at the flagship
-configuration (L8, $\alpha=40$, first 60 test prompts, chosen for
-tractable compute), the found FFN and Attention directions' flip rates
-were compared against an ensemble of 20 independently-drawn random
-directions on the identical prompts. The found directions produced
-**zero flips** on this subset -- and this sits at the **50th percentile**
+*Random-direction ensemble -- the strongest single check.* At the
+flagship configuration (L8, $\alpha=40$, 60 test prompts), the found FFN
+and Attention directions' flip rates were compared against 20
+independently-drawn random directions on the identical prompts. The
+found directions produced **zero flips** -- sitting at the **50th**
 (FFN) and **40th percentile** (Attention) of the random-direction
-ensemble's own flip-rate distribution (which ranges $0.0$-$0.067$ across
-the 20 draws). The found direction's causal effect is not merely
-statistically indistinguishable from the random-direction control's
-effect in the sense of failing to reject a null hypothesis -- it sits
-squarely in the middle of the random-direction distribution, exactly
-where a random direction with no special relationship to the label would
-be expected to land.
+distribution (range $0.0$-$0.067$). The found direction's causal effect
+is not merely statistically indistinguishable from random -- it sits
+squarely where a direction with no special relationship to the label
+would be expected to land.
 
-*Alternative direction estimators.* The direction-validity failure above
-uses one estimator (difference-of-class-means). We checked whether
-logistic-regression weights or Fisher LDA, fit on the identical
-direction-fit/validity-holdout split, do any better
-(`code/44_alternative_direction_estimators.py`). They do not: across both
-layers, both components, and all three estimators (12 configurations
-total), every held-out AUROC is at or below $0.167$, none clears chance,
-and the three estimators agree closely at every layer/component
-combination (e.g., L8 FFN: $0.083$/$0.083$/$0.042$ for diff-of-means/
-logistic-regression/LDA respectively). This is not one estimator's
-idiosyncratic failure -- three different, standard ways of estimating a
-linear discriminative direction all fail to validate on this held-out
-split, strengthening "the effect is not there" over "this estimator was
-a poor choice."
-
-*Formal power analysis for the direction-validity gate.* Rather than
-assert "$n=11$ is small," we quantified what it means
-(`code/43_direction_validity_power_analysis.py`, 2000-simulation Monte
-Carlo, binormal scores, 2000-resample bootstrap CI matching the kernel's
-own procedure): at the actual validity-holdout split (3 correct, 8
-hallucinated), power to distinguish a true held-out AUROC from chance
-rises from $5.5\%$ (at true AUROC$=0.50$) through $45.0\%$ (at
-$0.80$) to $89.3\%$ (at $0.95$) -- this test only reaches 80\% power once
-the true AUROC is approximately $0.95$. The observed point estimates
-($0.0$-$0.125$) are far below any AUROC this test could reliably
-confirm or rule out at this $n$ -- the null is uninformative by
-construction at this sample
-size, not merely "small" in an unquantified sense.
-
-*Low-dose response check.* A separate, lower-priority follow-up swept
-$\alpha\in\{2.5, 5, 10\}$ at the common injection site (L8), scored
-against the Jaccard label on the same 60-prompt subset the
-random-direction ensemble uses (`code/42_low_dose_alpha_sweep.py`; this
-trade-off -- Jaccard rather than the LLM judge, to keep the sweep local
-and fast -- is disclosed here, not assumed equivalent). Flip rates for
-both the FFN and Attention directions stay flat across all three doses
-($42$-$52\%$, no monotone trend with $\alpha$), consistent with no
-clean dose-response relationship at any of these lower doses either.
+*Six further checks, summarized.* A permutation-based cosine null
+(2000 draws) finds the FFN/Attention directions' cosine similarity
+($-0.058$/$-0.051$) statistically indistinguishable from two
+label-uninformed directions (both within 1 SD of the empirical null). A
+common-injection-site test (patching both directions at the shared
+post-block residual stream, disentangling "which direction" from "where
+injected") confirms FFN-native-site and FFN-common-site are
+mathematically identical for GPT-2 (verified byte-for-byte), and finds
+the genuinely new Attention-common-site comparison non-significant at
+every configuration (one nominal $p=0.049$ does not survive Holm
+correction across even these four tests). A TOST equivalence search
+finds no cell establishes equivalence at the pre-registered OR$=2.0$
+bound; the smallest achievable bounds range $2.85$-$10.9$. A
+competing-risks (flip/no-flip/degenerate) $2\times3$ chi-square finds
+one nominal $p=0.010$ that does not survive correction either. A
+low-dose sweep ($\alpha\in\{2.5,5,10\}$ at the common site, Jaccard
+label for speed) finds flip rates flat across all three doses
+($42$-$52\%$), no monotone dose-response. All six are consistent with,
+and do not add beyond, the two findings above.
 
 **What this means for the flagship result.** These checks do not
 simply add further support to the existing FFN-vs-Attention null; taken
@@ -1349,6 +1198,21 @@ clean scale story -- rather than what it positively establishes.
 and checks run to confirm each fix's actual effect on reported numbers.**
 §3.4 and §4 state the paper's results directly; nothing below is
 required to verify them.
+
+**A fabricated-looking claim, removed.** An earlier version of §3.4
+claimed "a direct FFN-found-vs-Attention-found comparison gives McNemar
+$p=1.000$ in every configuration." This was never actually computed:
+`code/01_ffn_causal_patch.py` and its scaled variants save an
+Attention-found flip rate but never run a McNemar test against it, and
+in any case that condition patches the FFN-derived direction at the
+Attention site rather than a direction derived from Attention's own
+activations, so no version of this script could have supported an
+FFN-vs-Attention specificity claim. The genuine test (§3.4) uses a real
+Attention-derived direction instead. A related paragraph's degeneracy
+rate ("19.8-29.6\% across conditions") was similarly only the FFN-found
+arm at L8 from an earlier, smaller pass, not the full range across all
+twelve conditions it was presented as describing; the correct range
+($10.1\%$-$46.5\%$) is now what §3.4 reports.
 
 **Judge-parser substring bug (checked directly against the flagship
 causal test, not just the underlying relabel).** Every judge-scoring
