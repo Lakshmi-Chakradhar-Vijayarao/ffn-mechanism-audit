@@ -1,0 +1,245 @@
+{
+  "or_bound": 2.0,
+  "cells": {
+    "L8_a20": {
+      "tost_native_site": {
+        "b": 5,
+        "c": 12,
+        "n_discordant": 17,
+        "observed_p": 0.29411764705882354,
+        "p_value_test_against_OR_geq_2": 0.0018748234040869241,
+        "p_value_test_against_OR_leq_0.5": 0.7186025543424469,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 7.100000000000005
+      },
+      "tost_common_site": {
+        "b": 5,
+        "c": 12,
+        "n_discordant": 17,
+        "observed_p": 0.29411764705882354,
+        "p_value_test_against_OR_geq_2": 0.0018748234040869241,
+        "p_value_test_against_OR_leq_0.5": 0.7186025543424469,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 7.100000000000005
+      },
+      "competing_risks_native_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_found": [
+            6,
+            371,
+            90
+          ],
+          "attn_found": [
+            10,
+            384,
+            73
+          ]
+        },
+        "chi2": 2.9968471945719743,
+        "p_value": 0.2234821805285083,
+        "dof": 2,
+        "min_expected_count": 8.0,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      },
+      "competing_risks_common_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_common": [
+            6,
+            371,
+            90
+          ],
+          "attn_common": [
+            9,
+            390,
+            68
+          ]
+        },
+        "chi2": 4.137666960528286,
+        "p_value": 0.1263330657979812,
+        "dof": 2,
+        "min_expected_count": 7.5,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      }
+    },
+    "L8_a40": {
+      "tost_native_site": {
+        "b": 4,
+        "c": 9,
+        "n_discordant": 13,
+        "observed_p": 0.3076923076923077,
+        "p_value_test_against_OR_geq_2": 0.008823180748192187,
+        "p_value_test_against_OR_leq_0.5": 0.6775759993426673,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 7.900000000000006
+      },
+      "tost_common_site": {
+        "b": 4,
+        "c": 13,
+        "n_discordant": 17,
+        "observed_p": 0.23529411764705882,
+        "p_value_test_against_OR_geq_2": 0.0003414816814192813,
+        "p_value_test_against_OR_leq_0.5": 0.8695777393435686,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 10.850000000000009
+      },
+      "competing_risks_native_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_found": [
+            4,
+            328,
+            135
+          ],
+          "attn_found": [
+            9,
+            330,
+            128
+          ]
+        },
+        "chi2": 2.11546773750479,
+        "p_value": 0.3472418149261814,
+        "dof": 2,
+        "min_expected_count": 6.5,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      },
+      "competing_risks_common_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_common": [
+            4,
+            328,
+            135
+          ],
+          "attn_common": [
+            14,
+            346,
+            107
+          ]
+        },
+        "chi2": 9.275937143215266,
+        "p_value": 0.009677336489420417,
+        "dof": 2,
+        "min_expected_count": 9.0,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      }
+    },
+    "L9_a20": {
+      "tost_native_site": {
+        "b": 8,
+        "c": 9,
+        "n_discordant": 17,
+        "observed_p": 0.47058823529411764,
+        "p_value_test_against_OR_geq_2": 0.07547522609213377,
+        "p_value_test_against_OR_leq_0.5": 0.17185670580267126,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 2.8500000000000014
+      },
+      "tost_common_site": {
+        "b": 6,
+        "c": 8,
+        "n_discordant": 14,
+        "observed_p": 0.42857142857142855,
+        "p_value_test_against_OR_geq_2": 0.057616304851651805,
+        "p_value_test_against_OR_leq_0.5": 0.310192476681325,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 3.9000000000000026
+      },
+      "competing_risks_native_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_found": [
+            8,
+            389,
+            70
+          ],
+          "attn_found": [
+            8,
+            387,
+            72
+          ]
+        },
+        "chi2": 0.033323653259764774,
+        "p_value": 0.9834762138711497,
+        "dof": 2,
+        "min_expected_count": 8.0,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      },
+      "competing_risks_common_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_common": [
+            8,
+            389,
+            70
+          ],
+          "attn_common": [
+            9,
+            390,
+            68
+          ]
+        },
+        "chi2": 0.08909273370563829,
+        "p_value": 0.9564312523583866,
+        "dof": 2,
+        "min_expected_count": 8.5,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      }
+    },
+    "L9_a40": {
+      "tost_native_site": {
+        "b": 5,
+        "c": 13,
+        "n_discordant": 18,
+        "observed_p": 0.2777777777777778,
+        "p_value_test_against_OR_geq_2": 0.0008525955889751623,
+        "p_value_test_against_OR_leq_0.5": 0.7689276160094874,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 7.600000000000006
+      },
+      "tost_common_site": {
+        "b": 6,
+        "c": 9,
+        "n_discordant": 15,
+        "observed_p": 0.4,
+        "p_value_test_against_OR_geq_2": 0.03082792299092888,
+        "p_value_test_against_OR_leq_0.5": 0.38162816164325286,
+        "equivalence_established_at_OR_2": false,
+        "smallest_OR_bound_achieving_equivalence": 4.250000000000003
+      },
+      "competing_risks_native_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_found": [
+            7,
+            327,
+            133
+          ],
+          "attn_found": [
+            11,
+            338,
+            118
+          ]
+        },
+        "chi2": 1.9672581187364162,
+        "p_value": 0.3739515410422451,
+        "dof": 2,
+        "min_expected_count": 9.0,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      },
+      "competing_risks_common_site": {
+        "contingency_flip_noflip_degenerate": {
+          "ffn_common": [
+            7,
+            327,
+            133
+          ],
+          "attn_common": [
+            8,
+            355,
+            104
+          ]
+        },
+        "chi2": 4.764749990719775,
+        "p_value": 0.09233103113221384,
+        "dof": 2,
+        "min_expected_count": 7.5,
+        "note": "chi-square test on 2x3 (condition x {flip,no_flip,degenerate}) contingency table; min_expected_count flags whether the chi-square approximation is reliable here (rule of thumb: >=5)."
+      }
+    }
+  }
+}

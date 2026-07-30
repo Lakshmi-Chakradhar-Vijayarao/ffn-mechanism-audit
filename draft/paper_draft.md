@@ -38,11 +38,20 @@ independently validated label -- shows zero measurable FFN-specificity
 against this Attention control (McNemar $p=0.08$-$1.00$ across four
 tested configurations, none significant), consistent with
 an independent finding that residual-stream steering fails to correct
-hallucinations at this scale. A stronger causal method (ROME-style
-tracing) finds only one effect anywhere across three architectures that
-survives correction, and it favors Attention, not FFN. A sparse-feature
-(SAE) intervention finds no passively-associated feature at all, bounded
-by instrument mismatch rather than a clean absence of mechanism.
+hallucinations at this scale. A held-out direction-validity check and a
+20-draw random-direction ensemble, run subsequently, found neither
+direction clears chance-level held-out AUROC and the found direction's
+causal effect sits at the 40th-50th percentile of the random-direction
+distribution -- so this null is better read as a limitation of the
+instrument (an under-validated difference-of-means direction) than as
+positive evidence the two components are equally causal. A stronger
+causal method (ROME-style tracing) finds only one effect anywhere across
+three architectures that survives correction under the original label,
+and it favors Attention, not FFN; rerun under the validated label
+(power-limited to $n=17$ judge-correct candidates), no effect survives
+correction at all. A sparse-feature (SAE) intervention finds no
+passively-associated feature at all, bounded by instrument mismatch
+rather than a clean absence of mechanism.
 
 All of this rests on a Jaccard word-overlap hallucination label whose
 validity we audited directly, on all three architectures: an independent
@@ -649,16 +658,21 @@ than a real, label-independent effect.
 **The null this
 paper reports -- no measurable causal difference between patching FFN
 and patching Attention at the 4-to-8-fold odds-ratio scale this test is
-powered to detect -- survives being tested properly, with a
-genuinely component-specific intervention on each side, under both
-labels, and this holds even after accounting for every test the
-corrected run computes, not only the ones most favorable to that
-conclusion.** This is a materially different, more precisely scoped, and now defensible basis for
-the same conclusion the uncorrected version of this test claimed to
-support; Appendix A-equivalent detail on exactly what was wrong with the
-earlier version, and why, is documented in this section rather than
-relegated to an appendix, since it bears directly on this paper's single
-most load-bearing claim.
+powered to detect -- holds up under every test the corrected run
+computes, under both labels, not only the ones most favorable to that
+conclusion.** This is a materially different, more precisely scoped basis
+for the same conclusion the uncorrected version of this test claimed to
+support. But a further round of validation (below) found that this
+instrument's genuinely Attention-derived direction, like the FFN
+direction, was never shown to carry validated causal-relevant content in
+the first place -- so the honest reading of this null is narrower than
+"we tested a genuinely component-specific intervention on each side and
+found no difference": it is closer to "this specific instrument does not
+clear the bar needed to make its own null claim informative about
+component specificity." Appendix-A-equivalent detail on exactly what was
+wrong with the earlier (same-direction) version of this test, and why,
+is documented in this section rather than relegated to an appendix,
+since it bears directly on this paper's single most load-bearing claim.
 
 **The judge-parser bug (§4) checked directly on this specific test, not
 just on the underlying relabel.** §4 discloses a substring-matching bug
@@ -726,6 +740,112 @@ Attention arm's more serious problem, that it never used a genuinely
 Attention-derived direction, is addressed next -- but it rules out
 dosage imbalance specifically as a confound.
 
+**Direction validity, a permutation-based cosine null, a common-injection-site
+test, and a random-direction ensemble -- four checks a fresh audit
+identified as missing, run on the flagship configuration
+(`kaggle_kernels/paper1-causal-patch-tier1-validated/`).** The checks
+below do not simply reinforce the null reported above; they surface a
+more fundamental limitation of this specific instrument that the paper
+must disclose honestly rather than narrate past.
+
+*Direction validity.* Before any direction is injected, does it actually
+separate correct from hallucinated activations on genuinely held-out
+data? We split the 58-prompt training pool into a direction-fit set (47)
+and a held-out validity set (11), estimated each direction on the
+former, and measured its scalar projection's AUROC on the latter. At
+neither tested layer does either direction clear chance: L8 FFN
+AUROC$=0.083$ (95\% CI $[0.0, 0.33]$), L8 Attn$=0.083$ ($[0.0, 0.33]$),
+L9 FFN$=0.0$ ($[0.0, 0.0]$), L9 Attn$=0.125$ ($[0.0, 0.5]$). The
+held-out set is small (n=11), so these point estimates trending *below*
+0.5 should not be read as evidence the directions are anti-predictive --
+but the CIs are consistent with chance throughout, and none establishes
+the directions carry validated discriminative signal before they are
+ever injected.
+
+*Permutation-based cosine null.* The paper's cosine-similarity diagnostic
+(§3.4 above, $-0.05$ to $-0.06$) was previously read as confirming the
+FFN and Attention directions are genuinely distinct. A 2000-permutation
+null (recomputing both directions from label-shuffled training data, no
+new model inference) puts this in context: observed cosine
+$-0.0058$ at L8 sits at $z=0.76$ against a null with mean $-0.057$,
+sd $0.067$; observed $-0.0051$ at L9 sits at $z=0.33$ against a null with
+mean $-0.028$, sd $0.069$. Both observed values are within 1 SD of the
+empirical null -- statistically indistinguishable from what two
+label-uninformed directions would produce.
+
+*Common-injection-site test.* The original Attention arm patches the
+attention sublayer's own output, which then passes through that block's
+own LayerNorm and MLP before leaving the block -- a different site than
+the FFN arm's patch, entangling "which component's direction" with
+"where in the block it is injected." We add two conditions patching both
+directions at a common site (the whole block's residual-stream output,
+after both attn and mlp have already been added): FFN-direction-at-common-site
+turns out to be mathematically identical to the existing FFN-native-site
+arm (the MLP's own output *is* the block's last operation before the
+residual add in GPT-2, so patching either point is the same
+intervention -- confirmed empirically: identical generations, byte for
+byte). The Attention arm's common-site version is a genuinely new
+comparison: FFN-vs-Attention at the common site gives McNemar
+$p=0.144$/$\mathbf{0.049}$/$0.791$/$0.607$ across L8$\alpha20$/L8$\alpha40$/L9$\alpha20$/L9$\alpha40$
+-- one nominally significant cell that does not survive Holm correction
+across even these four common-site tests alone (threshold $0.05/4=0.0125$),
+let alone the paper's wider test family.
+
+*TOST equivalence bounds.* Rather than a single fixed bound, we searched
+for the smallest odds-ratio bound at which two one-sided exact tests on
+each cell's McNemar discordant pairs jointly establish equivalence. At
+the pre-registered OR$=2.0$ bound, no cell establishes equivalence. The
+actually-achievable bounds are OR$=7.1$/$7.9$/$2.85$/$3.9$ (native site)
+and OR$=7.1$/$10.9$/$3.9$/$4.25$ (common site) across the four
+configurations -- consistent with, and now more precisely quantifying,
+the $3.75$-$8.0$ minimum-detectable-odds-ratio range already reported
+above from the exact-binomial power calculation.
+
+*Competing-risks outcome table.* Splitting outcomes into flip/no-flip/degenerate
+(using the Jaccard label's own $-1$ as a degenerate-completion proxy, since
+the judge label had zero unparseable verdicts in this run) and testing
+condition-vs-outcome association via a $2\times3$ chi-square: native-site
+$p=0.223$/$0.347$/$0.983$/$0.374$, common-site $p=0.126$/$\mathbf{0.010}$/$0.956$/$0.092$
+across the four configurations -- again one nominally low value (common
+site, L8$\alpha40$) that would not survive correction across this
+expanded family either, and the chi-square approximation's minimum
+expected cell count ($6.5$-$9.0$) is only borderline reliable at this
+sample size.
+
+*Random-direction ensemble.* The strongest single check: at the flagship
+configuration (L8, $\alpha=40$, first 60 test prompts, chosen for
+tractable compute), the found FFN and Attention directions' flip rates
+were compared against an ensemble of 20 independently-drawn random
+directions on the identical prompts. The found directions produced
+**zero flips** on this subset -- and this sits at the **50th percentile**
+(FFN) and **40th percentile** (Attention) of the random-direction
+ensemble's own flip-rate distribution (which ranges $0.0$-$0.067$ across
+the 20 draws). The found direction's causal effect is not merely
+statistically indistinguishable from the random-direction control's
+effect in the sense of failing to reject a null hypothesis -- it sits
+squarely in the middle of the random-direction distribution, exactly
+where a random direction with no special relationship to the label would
+be expected to land.
+
+**What this means for the flagship result.** These four checks do not
+simply add further support to the existing FFN-vs-Attention null; taken
+together, they show that neither direction in this test was ever
+demonstrated to carry validated causal-relevant content in the first
+place. A null result from an instrument that cannot be shown to measure
+anything is not informative about component specificity one way or the
+other -- it is uninterpretable between "FFN and Attention are equally
+(un)causal for hallucination" and "we injected two vectors indistinguishable
+from noise, so of course nothing differed." The common-site and TOST
+results are consistent with the paper's existing null, and the achievable
+equivalence bounds line up with the previously-reported power
+calculation -- but the direction-validity and random-direction-ensemble
+findings are the more consequential result of this round: this specific
+causal test, as designed (an 18-vs-40-sample difference-of-means
+direction), does not clear the bar needed to make its own null claim
+meaningful, independent of anything about FFN or Attention specifically.
+We report this as an honest limitation of the instrument, not a claim
+that has been strengthened.
+
 ### 3.5 ROME-style causal tracing: a stronger causal test
 
 Additive mean-shift steering (§3.4) is a comparatively weak causal
@@ -771,6 +891,40 @@ stricter 24-layer per-family threshold. The one causal signal this test
 found anywhere (GPT-2 Attn L9, itself only surviving under a
 non-default, per-family correction scoping) does not replicate in either
 extension architecture.
+
+**Rerun under the validated judge label -- a more structural dependence
+on the Jaccard label than §3.4 had, closed by a fresh audit.** Every
+result above filters candidates on Jaccard label$=1$ ("clean" examples).
+§4 establishes that only $27/534$ GPT-2 samples are actually judge-correct
+-- so most of the "clean" examples driving this section's own
+self-declared *stronger* causal test were, on this paper's own validated
+numbers, likely hallucinations. We reran the sweep filtering on the
+validated judge label instead (`code/40_rome_style_causal_tracing_validated.py`),
+averaging $10$ independent corruption draws per example (removing the
+original's selection on a single noisy realization: the old
+"clean$>$corrupted" filter is dropped entirely, and all candidates are
+retained regardless of any one draw's degradation) and ensembling the
+mismatched-donor control over $10$ random donors instead of one
+deterministic ring-neighbor. The judge-correct pool is small --
+$17$ usable candidates out of $27$ total judge-correct GPT-2 samples,
+after requiring a parseable correct/incorrect answer pair -- and this is
+disclosed as a genuine power limitation, not silently absorbed. Across
+individual corruption draws, only $53.5\%$ show real degradation from
+corruption (clean$>$corrupted), underscoring why averaging over draws,
+rather than selecting on one, is the right correction. No cell survives
+Holm-Bonferroni correction at either this test's own 24-comparison
+family or a stricter $120$-test family spanning all three
+architectures' equivalent sweeps; the two smallest uncorrected p-values
+are both Attention layers (L10 $p=0.026$, L11 $p=0.023$, both
+own$-$shuffled positive), consistent in direction with this section's
+Jaccard-label result above but clearing neither correction threshold at
+this sample size. The one-instance-name limitation this round does not
+address, disclosed rather than silently left as-is: the forced-choice
+score remains first-token log-odds, not a length-normalized
+full-sequence log-probability -- implementing the latter would require a
+materially larger redesign of the causal-tracing hook machinery than was
+tractable alongside the label-validity and averaging fixes in this
+round.
 
 ### 3.6 Toward active causal control: beyond a single linear direction
 
@@ -944,6 +1098,9 @@ with this paper.
 | Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
 | Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
 | Corrected FFN-vs-Attention component-specificity test (real Attention direction) | §3.4 | `kaggle_kernels/paper1-causal-patch-real-attn-direction/` | `results/causal_patch_real_attn_direction_results.json` |
+| Direction-validity gate, permutation cosine null, common-site test, random-direction ensemble | §3.4 | `kaggle_kernels/paper1-causal-patch-tier1-validated/` | `kaggle_kernels/paper1-causal-patch-tier1-validated/output/causal_patch_tier1_validated_results.json` |
+| TOST equivalence bounds, competing-risks outcome table | §3.4 | `code/38_tier1_tost_competing_risks.py` | `results/tier1_tost_competing_risks.json` |
+| ROME-style causal tracing under validated judge label | §3.5 | `code/40_rome_style_causal_tracing_validated.py` | `results/rome_style_causal_tracing_validated.json` |
 | FFN/Attn dosage-mismatch diagnostic | §3.4 | `code/26_ffn_attn_dosage_diagnostic.py` | `results/ffn_attn_dosage_diagnostic.json` |
 | GPT-2 full-534 judge relabel | §3.1, §3.2, §3.7 | `kaggle_kernels/paper1-gpt2-full-judge-relabel/` | `results/gpt2_full_534_judge_labels.json` |
 | Surface-feature (length/lexical) baseline vs. validated judge label | §4 | `code/32_surface_baseline_vs_judge_label.py` | `results/surface_baseline_vs_judge_label.json` |
