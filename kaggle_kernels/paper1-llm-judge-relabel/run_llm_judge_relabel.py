@@ -138,10 +138,17 @@ def judge_all(records, judge_model, judge_tok, device):
             out_ids = judge_model.generate(**inputs, max_new_tokens=8, do_sample=False,
                                             pad_token_id=judge_tok.eos_token_id)
         verdict = judge_tok.decode(out_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip().upper()
-        if "CORRECT" in verdict and "HALLUCINAT" not in verdict:
-            judge_labels.append(1)
-        elif "HALLUCINAT" in verdict:
+        # CORRECTION (post-review): "CORRECT" in verdict matched the
+        # substring "CORRECT" inside "INCORRECT" too, silently mis-scoring
+        # any judge output containing the word "incorrect" as label=1.
+        # Check HALLUCINAT and INCORRECT first (both -> hallucinated/wrong),
+        # only then treat a bare "CORRECT" as label=1.
+        if "HALLUCINAT" in verdict:
             judge_labels.append(0)
+        elif "INCORRECT" in verdict:
+            judge_labels.append(0)
+        elif "CORRECT" in verdict:
+            judge_labels.append(1)
         else:
             judge_labels.append(-1)
         if (i + 1) % 100 == 0:

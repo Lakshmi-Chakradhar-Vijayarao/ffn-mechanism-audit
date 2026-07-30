@@ -1,0 +1,32 @@
+{
+  "n_valid": 534,
+  "n_correct": 27,
+  "n_hallucinated": 507,
+  "results": {
+    "logistic": {
+      "cv_auroc_mean": 0.5604,
+      "cv_auroc_std": 0.1047,
+      "auroc": 0.6392
+    },
+    "mlp": {
+      "cv_auroc_mean": 0.5704,
+      "cv_auroc_std": 0.0971,
+      "auroc": 0.3098
+    },
+    "random_baseline": {
+      "cv_auroc_mean": null,
+      "cv_auroc_std": null,
+      "auroc": 0.4745
+    },
+    "prob_only_baseline": {
+      "cv_auroc_mean": null,
+      "cv_auroc_std": null,
+      "auroc": 0.4863
+    },
+    "majority_baseline": {
+      "cv_auroc_mean": null,
+      "cv_auroc_std": null,
+      "auroc": 0.5
+    }
+  }
+}

@@ -46,17 +46,27 @@ by instrument mismatch rather than a clean absence of mechanism.
 
 All of this rests on a Jaccard word-overlap hallucination label whose
 validity we audited directly, on all three architectures: an independent
-LLM judge agrees with only 49.7-57.5\% of labels (below chance on
-Qwen0.5B-chat specifically) (Cohen's $\kappa=0.03$-$0.14$
+LLM judge agrees with only 49.7-57.5\% of labels (lowest, at 49.65\% raw
+agreement, on Qwen0.5B-chat, though Cohen's $\kappa$ there is still
+weakly positive at $0.084$ once the label marginals are accounted for --
+raw agreement below 50\% is not the same statement as below-chance
+agreement in the $\kappa$ sense) (Cohen's $\kappa=0.03$-$0.14$
 across GPT-2, Pythia, and both Qwen0.5B variants, next to chance
 throughout), consistently biased toward calling completions
 hallucinated that the word-overlap heuristic called correct. Rather than
 leave this as an unresolved caveat, we reran the decisive causal test
-(§3.4) end to end under the validated label, at nearly double the
-sample size ($n=467$): the causal null does not weaken, it is
-corroborated by two signatures at once -- flip rates for FFN-found,
-FFN-random, and Attn-found alike collapse to a 1.3-3.0\% floor, with no
-configuration distinguishable from any other even at that floor. The
+(§3.4) end to end under the validated label, on nearly double the
+number of test prompts ($n=467$ vs.\ $n=228$). This is not the same as
+nearly doubled statistical power: the much lower absolute flip rate
+under the validated label means fewer prompts where any two conditions
+disagree, so the number of *informative* (discordant) pairs actually
+*fell*, from 27-46 to 9-22, and the test is correspondingly only
+powered to detect large effects (minimum detectable odds ratio
+3.75-8.0 across the four configurations; §3.4 reports the exact
+figures and confidence intervals). Within that power limit, flip rates
+for FFN-found, FFN-random, Attn-found, and Attn-random alike collapse
+to a 1.3-3.0\% floor, with no configuration's point estimate reaching
+significance after accounting for multiple comparisons. The
 passive component-comparison picture is more mixed under the
 validated label: absolute AUROCs rise substantially (to 0.66-0.75) and
 FFN's numerical majority is restored on Qwen0.5B-chat, but which
@@ -105,11 +115,16 @@ That transferable discipline, not the specific FFN finding, is this
 paper's most durable contribution.
 
 **Contributions, honestly scoped:**
-1. Localization of hallucination signal to layers 8-9 on GPT-2 (6
-   converging methods, triangulating rigor rather than a qualitatively
-   new discovery -- mid-layer hallucination localization is established
-   prior art). A seventh method (DLA magnitude) peaks at L10/L11 instead
-   and is excluded from this count (§3.1).
+1. Localization of hallucination signal to layers 8-9 on GPT-2 under the
+   Jaccard label (6 converging methods, triangulating rigor rather than
+   a qualitatively new discovery -- mid-layer hallucination localization
+   is established prior art). A seventh method (DLA magnitude) peaks at
+   L10/L11 instead and is excluded from this count. **This convergence
+   itself does not survive relabeling**: under the validated judge label,
+   the same six methods' peaks move to L7, L7, L6, and L11 respectively
+   (§3.1) -- L8-9 is a property of the Jaccard label's specific noise
+   pattern on this dataset, not a label-independent localization, and
+   this contribution should be read accordingly.
 2. FFN-vs-Attention component decomposition testing whether ReDeEP's
    RAG-scoped mechanism extends to closed-book QA: a numerical FFN
    majority on 3/3 architectures under a bare-template first pass, with
@@ -325,18 +340,28 @@ rather than selectively:** under the validated label, FFN's numerical
 majority actually *rises* on three of four architectures (Pythia
 $16/24\to18/24$; Qwen0.5B-bare $14/24\to20/24$; Qwen0.5B-chat
 $11/24\to18/24$) and only GPT-2 moves the other way, reversing further
-toward Attention ($8/12\to2/12$). At the architecture level this leaves
-FFN holding a layer-count majority on 3 of 4 architectures under the
-validated label, unchanged in count from Jaccard's 2 of 3 but with
-different member architectures (GPT-2 flips out of FFN's majority as
-Qwen0.5B-chat flips in) -- neither a clean strengthening nor a clean
-reversal of the original picture. Which component peaks, however, remains
-architecture-dependent under the validated label exactly as it was
-before (Attention still peaks on Pythia and now on GPT-2; FFN still peaks
-on both Qwen0.5B variants) -- so this re-check strengthens the case that
-a real, larger signal than the noisy label suggested exists, without
-resolving the paper's core FFN-vs-Attention specificity question either
-way.
+toward Attention ($8/12\to2/12$). At the architecture level, using the
+same four-way tally under both labels, this leaves FFN holding a
+layer-count majority on 3 of 4 architectures under the validated label --
+unchanged in count from Jaccard's own 3 of 4 (GPT-2, Pythia,
+Qwen0.5B-bare), but with different member architectures: GPT-2 flips
+out of FFN's majority as Qwen0.5B-chat flips in. Neither a clean
+strengthening nor a clean reversal of the original picture.
+
+Which component peaks is, if anything, *less* stable across labels than
+the layer-count tally: only 2 of 4 architectures keep the same
+peak-AUROC winner under both labels (GPT-2: Attention both times;
+Qwen0.5B-bare: FFN both times), while the other 2 flip in opposite
+directions (Pythia: FFN under Jaccard $\to$ Attention under the
+validated label; Qwen0.5B-chat: Attention under Jaccard $\to$ FFN under
+the validated label). An earlier version of this paragraph described
+Pythia as "Attention still peaks" and both Qwen0.5B variants as "FFN
+still peaks" -- both wrong: "still" implies no change, and two of the
+four architectures' peak component changes label to label. This
+re-check strengthens the case that a real, larger signal than the noisy
+label suggested exists, without resolving the paper's core
+FFN-vs-Attention specificity question either way -- and if anything
+underscores how unstable the specific peak-component assignment is.
 
 **A class-imbalance caveat that applies to every validated-label number
 above.** The judge label is not just different from Jaccard, it is
@@ -361,7 +386,7 @@ original Jaccard-label numbers (wrongly) conveyed.
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.75\textwidth]{figures/ffn-attn-comparison.pdf}
-\caption{Peak AUROC for FFN vs.\ Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in three of four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template.}
+\caption{Peak AUROC for FFN vs.\ Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in all four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template.}
 \label{fig:ffn-attn-comparison}
 \end{figure}
 
@@ -424,10 +449,24 @@ noise at $n=228$, 7.5\% vs.\ 7.9\%, $p=1.000$.)
 
 A non-trivial fraction of interventions in every condition produce a
 degenerate/unparseable completion rather than a clean correct-or-wrong
-answer (19.8-29.6\% across conditions), found and random directions at
-similar rates in three of four configurations -- consistent with much of
-the flip-rate signal being generic generation perturbation from any large
-additive intervention, not targeted semantic correction.
+answer. An earlier version of this paragraph cited "19.8-29.6\% across
+conditions" -- this was in fact only the FFN-found arm at L8 from the
+original $n=81$ pass, not a range across the twelve $n=228$ conditions
+this paragraph is actually about. The correct $n=228$ range, computed
+across all twelve found/random/attn-found conditions at both layers and
+alphas, is $10.1\%$-$46.5\%$ (`results/ffn_causal_patch_scaled_results.json`),
+substantially wider than previously stated. Found and random directions
+are at broadly similar rates in most configurations but diverge sharply
+at L8/$\alpha{=}40$ (FFN-found $40.8\%$ vs.\ FFN-random $25.4\%$;
+Attn-found $46.5\%$) -- the found direction is, if anything, a
+\emph{stronger} disruptor of coherent generation than a random direction
+of equal norm at this configuration, consistent with much of the
+flip-rate signal being generic generation perturbation from any large
+additive intervention, not targeted semantic correction. Because
+unparseable completions are scored as not-flipped in every condition,
+this differential degeneration could mechanically penalize whichever
+arm degenerates more; we do not attempt a competing-risks correction
+here and flag this as an unresolved limitation of the outcome metric.
 
 **Extending beyond GPT-2.** The same test on Pythia-410M and
 Qwen2.5-0.5B-Instruct (chat-templated), at each architecture's own
@@ -482,21 +521,87 @@ McNemar $p=0.167$ (L8/$\alpha{=}20$), $0.607$ (L8/$\alpha{=}40$), $1.000$
 (L9/$\alpha{=}20$), $0.077$ (L9/$\alpha{=}40$) -- not significant at any
 configuration, and the smallest (L9/$\alpha{=}40$, $p=0.077$) would not
 survive even a mild multiple-comparison correction across the four
-configurations tested. Attention-found is also indistinguishable from
+configurations tested.
+
+**What this test can and cannot rule out, stated explicitly.** Discordant
+pairs per configuration are $19$ (L8/$\alpha{=}20$), $15$ (L8/$\alpha{=}40$),
+$9$ (L9/$\alpha{=}20$), $16$ (L9/$\alpha{=}40$) -- fewer than the
+$27$-$46$ available at $n=228$ under the Jaccard label, because the much
+lower absolute flip rate under the validated label leaves fewer prompts
+where FFN-found and Attention-found disagree at all. At these counts, the
+minimum odds ratio an exact two-sided binomial test (McNemar) can detect
+at $p<0.05$ is $3.75$ (L8/$\alpha{=}20$), $4.00$ (L8/$\alpha{=}40$),
+$8.00$ (L9/$\alpha{=}20$), and $4.33$ (L9/$\alpha{=}40$) -- this test is
+powered only to detect a 4-to-8-fold asymmetry between the two
+conditions, not a moderate one. The observed odds ratios and their
+approximate 95\% confidence intervals (log-odds normal approximation)
+are $0.46$ $[0.18, 1.21]$, $0.67$ $[0.24, 1.87]$, $1.25$ $[0.34, 4.65]$,
+and $3.00$ $[0.97, 9.30]$ -- wide enough that the data are simultaneously
+consistent with FFN being several-fold worse than Attention and with FFN
+being several-fold better, at three of the four configurations. This is
+the honest scope of "no measurable difference": it is a demonstrated
+absence of a very large effect, not a demonstrated absence of a moderate
+one, and we did not run an equivalence test (e.g.\ TOST against a
+pre-specified $\delta$) that would let us make the stronger claim.
+Attention-found is also indistinguishable from
 its own random-direction control at every configuration ($p=0.84, 0.50,
 1.00, 0.18$), just as FFN-found is from FFN-random. The same test
 rerun under the original Jaccard label (same prompts and patches, scored
 by the cheaper heuristic instead) gives FFN-vs-Attention $p=0.439,
-0.355, 0.747, 0.399$ -- also uniformly non-significant. **The null this
+0.355, 0.747, 0.399$ -- also uniformly non-significant.
+
+**Reporting every test this file computes, not only the FFN-vs-Attention
+comparison.** The same Jaccard-labeled run also computes each arm
+against its own random-direction control, and three of these eight
+additional tests are nominally significant, all omitted from an earlier
+version of this section: at L8, Attention-found is beaten by its own
+random control ($p=0.021$, $\alpha{=}20$; $p=0.0043$, $\alpha{=}40$ --
+random flips more often than the Attention-derived direction does); at
+L9/$\alpha{=}20$, FFN-found beats its own random control ($p=0.0264$).
+None of these three would survive a Holm-Bonferroni correction across
+the 8 found-vs-random tests this run computes (smallest $p=0.0043\times8=0.0344$,
+which does survive; the next, $0.021\times7=0.147$, does not) -- so one
+of the three, the Attention-found-underperforms-random result at
+L8/$\alpha{=}40$, is nominally significant even after correction. We
+read this as consistent with, not contradicting, this section's overall
+picture: an Attention-derived direction performing \emph{worse} than a
+random direction of matched norm is not evidence of Attention
+specificity in the paper's favor, and is at least as consistent with
+generic large-perturbation disruption (§3.4's degeneracy discussion
+above) as with any targeted effect. The one result in the opposite
+direction (L9/$\alpha{=}20$ FFN-found beats FFN-random, $p=0.0264$,
+uncorrected) does not survive correction and is not replicated under the
+validated judge label at the same configuration ($p=1.000$) --
+consistent with this specific cell being Jaccard-label noise rather
+than a real, label-independent effect.
+
+**The null this
 paper reports -- no measurable causal difference between patching FFN
-and patching Attention -- survives being tested properly, with a
+and patching Attention at the 4-to-8-fold odds-ratio scale this test is
+powered to detect -- survives being tested properly, with a
 genuinely component-specific intervention on each side, under both
-labels.** This is a materially different, and now defensible, basis for
+labels, and this holds even after accounting for every test the
+corrected run computes, not only the ones most favorable to that
+conclusion.** This is a materially different, more precisely scoped, and now defensible basis for
 the same conclusion the uncorrected version of this test claimed to
 support; Appendix A-equivalent detail on exactly what was wrong with the
 earlier version, and why, is documented in this section rather than
 relegated to an appendix, since it bears directly on this paper's single
 most load-bearing claim.
+
+**The judge-parser bug (§4) checked directly on this specific test, not
+just on the underlying relabel.** §4 discloses a substring-matching bug
+in every judge-scoring function (`"CORRECT" in verdict`, which also
+matches `"INCORRECT"`) found by a fresh review, fixed in all seven
+implementations, and confirmed to change zero labels in the 534-sample
+GPT-2 relabel. Because this specific test scores 467 test prompts times
+seventeen conditions (baseline plus sixteen patched variants) with the
+judge, we reran it end to end with the corrected parser as a direct
+check, not an inference from the relabel result. The output is
+byte-identical to the pre-fix version at every one of the $467\times17$
+scored cells and every summary statistic reported above -- the bug was
+real, but for this judge model it never actually fired on this paper's
+completions.
 
 We do not carry forward the previous version's interpretive claim about
 the gap between Jaccard's and the judge's absolute flip rates (33-42\%
@@ -761,6 +866,7 @@ with this paper.
 | Corrected FFN-vs-Attention component-specificity test (real Attention direction) | §3.4 | `kaggle_kernels/paper1-causal-patch-real-attn-direction/` | `results/causal_patch_real_attn_direction_results.json` |
 | FFN/Attn dosage-mismatch diagnostic | §3.4 | `code/26_ffn_attn_dosage_diagnostic.py` | `results/ffn_attn_dosage_diagnostic.json` |
 | GPT-2 full-534 judge relabel | §3.1, §3.2, §3.7 | `kaggle_kernels/paper1-gpt2-full-judge-relabel/` | `results/gpt2_full_534_judge_labels.json` |
+| Surface-feature (length/lexical) baseline vs. validated judge label | §4 | `code/32_surface_baseline_vs_judge_label.py` | `results/surface_baseline_vs_judge_label.json` |
 | GPT-2 layer localization + component probe under validated label | §3.1, §3.2 | `code/29_gpt2_full_validated_relabel_rerun.py` | `results/gpt2_full_validated_relabel_rerun.json` |
 | GPT-2 difficulty-matched control under validated label | §3.7 | `code/30_difficulty_matched_control_judge_label.py` | `results/difficulty_matched_control_judge_label.json` |
 
@@ -778,14 +884,36 @@ on Jaccard-correct calls), and manual reading of disagreement cases
 confirms the judge is usually right -- word-overlap frequently credits
 completions that share surface words with the reference but state a
 different specific fact (e.g., naming the wrong person or film), or that
-are degenerate repetition loops, as "correct." A trivial length/lexical
-baseline does not explain the judge label's structure (chance-level
-AUROC), meaning it is not simply rewarding shorter or blander
-completions. Given this, we reran the paper's decisive causal test under
+are degenerate repetition loops, as "correct." **An earlier version of
+this section asserted that a trivial length/lexical baseline does not
+explain the judge label's structure at chance-level AUROC -- no such
+computation existed anywhere in this project, and a fresh review
+correctly flagged this as unsupported.** We computed it
+(`code/32_surface_baseline_vs_judge_label.py`, the identical 6-feature
+surface classifier from §2/Related Work, rerun against the validated
+label on the same cached features): logistic regression CV AUROC
+$=0.5604\pm0.1047$, MLP $=0.5704\pm0.0971$ ($n=534$, 5-fold). This is
+not chance-level, and it is not meaningfully different from the same
+baseline's performance against the original Jaccard label
+($0.531$/$0.576$) -- so the validated label is not obviously *easier*
+for a surface-only classifier than the original label was. This is
+weak evidence against the alternative that the validated-label rise in
+hidden-state probe AUROC (§3.2-3.3, roughly $0.60\to0.70$) is driven
+purely by degeneracy detection: a purely-degeneracy-driven account
+would predict the surface baseline itself should also rise
+substantially under the validated label, since entropy and generation
+dynamics are the most direct surface signal of a repetition loop, and
+it does not. This is not a strong exclusion -- both baselines remain
+well short of the hidden-state probes' AUROC, and we did not restrict
+either analysis to the confirmed-non-degenerate subset -- but it is
+evidence, not merely an asserted fact with no computation behind it.
+Given this, we reran the paper's decisive causal test under
 the validated label rather than leave the concern unresolved (§3.4): the
-causal null holds, corroborated by a floor-level flip rate and zero
-separation between conditions at that floor, at nearly double the
-original sample size. We extended this same validated-label relabeling
+causal null holds within this test's power limits, corroborated by a
+floor-level flip rate and zero separation between conditions at that
+floor, though (as discussed in §3.4) the number of test prompts nearly
+doubled while the number of statistically informative discordant pairs
+actually fell. We extended this same validated-label relabeling
 to all 534 of GPT-2's completions (not just the 100-item audit sample,
 $\kappa=0.042$, consistent) and reran layer localization, component
 decomposition, and the difficulty-matched control under it as well
@@ -799,8 +927,33 @@ longer depends on that distinction mattering. One residual limitation:
 the same judge model both defines the found-direction's train split and
 scores every generated output in §3.4's validated-label test, so that
 result's validity rests on the judge's own accuracy, which we have
-checked only by manual spot-reading and a chance-level surface-feature
-control, not an independent second judge or human annotation.
+checked only by manual spot-reading and the surface-feature control
+above (not chance-level, but not meaningfully different from the same
+baseline's performance under the original label either), not an
+independent second judge or human annotation.
+
+**A parser bug, found by a fresh review, checked and confirmed to have
+zero effect on this paper's reported labels.** Every judge-scoring
+function in this project classified a verdict as "correct" if the
+string `"CORRECT"` appeared in it and `"HALLUCINAT"` did not --
+`"CORRECT"` is a substring of `"INCORRECT"`, so a judge output of
+"INCORRECT" would have been silently scored as label $1$ (correct) in
+seven separate implementations. We had never persisted the judge's raw
+verdict strings, only the parsed integer labels, so this was
+unfalsifiable from existing artifacts when the review flagged it. Fixed
+by checking for `"HALLUCINAT"` and `"INCORRECT"` before treating a bare
+`"CORRECT"` as label $1$, in all seven implementations, and reran the
+full 534-sample GPT-2 relabel
+(`kaggle_kernels/paper1-gpt2-full-judge-relabel/`) end to end with the
+corrected parser. The result is byte-identical to the original: all 534
+labels unchanged, same $27$ correct / $507$ hallucinated split, same
+$\kappa=0.0417$. For this judge model and this dataset, Qwen2.5-3B-Instruct
+reliably complied with the one-word instruction and never actually
+produced a verdict the buggy parser would have mishandled -- so the bug
+was real and needed fixing, but it did not change any number this paper
+reports. We reran the §3.4 flagship causal test with the same corrected
+parser as a further check, given how directly that result depends on
+judge scoring; see §3.4 for the outcome.
 
 **No inference-economy claim.** This paper localizes a signal and tests
 a causal intervention; it does not propose an early-exit, routing, or
@@ -837,12 +990,20 @@ extending rather than contradicting an independent finding
 that activation interventions fail to causally correct hallucinated
 answers at this model scale. This null does not depend on trusting the
 paper's word-overlap label: relabeling every completion with an
-independent LLM judge and rerunning the causal test end to end at nearly
-double the sample size leaves the null intact, corroborated by both a
+independent LLM judge and rerunning the causal test end to end -- on
+nearly double the test prompts, though with fewer statistically
+informative discordant pairs than the Jaccard-label version, since the
+much lower absolute flip rate leaves fewer prompts where conditions
+disagree -- leaves the null intact within this test's power limits
+(minimum detectable odds ratio 3.75-8.0; §3.4 reports the exact
+confidence intervals), corroborated by both a
 floor-level flip rate and zero separation between conditions at that
-floor -- the strongest single piece of evidence in this paper, precisely
-because it is the one result shown to survive the paper's own most
-serious methodological objection.
+floor. This is the paper's most methodologically scrutinized result --
+the one shown to survive the paper's own most
+serious methodological objection, both the label-validity concern and a
+genuine (rather than fabricated) Attention-specific control -- but its
+power to exclude a moderate effect remains limited, and we do not claim
+more than that.
 
 We report this candidly as a modest, largely null-leaning contribution.
 Closed-book FFN over-retrieval is a plausible but empirically unconfirmed
