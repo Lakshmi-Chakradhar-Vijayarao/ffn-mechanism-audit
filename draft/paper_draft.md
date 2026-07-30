@@ -674,19 +674,14 @@ wrong with the earlier (same-direction) version of this test, and why,
 is documented in this section rather than relegated to an appendix,
 since it bears directly on this paper's single most load-bearing claim.
 
-**The judge-parser bug (§4) checked directly on this specific test, not
-just on the underlying relabel.** §4 discloses a substring-matching bug
-in every judge-scoring function (`"CORRECT" in verdict`, which also
-matches `"INCORRECT"`) found by a fresh review, fixed in all seven
-implementations, and confirmed to change zero labels in the 534-sample
-GPT-2 relabel. Because this specific test scores 467 test prompts times
-seventeen conditions (baseline plus sixteen patched variants) with the
-judge, we reran it end to end with the corrected parser as a direct
-check, not an inference from the relabel result. The output is
-byte-identical to the pre-fix version at every one of the $467\times17$
-scored cells and every summary statistic reported above -- the bug was
-real, but for this judge model it never actually fired on this paper's
-completions.
+**The judge-parser fix (§4, Appendix B) checked directly on this specific
+test, not just on the underlying relabel.** Because this specific test
+scores 467 test prompts times seventeen conditions (baseline plus
+sixteen patched variants) with the judge, we reran it end to end with
+the corrected parser as a direct check, not an inference from the
+relabel result (Appendix B). The output is byte-identical to the
+pre-fix version at every one of the $467\times17$ scored cells and every
+summary statistic reported above.
 
 We do not carry forward the previous version's interpretive claim about
 the gap between Jaccard's and the judge's absolute flip rates (33-42\%
@@ -706,25 +701,18 @@ result and superseded for the FFN-vs-Attention comparison),
 component-specificity test), `results/causal_patch_judge_label_results.json`,
 `results/causal_patch_real_attn_direction_results.json`.
 
-**A dosage-mismatch check on the FFN-vs-Attention comparison itself,
-corrected after a review caught two errors in an earlier version.** The
-same $\alpha$ is added to both sublayers' output in every configuration
-above; whether this is a fair comparison depends on what that $\alpha$
-is actually competing with. An earlier version of this diagnostic
-(1) measured on bare TruthfulQA questions rather than the
-"Q: \{question\}\textbackslash nA:" formatted prompts the causal test
-actually patches, and (2) normalized $\alpha$ against each sublayer's
-own raw output norm -- the wrong denominator, since
-\texttt{patched\_generate}'s hook replaces that output with
-$(\text{out}+\alpha\cdot\text{direction})$ and this combined value is
-then added into the residual stream by the transformer block's own
-forward code; the quantity the intervention actually competes with, at
-the point it enters the computation, is the residual stream's own norm
-at that layer, which both the FFN-site and Attention-site hooks add into
-almost identically (both accumulate the same embedding-plus-all-prior-layers
+**A dosage-mismatch check on the FFN-vs-Attention comparison itself
+(Appendix B documents two errors an earlier version of this diagnostic
+made and how they were fixed).** The same $\alpha$ is added to both
+sublayers' output in every configuration above; whether this is a fair
+comparison depends on what that $\alpha$ is actually competing with. The
+quantity the intervention actually competes with, at the point it
+enters the computation, is the residual stream's own norm at that
+layer, which both the FFN-site and Attention-site hooks add into almost
+identically (both accumulate the same embedding-plus-all-prior-layers
 history, differing only by one attention-sublayer contribution at layer
-8-9, small relative to eight-plus layers of accumulation). Correcting
-both errors (`code/26_ffn_attn_dosage_diagnostic.py`, $n=100$
+8-9, small relative to eight-plus layers of accumulation). Measured
+correctly (`code/26_ffn_attn_dosage_diagnostic.py`, $n=100$
 correctly-formatted prompts): residual-stream norm is $124.7$ (L8) and
 $166.0$ (L9), giving a relative perturbation of $16.0\%$/$12.0\%$ of the
 residual stream at $\alpha=20$ and $32.1\%$/$24.1\%$ at $\alpha=40$ --
@@ -827,7 +815,46 @@ squarely in the middle of the random-direction distribution, exactly
 where a random direction with no special relationship to the label would
 be expected to land.
 
-**What this means for the flagship result.** These four checks do not
+*Alternative direction estimators.* The direction-validity failure above
+uses one estimator (difference-of-class-means). We checked whether
+logistic-regression weights or Fisher LDA, fit on the identical
+direction-fit/validity-holdout split, do any better
+(`code/44_alternative_direction_estimators.py`). They do not: across both
+layers, both components, and all three estimators (12 configurations
+total), every held-out AUROC is at or below $0.167$, none clears chance,
+and the three estimators agree closely at every layer/component
+combination (e.g., L8 FFN: $0.083$/$0.083$/$0.042$ for diff-of-means/
+logistic-regression/LDA respectively). This is not one estimator's
+idiosyncratic failure -- three different, standard ways of estimating a
+linear discriminative direction all fail to validate on this held-out
+split, strengthening "the effect is not there" over "this estimator was
+a poor choice."
+
+*Formal power analysis for the direction-validity gate.* Rather than
+assert "$n=11$ is small," we quantified what it means
+(`code/43_direction_validity_power_analysis.py`, 2000-simulation Monte
+Carlo, binormal scores, 2000-resample bootstrap CI matching the kernel's
+own procedure): at the actual validity-holdout split (3 correct, 8
+hallucinated), power to distinguish a true held-out AUROC from chance
+rises from $5.5\%$ (at true AUROC$=0.50$) through $45.0\%$ (at
+$0.80$) to $89.3\%$ (at $0.95$) -- this test only reaches 80\% power once
+the true AUROC is approximately $0.95$. The observed point estimates
+($0.0$-$0.125$) are far below any AUROC this test could reliably
+confirm or rule out at this $n$ -- the null is uninformative by
+construction at this sample
+size, not merely "small" in an unquantified sense.
+
+*Low-dose response check.* A separate, lower-priority follow-up swept
+$\alpha\in\{2.5, 5, 10\}$ at the common injection site (L8), scored
+against the Jaccard label on the same 60-prompt subset the
+random-direction ensemble uses (`code/42_low_dose_alpha_sweep.py`; this
+trade-off -- Jaccard rather than the LLM judge, to keep the sweep local
+and fast -- is disclosed here, not assumed equivalent). Flip rates for
+both the FFN and Attention directions stay flat across all three doses
+($42$-$52\%$, no monotone trend with $\alpha$), consistent with no
+clean dose-response relationship at any of these lower doses either.
+
+**What this means for the flagship result.** These checks do not
 simply add further support to the existing FFN-vs-Attention null; taken
 together, they show that neither direction in this test was ever
 demonstrated to carry validated causal-relevant content in the first
@@ -1064,6 +1091,60 @@ completions to support matching.
 
 ## 4. Discussion and Limitations
 
+**A validity checklist for causal-patching interpretability studies.**
+§3.4's flagship causal test went through five rounds of construct-
+validity scrutiny before its null could be trusted: a genuinely
+component-specific control direction (not a reused, wrong-component
+one), a dosage-match check, a direction-validity gate, a permutation-
+based cosine null, and a random-direction ensemble -- and even after all
+five, the direction-validity gate itself failed (neither the FFN nor
+the Attention direction clears chance-level held-out AUROC at any
+tested layer, §3.4). This paper's most transferable contribution is
+this checklist, distilled from that process, for any study patching a
+single estimated direction into a model's activations and drawing a
+causal conclusion from the result:
+
+1. **Is the estimated direction itself validated on held-out data
+   before any intervention?** A direction that does not clear
+   chance-level AUROC on a genuinely held-out split has not been shown
+   to carry the signal an intervention experiment assumes it carries --
+   patching it in and observing no effect is then uninformative about
+   the underlying mechanism, not evidence against it.
+2. **Is the "control" direction genuinely from a different source, not
+   the same direction reused with a different label?** A control that
+   is mathematically identical or near-identical to the treatment
+   cannot establish specificity.
+3. **Does the injection site confound "which representation" with
+   "where in the computation"?** Patching two different sublayers at
+   different points in the block entangles component identity with
+   injection site; a common-site test disentangles them (§3.4) --
+   and can reveal that two apparently different interventions are
+   mathematically identical (as FFN-site and common-site patching are,
+   for GPT-2's block structure, verified by direct algebra and an
+   empirical byte-for-byte check).
+4. **Is a null distinguishable from a genuinely random direction, not
+   just from "no effect"?** A found direction whose causal effect sits
+   inside the empirical distribution of random-direction effects (as
+   this paper's does, at the 40th-50th percentile of a 20-draw
+   ensemble) has not been shown to be doing anything a random direction
+   would not also do.
+5. **Is statistical power reported at the resolution the claim needs?**
+   A null with a wide confidence interval (this paper's flagship test:
+   minimum detectable odds ratio 3.75-8.0) rules out large effects, not
+   small-to-moderate ones -- reporting the interval, not just the point
+   estimate and p-value, is what lets a reader judge which claim the
+   data actually support.
+6. **Does an alternative direction-estimation method change the
+   conclusion?** A single estimator's failure to validate is
+   ambiguous between "this estimator is a poor choice" and "the effect
+   is not there"; checking at least one alternative (this paper checks
+   logistic-regression weights and Fisher LDA against the same
+   held-out split, §3.4) helps distinguish the two.
+
+Applying this checklist to this paper's own flagship result is why its
+central claim is reported as a limitation of the instrument rather than
+as confirmatory evidence for or against FFN-specific causal control.
+
 **Data and code availability.** All code, cached result JSONs, and the
 paper source are included in the anonymized supplementary material for
 double-blind review, and will be released as a public GitHub repository
@@ -1106,6 +1187,10 @@ with this paper.
 | Surface-feature (length/lexical) baseline vs. validated judge label | §4 | `code/32_surface_baseline_vs_judge_label.py` | `results/surface_baseline_vs_judge_label.json` |
 | GPT-2 layer localization + component probe under validated label | §3.1, §3.2 | `code/29_gpt2_full_validated_relabel_rerun.py` | `results/gpt2_full_validated_relabel_rerun.json` |
 | GPT-2 difficulty-matched control under validated label | §3.7 | `code/30_difficulty_matched_control_judge_label.py` | `results/difficulty_matched_control_judge_label.json` |
+| Cheap baselines (last-layer probe, generation-confidence features) | §4 | `code/41_cheap_baselines.py` | `results/cheap_baselines.json` |
+| Low-dose alpha sweep (common site, Jaccard label) | §3.4 | `code/42_low_dose_alpha_sweep.py` | `results/low_dose_alpha_sweep.json` |
+| Direction-validity gate power/MDE analysis | §3.4 | `code/43_direction_validity_power_analysis.py` | `results/direction_validity_power_analysis.json` |
+| Alternative direction estimators (logistic regression, LDA) | §3.4 | `code/44_alternative_direction_estimators.py` | `results/alternative_direction_estimators.json` |
 
 **Label validity.** All results rest on a Jaccard word-overlap label,
 surface-form divergence rather than verified factual incorrectness. We
@@ -1121,11 +1206,9 @@ on Jaccard-correct calls), and manual reading of disagreement cases
 confirms the judge is usually right -- word-overlap frequently credits
 completions that share surface words with the reference but state a
 different specific fact (e.g., naming the wrong person or film), or that
-are degenerate repetition loops, as "correct." **An earlier version of
-this section asserted that a trivial length/lexical baseline does not
-explain the judge label's structure at chance-level AUROC -- no such
-computation existed anywhere in this project, and a fresh review
-correctly flagged this as unsupported.** We computed it
+are degenerate repetition loops, as "correct." **A trivial length/lexical
+baseline check (Appendix B notes why this computation needed to exist
+before the claim below could be made).** We computed it
 (`code/32_surface_baseline_vs_judge_label.py`, the identical 6-feature
 surface classifier from §2/Related Work, rerun against the validated
 label on the same cached features): logistic regression CV AUROC
@@ -1144,6 +1227,24 @@ it does not. This is not a strong exclusion -- both baselines remain
 well short of the hidden-state probes' AUROC, and we did not restrict
 either analysis to the confirmed-non-degenerate subset -- but it is
 evidence, not merely an asserted fact with no computation behind it.
+
+**Cheap baselines, on the same validated label.** Before attributing any
+discriminative power to the FFN/Attention decomposition specifically, we
+checked whether trivial generation-confidence signals do comparably well
+(`code/41_cheap_baselines.py`, same $n=534$ validated label): an
+undecomposed last-layer (final resid\_post) probe reaches AUROC
+$=0.610\pm0.126$; teacher-forced generation-confidence features (mean
+log-prob, min log-prob, mean/min per-token max-softmax) individually
+reach $0.54$-$0.64$, with min-max-softmax the strongest single feature at
+$0.643\pm0.065$, and all four combined at $0.635\pm0.077$. These sit in
+the same range as this paper's own FFN/Attention component probes
+($0.53$-$0.75$ depending on layer and label), meaning the specific
+FFN-vs-Attention decomposition this paper studies does not obviously
+outperform a simple, mechanism-agnostic confidence signal on this task --
+consistent with this paper's overall finding that the component-level
+mechanistic story is harder to establish than the raw AUROC numbers
+alone would suggest.
+
 Given this, we reran the paper's decisive causal test under
 the validated label rather than leave the concern unresolved (§3.4): the
 causal null holds within this test's power limits, corroborated by a
@@ -1169,28 +1270,17 @@ above (not chance-level, but not meaningfully different from the same
 baseline's performance under the original label either), not an
 independent second judge or human annotation.
 
-**A parser bug, found by a fresh review, checked and confirmed to have
-zero effect on this paper's reported labels.** Every judge-scoring
-function in this project classified a verdict as "correct" if the
-string `"CORRECT"` appeared in it and `"HALLUCINAT"` did not --
-`"CORRECT"` is a substring of `"INCORRECT"`, so a judge output of
-"INCORRECT" would have been silently scored as label $1$ (correct) in
-seven separate implementations. We had never persisted the judge's raw
-verdict strings, only the parsed integer labels, so this was
-unfalsifiable from existing artifacts when the review flagged it. Fixed
-by checking for `"HALLUCINAT"` and `"INCORRECT"` before treating a bare
-`"CORRECT"` as label $1$, in all seven implementations, and reran the
+**A parser fix, checked and confirmed to have zero effect on this
+paper's reported labels (Appendix B).** All seven judge-scoring
+implementations now check for `"HALLUCINAT"` and `"INCORRECT"` before
+treating a bare `"CORRECT"` substring match as label $1$. Rerunning the
 full 534-sample GPT-2 relabel
 (`kaggle_kernels/paper1-gpt2-full-judge-relabel/`) end to end with the
-corrected parser. The result is byte-identical to the original: all 534
+corrected parser gives a result byte-identical to the original: all 534
 labels unchanged, same $27$ correct / $507$ hallucinated split, same
-$\kappa=0.0417$. For this judge model and this dataset, Qwen2.5-3B-Instruct
-reliably complied with the one-word instruction and never actually
-produced a verdict the buggy parser would have mishandled -- so the bug
-was real and needed fixing, but it did not change any number this paper
-reports. We reran the §3.4 flagship causal test with the same corrected
-parser as a further check, given how directly that result depends on
-judge scoring; see §3.4 for the outcome.
+$\kappa=0.0417$. We reran the §3.4 flagship causal test with the same
+corrected parser as a further check, given how directly that result
+depends on judge scoring; see §3.4 for the outcome.
 
 **No inference-economy claim.** This paper localizes a signal and tests
 a causal intervention; it does not propose an early-exit, routing, or
@@ -1252,6 +1342,64 @@ but empirically unconfirmed extension of ReDeEP -- neither signature was
 observed reliably on any architecture tested. The paper's main value is
 in what it honestly rules out -- clean FFN-specific causal control, a
 clean scale story -- rather than what it positively establishes.
+
+## Appendix B: Correction History
+
+**This appendix documents bugs found and fixed during iterative review,
+and checks run to confirm each fix's actual effect on reported numbers.**
+§3.4 and §4 state the paper's results directly; nothing below is
+required to verify them.
+
+**Judge-parser substring bug (checked directly against the flagship
+causal test, not just the underlying relabel).** Every judge-scoring
+function in this project originally classified a verdict as "correct"
+if the string `"CORRECT"` appeared in it and `"HALLUCINAT"` did not --
+`"CORRECT"` is a substring of `"INCORRECT"`, so a judge output of
+"INCORRECT" would have been silently scored as label $1$ (correct) in
+seven separate implementations. We had never persisted the judge's raw
+verdict strings, only the parsed integer labels, so this was
+unfalsifiable from existing artifacts until a fresh review flagged it.
+Fixed by checking for `"HALLUCINAT"` and `"INCORRECT"` before treating a
+bare `"CORRECT"` as label $1$, in all seven implementations, then reran
+the full 534-sample GPT-2 relabel end to end with the corrected parser:
+byte-identical to the original (same $27$/$507$ split, same
+$\kappa=0.0417$). We additionally reran the §3.4 flagship causal test
+(467 test prompts $\times$ 17 conditions) with the corrected parser as a
+direct check, given how directly that specific result depends on judge
+scoring, rather than inferring it was unaffected from the relabel result
+alone: byte-identical at every one of the $467\times17$ scored cells.
+For this judge model and this dataset, Qwen2.5-3B-Instruct reliably
+complied with the one-word instruction and never actually produced a
+verdict the buggy parser would have mishandled -- the bug was real and
+needed fixing, but it did not change any number this paper reports.
+
+**Dosage-mismatch diagnostic, corrected after a review caught two
+errors in an earlier version.** An earlier version of
+`code/26_ffn_attn_dosage_diagnostic.py` (1) measured on bare TruthfulQA
+questions rather than the "Q: \{question\}\textbackslash nA:" formatted
+prompts the causal test actually patches, and (2) normalized $\alpha$
+against each sublayer's own raw output norm -- the wrong denominator,
+since `patched_generate`'s hook replaces that output with
+$(\text{out}+\alpha\cdot\text{direction})$ and this combined value is
+then added into the residual stream by the transformer block's own
+forward code, so the quantity the intervention actually competes with
+is the residual stream's own norm at that layer, not the sublayer's own
+output norm. The uncorrected version reported a $2$-$3\times$ dosage
+asymmetry between the FFN and Attention arms; correcting only the
+prompt format (keeping the wrong denominator) shrinks this to
+$1.3$-$1.5\times$; correcting both gives the $16.0\%/12.0\%$
+($\alpha=20$) and $32.1\%/24.1\%$ ($\alpha=40$) relative-perturbation
+numbers reported in §3.4, with no asymmetry between the two arms.
+
+**Surface-baseline computation, flagged as missing by a fresh review.**
+An earlier version of §4's label-validity discussion asserted that a
+trivial length/lexical baseline does not explain the judge label's
+structure at chance-level AUROC -- no such computation existed anywhere
+in this project at the time, and a fresh review correctly flagged this
+as an unsupported claim. `code/32_surface_baseline_vs_judge_label.py`
+was written to actually compute it (the result, not chance-level but not
+meaningfully different from the same baseline's performance against the
+original Jaccard label, is reported directly in §4).
 
 ## References
 
