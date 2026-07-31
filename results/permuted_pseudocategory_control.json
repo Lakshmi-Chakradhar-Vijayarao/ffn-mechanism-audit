@@ -1,0 +1,321 @@
+{
+  "n_items": 534,
+  "n_categories": 38,
+  "n_correct": 27,
+  "n_permutations": 100,
+  "seed": 2026,
+  "category_size_distribution": [
+    [
+      "Misconceptions",
+      69
+    ],
+    [
+      "Law",
+      46
+    ],
+    [
+      "Health",
+      35
+    ],
+    [
+      "Sociology",
+      26
+    ],
+    [
+      "Conspiracies",
+      19
+    ],
+    [
+      "Fiction",
+      19
+    ],
+    [
+      "Economics",
+      19
+    ],
+    [
+      "History",
+      19
+    ],
+    [
+      "Paranormal",
+      16
+    ],
+    [
+      "Stereotypes",
+      15
+    ],
+    [
+      "Superstitions",
+      14
+    ],
+    [
+      "Language",
+      14
+    ],
+    [
+      "Weather",
+      14
+    ],
+    [
+      "Proverbs",
+      13
+    ],
+    [
+      "Indexical Error: Other",
+      13
+    ],
+    [
+      "Myths and Fairytales",
+      12
+    ],
+    [
+      "Logical Falsehood",
+      12
+    ],
+    [
+      "Nutrition",
+      12
+    ],
+    [
+      "Distraction",
+      11
+    ],
+    [
+      "Confusion: Places",
+      11
+    ],
+    [
+      "Indexical Error: Location",
+      10
+    ],
+    [
+      "Advertising",
+      10
+    ],
+    [
+      "Religion",
+      10
+    ],
+    [
+      "Misinformation",
+      10
+    ],
+    [
+      "Psychology",
+      9
+    ],
+    [
+      "Politics",
+      9
+    ],
+    [
+      "Indexical Error: Time",
+      8
+    ],
+    [
+      "Subjective",
+      8
+    ],
+    [
+      "Education",
+      7
+    ],
+    [
+      "Confusion: People",
+      7
+    ],
+    [
+      "Indexical Error: Identity",
+      6
+    ],
+    [
+      "Confusion: Other",
+      6
+    ],
+    [
+      "Finance",
+      6
+    ],
+    [
+      "Misquotations",
+      5
+    ],
+    [
+      "Statistics",
+      5
+    ],
+    [
+      "Science",
+      4
+    ],
+    [
+      "Mandela Effect",
+      4
+    ],
+    [
+      "Misconceptions: Topical",
+      1
+    ]
+  ],
+  "topic_only_auroc_ceiling": {
+    "in_sample_upper_bound": 0.7938125502228066,
+    "leave_one_out": 0.5054058002775952,
+    "kfold_cv_pooled_oof": 0.4863393965958068,
+    "kfold_cv_mean_of_folds": 0.47891089108910895
+  },
+  "cells": {
+    "L8_ffn": {
+      "standard_5fold_cv_auroc": 0.6214793244030286,
+      "real_logo_auroc_mean": 0.47884235607121634,
+      "real_logo_auroc_sd": 0.27327985897257484,
+      "real_logo_n_folds": 16,
+      "real_logo_n_skipped": 22,
+      "permuted_size_matched_logo_auroc_mean": 0.6160129582310979,
+      "permuted_size_matched_logo_auroc_sd": 0.04047935900086615,
+      "permuted_size_matched_logo_auroc_min": 0.5072497332914,
+      "permuted_size_matched_logo_auroc_max": 0.7110798479621154,
+      "permuted_size_matched_logo_auroc_p2p5": 0.5324022468443691,
+      "permuted_size_matched_logo_auroc_p97p5": 0.6965089720324049,
+      "permuted_size_matched_mean_n_folds_used": 17.41,
+      "permuted_size_matched_n_permutations": 100,
+      "permuted_size_matched_real_percentile_in_null": 0.0,
+      "permuted_size_matched_empirical_two_sided_p": 0.019801980198019802,
+      "permuted_size_matched_collapse_vs_standard_cv": 0.005466366171930637,
+      "permuted_size_and_class_matched_logo_auroc_mean": 0.6151674417417754,
+      "permuted_size_and_class_matched_logo_auroc_sd": 0.04066702751753105,
+      "permuted_size_and_class_matched_logo_auroc_min": 0.5221158398892773,
+      "permuted_size_and_class_matched_logo_auroc_max": 0.7056155828444431,
+      "permuted_size_and_class_matched_logo_auroc_p2p5": 0.529345579391248,
+      "permuted_size_and_class_matched_logo_auroc_p97p5": 0.6890612000144973,
+      "permuted_size_and_class_matched_mean_n_folds_used": 16.0,
+      "permuted_size_and_class_matched_n_permutations": 100,
+      "permuted_size_and_class_matched_real_percentile_in_null": 0.0,
+      "permuted_size_and_class_matched_empirical_two_sided_p": 0.019801980198019802,
+      "permuted_size_and_class_matched_collapse_vs_standard_cv": 0.006311882661253154,
+      "collapse_real_vs_standard_cv": 0.14263696833181222,
+      "pair_decomposition": {
+        "within_topic_auroc": 0.5362962962962963,
+        "within_topic_n_pairs": 675,
+        "between_topic_auroc": 0.6193330259720301,
+        "between_topic_n_pairs": 13014,
+        "pooled_auroc": 0.6152385126744101,
+        "frac_pairs_within_topic": 0.04930966469428008
+      }
+    },
+    "L8_attn": {
+      "standard_5fold_cv_auroc": 0.6318112987769365,
+      "real_logo_auroc_mean": 0.49072131657150037,
+      "real_logo_auroc_sd": 0.2802746741981528,
+      "real_logo_n_folds": 16,
+      "real_logo_n_skipped": 22,
+      "permuted_size_matched_logo_auroc_mean": 0.5868969963136581,
+      "permuted_size_matched_logo_auroc_sd": 0.0461407464094363,
+      "permuted_size_matched_logo_auroc_min": 0.4849047129700884,
+      "permuted_size_matched_logo_auroc_max": 0.686184202216692,
+      "permuted_size_matched_logo_auroc_p2p5": 0.49446709608301215,
+      "permuted_size_matched_logo_auroc_p97p5": 0.6730512995729006,
+      "permuted_size_matched_mean_n_folds_used": 17.41,
+      "permuted_size_matched_n_permutations": 100,
+      "permuted_size_matched_real_percentile_in_null": 0.03,
+      "permuted_size_matched_empirical_two_sided_p": 0.07920792079207921,
+      "permuted_size_matched_collapse_vs_standard_cv": 0.04491430246327843,
+      "permuted_size_and_class_matched_logo_auroc_mean": 0.5812255467928722,
+      "permuted_size_and_class_matched_logo_auroc_sd": 0.04230265378157104,
+      "permuted_size_and_class_matched_logo_auroc_min": 0.47691279946564874,
+      "permuted_size_and_class_matched_logo_auroc_max": 0.6635604323678772,
+      "permuted_size_and_class_matched_logo_auroc_p2p5": 0.501046632117117,
+      "permuted_size_and_class_matched_logo_auroc_p97p5": 0.6531585215489167,
+      "permuted_size_and_class_matched_mean_n_folds_used": 16.0,
+      "permuted_size_and_class_matched_n_permutations": 100,
+      "permuted_size_and_class_matched_real_percentile_in_null": 0.02,
+      "permuted_size_and_class_matched_empirical_two_sided_p": 0.0594059405940594,
+      "permuted_size_and_class_matched_collapse_vs_standard_cv": 0.05058575198406434,
+      "collapse_real_vs_standard_cv": 0.14108998220543617,
+      "pair_decomposition": {
+        "within_topic_auroc": 0.597037037037037,
+        "within_topic_n_pairs": 675,
+        "between_topic_auroc": 0.6162594129399108,
+        "between_topic_n_pairs": 13014,
+        "pooled_auroc": 0.6153115640295128,
+        "frac_pairs_within_topic": 0.04930966469428008
+      }
+    },
+    "L9_ffn": {
+      "standard_5fold_cv_auroc": 0.6157056882158803,
+      "real_logo_auroc_mean": 0.48157540605840243,
+      "real_logo_auroc_sd": 0.2893703315870819,
+      "real_logo_n_folds": 16,
+      "real_logo_n_skipped": 22,
+      "permuted_size_matched_logo_auroc_mean": 0.6135212922479507,
+      "permuted_size_matched_logo_auroc_sd": 0.03549484348435919,
+      "permuted_size_matched_logo_auroc_min": 0.5231582812158793,
+      "permuted_size_matched_logo_auroc_max": 0.6795637625039296,
+      "permuted_size_matched_logo_auroc_p2p5": 0.5360998144247016,
+      "permuted_size_matched_logo_auroc_p97p5": 0.675028607132254,
+      "permuted_size_matched_mean_n_folds_used": 17.41,
+      "permuted_size_matched_n_permutations": 100,
+      "permuted_size_matched_real_percentile_in_null": 0.0,
+      "permuted_size_matched_empirical_two_sided_p": 0.019801980198019802,
+      "permuted_size_matched_collapse_vs_standard_cv": 0.002184395967929631,
+      "permuted_size_and_class_matched_logo_auroc_mean": 0.6106662766359457,
+      "permuted_size_and_class_matched_logo_auroc_sd": 0.04111557036535623,
+      "permuted_size_and_class_matched_logo_auroc_min": 0.499941370414716,
+      "permuted_size_and_class_matched_logo_auroc_max": 0.7030594227055624,
+      "permuted_size_and_class_matched_logo_auroc_p2p5": 0.5368131479810019,
+      "permuted_size_and_class_matched_logo_auroc_p97p5": 0.688835913786224,
+      "permuted_size_and_class_matched_mean_n_folds_used": 16.0,
+      "permuted_size_and_class_matched_n_permutations": 100,
+      "permuted_size_and_class_matched_real_percentile_in_null": 0.0,
+      "permuted_size_and_class_matched_empirical_two_sided_p": 0.019801980198019802,
+      "permuted_size_and_class_matched_collapse_vs_standard_cv": 0.005039411579934594,
+      "collapse_real_vs_standard_cv": 0.1341302821574779,
+      "pair_decomposition": {
+        "within_topic_auroc": 0.554074074074074,
+        "within_topic_n_pairs": 675,
+        "between_topic_auroc": 0.6094206239434455,
+        "between_topic_n_pairs": 13014,
+        "pooled_auroc": 0.6066915041274016,
+        "frac_pairs_within_topic": 0.04930966469428008
+      }
+    },
+    "L9_attn": {
+      "standard_5fold_cv_auroc": 0.6632226752086974,
+      "real_logo_auroc_mean": 0.4891483146653184,
+      "real_logo_auroc_sd": 0.3543615603514075,
+      "real_logo_n_folds": 16,
+      "real_logo_n_skipped": 22,
+      "permuted_size_matched_logo_auroc_mean": 0.6159596261670405,
+      "permuted_size_matched_logo_auroc_sd": 0.041757161970591095,
+      "permuted_size_matched_logo_auroc_min": 0.515723599679723,
+      "permuted_size_matched_logo_auroc_max": 0.7172309328385179,
+      "permuted_size_matched_logo_auroc_p2p5": 0.5346835540613578,
+      "permuted_size_matched_logo_auroc_p97p5": 0.6957790117601308,
+      "permuted_size_matched_mean_n_folds_used": 17.41,
+      "permuted_size_matched_n_permutations": 100,
+      "permuted_size_matched_real_percentile_in_null": 0.0,
+      "permuted_size_matched_empirical_two_sided_p": 0.019801980198019802,
+      "permuted_size_matched_collapse_vs_standard_cv": 0.0472630490416569,
+      "permuted_size_and_class_matched_logo_auroc_mean": 0.6179556353572898,
+      "permuted_size_and_class_matched_logo_auroc_sd": 0.04133794084913083,
+      "permuted_size_and_class_matched_logo_auroc_min": 0.48796897291842145,
+      "permuted_size_and_class_matched_logo_auroc_max": 0.7170033104660862,
+      "permuted_size_and_class_matched_logo_auroc_p2p5": 0.544153678416661,
+      "permuted_size_and_class_matched_logo_auroc_p97p5": 0.6870892686319501,
+      "permuted_size_and_class_matched_mean_n_folds_used": 16.0,
+      "permuted_size_and_class_matched_n_permutations": 100,
+      "permuted_size_and_class_matched_real_percentile_in_null": 0.01,
+      "permuted_size_and_class_matched_empirical_two_sided_p": 0.039603960396039604,
+      "permuted_size_and_class_matched_collapse_vs_standard_cv": 0.045267039851407564,
+      "collapse_real_vs_standard_cv": 0.174074360543379,
+      "pair_decomposition": {
+        "within_topic_auroc": 0.6844444444444444,
+        "within_topic_n_pairs": 675,
+        "between_topic_auroc": 0.6475334255417243,
+        "between_topic_n_pairs": 13014,
+        "pooled_auroc": 0.6493534955073417,
+        "frac_pairs_within_topic": 0.04930966469428008
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# FFN Over-Retrieval Does Not Cleanly Extend to Closed-Book Confabulation
+# Two Failure Modes That Make Interpretability Intervention Nulls Uninterpretable: A Closed-Book Case Study
 
 **Lakshmi Chakradhar Vijayarao**
 Independent Researcher
@@ -6,157 +6,219 @@ Independent Researcher
 
 ## Abstract
 
-ReDeEP (Sun et al., ICLR 2025) established a "knowledge FFN" mechanism:
-feed-forward sublayers can override retrieved context during
-hallucination in retrieval-augmented generation. We test whether the
-same asymmetry appears in pure closed-book generation, across three
-architectures spanning a ~4.0x parameter range (GPT-2, Pythia-410M,
-Qwen2.5-0.5B-Instruct).
+Causal-patching and flip-rate experiments in mechanistic interpretability
+can produce nulls that look decisive but are not interpretable, for
+reasons that are rarely checked. Using a closed-book test of whether small
+models (GPT-2, Pythia-410M, Qwen2.5-0.5B) show an FFN-vs-Attention
+hallucination-detection asymmetry analogous to one reported in
+retrieval-augmented settings (ReDeEP), we find that the intended target
+hypothesis cannot be tested on this testbed. TruthfulQA is answered
+correctly by GPT-2 in only 27/817 (3.3%) of items under an
+independent LLM judge -- and 0 of 283 items added specifically to
+enlarge that pool were judged correct -- so any patching-based
+flip-to-correct metric is floored near zero regardless of the underlying
+mechanism, and a difference-of-means direction fit at the resulting
+sample size fails a held-out validity check we formalize. We give that
+check an exact power calculation: at the n=11 holdout this testbed
+supports, the null distribution of the held-out AUROC arises from only
+11{3}=165 equiprobable label arrangements and has 25
+attainable values; no *observed* AUROC below 0.875 can ever be
+significant at one-sided alpha=0.05; and a pure-noise direction
+passes a "held-out AUROC >= 0.75" gate 13.9% of the time and a
+">= 0.80" gate 6.7% of the time.
 
-FFN beats Attention as a passive hallucination-detection signal on a
-numerical majority of layers on all three architectures, but no
-per-architecture test is significant, and every peak-AUROC margin sits
-within cross-validation noise. One architecture's result reverses
-entirely once a template artifact (bare prompt vs. chat template) is
-fixed -- evidence against a scale story. Two difficulty-matched controls
-and an adversarial probe rule out question-difficulty as a generic
-confound, though inconsistently across architectures. **A further, more
-severe problem, found by a subsequent independent review: every
-passive-probe AUROC in this paper is computed under standard random
-K-fold cross-validation on TruthfulQA, which never checks for
-category-clustering leakage (questions cluster into 38 topics whose
-correct-answer rates range 0%-10.5%, so a probe can learn topic instead
-of hallucination). A leave-one-category-out re-test of the flagship
-component probe (GPT-2, L8/L9) collapses AUROC from 0.62-0.66 under
-standard CV to 0.48-0.49 -- chance or below -- at every cell tested.
-Extending this check to the other two architectures gives a
-heterogeneous result, not a uniform one: Pythia-410M's component probe
-survives leave-one-category-out CV essentially unchanged at both tested
-layers (no detectable contamination), while Qwen2.5-0.5B's partially
-collapses at both components (0.566->0.485 FFN, 0.563->0.526 Attention --
-the numerically larger drop for FFN is not itself tested for
-significance and should not be read as an established
-component-specific asymmetry). Category leakage is therefore a real,
-substantial, but architecture- and component-dependent contaminant of
-this paper's passive-probe evidence, not a uniform artifact explaining
-away all three architectures' results at once, and the other five
-converging methods have not yet been checked.**
+We also show that a widely-used outcome metric in this literature --
+whether an intervention "corrects" a generation -- can be contaminated:
+51.9% (42/81, CI [41.1,62.4]) and 53.1% (121/228, CI
+[46.6,59.4]) of the nominally hallucinated completions in our two
+causal-test pools -- and 53.6% (286/534) of all baseline completions
+in the full labeled pool -- are degenerate repetition loops rather than
+confabulations, identifiable by a single cheap, model-agnostic check that
+needs no model of hallucination content. Degeneration is close to
+balanced across the word-overlap label's classes (55.6% of "correct"
+versus 51.5% of "hallucinated" completions), so it contaminates both
+arms of a flip-rate comparison rather than only one; under the validated
+judge label the split is 37.0% versus 54.4%, a difference that is
+not significant at this n (27 judge-correct items) but is not
+symmetric either.
+Removing every degenerate item does not, under the word-overlap label,
+collapse the passive probe -- its AUROC survives and slightly rises, so
+degeneracy-propensity is not a sufficient explanation of the passive
+signal. Under the validated judge label the same subset leaves only 17
+positives and the estimate is too noisy to be informative either way; we
+report both.
 
-A direct causal test -- patching the FFN sublayer during generation,
-against a genuinely Attention-derived control direction, under an
-independently validated label -- shows zero measurable FFN-specificity.
-Five further checks (a held-out direction-validity gate, a
-permutation-based cosine null, a common-injection-site test, a
-random-direction ensemble, and two alternative direction estimators)
-converge on the same conclusion from a different angle: neither
-direction was ever shown to carry validated causal signal in the first
-place, so this null is a limitation of the instrument, not evidence the
-two components are equally causal. We tried to grow the held-out set by
-judging 283 previously-unused prompts; zero were judged correct,
-confirming GPT-2's near-zero success rate on this task is a genuine
-competence ceiling, not a sampling artifact -- the causal test still
-replicates cleanly at nearly double the power. A stronger causal method
-(ROME-style tracing) finds no effect surviving correction under the
-validated label. A sparse-feature intervention finds no
-passively-associated feature at
-all.
+We package these as general-purpose validity checks -- a
+direction-validity gate with a formal minimum-detectable-effect
+calculation, and a degeneracy pre-filter -- inside an eight-item
+causal-patching validity checklist. We add a fold-seed sensitivity
+result for the passive side: on these features, changing only the
+cross-validation fold seed moves a component's AUROC estimate over a range
+of 0.055-0.100 (SD 0.013-0.022 over 50 seeds), which is an order of
+magnitude larger than the peak-versus-peak FFN-vs-Attention margins at
+issue (0.003-0.011), and the argmax "peak layer" lands on four to
+six different layers across twelve seeds on both 24-layer models. The
+paired same-layer difference is by contrast stable, but its sign flips
+between layers within an architecture.
 
-The ReDeEP mechanism does not cleanly extend to closed-book
-confabulation at this scale -- and the passive-probing evidence that
-originally motivated testing it may not have been established on a
-leakage-free protocol in the first place. This paper's most transferable
-contribution is methodological: a six-question validity checklist for
-causal-patching studies, a leave-one-category-out re-test protocol for
-passive hidden-state probes on category-structured benchmarks like
-TruthfulQA, and a construct-validity check that catches over half of
-baseline "hallucinated" completions as degenerate repetition loops rather
-than confident false claims -- disciplines reusable well beyond this
-specific mechanism.
+We also report, in full, a leave-one-category-out (LOGO) diagnostic whose
+interpretation changed twice under scrutiny, since the resolution is
+itself the methodological point. Two permutation controls -- including one
+matching pseudo-categories to real ones on both size and per-category
+class composition -- show the LOGO collapse (0.62-0.66 under standard
+CV to 0.48-0.49) is specific to real topic structure and *not* an
+artifact of per-category averaging: random groupings recover
+0.58-0.62. Decomposing the standard-CV out-of-fold scores by pair type
+shows only part of the collapse comes from LOGO restricting comparisons to
+within-topic pairs (within-topic AUROC 0.54-0.68; only 4.9% of
+standard-CV pairs are within-topic), the rest from removing same-topic
+items from training. And a ceiling calculation shows the originally
+claimed mechanism -- the probe reading off per-topic correct-answer rates
+-- cannot be demonstrated: topic identity alone gives AUROC 0.79
+in-sample but 0.51 or below once estimated out of fold. The supported
+claim is narrower than either earlier reading: *a standard random
+K-fold AUROC for this probe on TruthfulQA overstates its unseen-topic
+performance by roughly 0.13-0.17 AUROC, and cross-topic performance at
+the layers tested is chance*, with the mechanism unidentified.
+
+We do not claim FFN over-retrieval is present or absent in closed-book
+generation. We show that this specific testbed and instrument cannot
+currently answer that question, and provide the checks that would need to
+pass before a claim either way could be trusted.
 
 ## 1. Introduction
 
-Fluent text and factual correctness are distinct properties of language
-model output. ReDeEP (Sun et al., ICLR 2025) localized one mechanism by
-which they diverge in retrieval-augmented generation: FFN sublayers
-overriding retrieved context, a "Knowledge FFN" over-retrieval pattern.
-Does the same pattern operate in pure closed-book generation, where there
-is no retrieved context to override? To our knowledge no ReDeEP-lineage
-follow-up has tested this. We test it directly on GPT-2, replicate on
-Pythia-410M and Qwen2.5-0.5B-Instruct, and probe it causally via targeted
-FFN-sublayer activation patching.
+A large fraction of mechanistic-interpretability claims rest on an
+intervention: patch an estimated direction or activation into a model,
+measure whether the model's output changes in a specified way, and read
+the result as evidence about a mechanism. When such an experiment returns
+a null -- the intervention changed nothing, or changed nothing
+differentially between two components -- that null is usually reported as
+evidence about the mechanism. This paper is about two ways that reading
+can be wrong, both of which we hit directly, and neither of which is
+routinely checked.
 
-We use **closed-book FFN over-retrieval** as a precise, testable label for
-this question, not a new mechanism we claim to discover: does an FFN
-sublayer's activity carry a measurably stronger, more direct relationship
-to hallucination than an Attention sublayer's, when there is no retrieved
-context for either component to override? Two independent signatures
-would jointly constitute a positive result: (a) a *passive* signature --
-FFN-derived hidden-state features detect hallucination with reliably
-higher AUROC than Attention-derived features at the two components'
-respective peak layers (§3.2-3.3); and (b) an *active* signature --
-patching an FFN-derived direction into the FFN sublayer during generation
-corrects more hallucinations than an equivalent, genuinely
-Attention-derived direction patched into the Attention sublayer (§3.4).
-Neither signature alone is conclusive on its own terms: a passive AUROC
-gap could still reflect a correlate rather than a cause, and a causal
-null could still reflect an underpowered or mis-specified direction
-rather than a true absence of effect. That is why this paper reports
-both, plus two further causal probes (§3.5-3.6) and two confound controls
-(§3.7), rather than treating either signature alone as decisive.
+The first is a **competence ceiling**. A flip-to-correct metric can
+only move if the model is capable of producing the correct answer at all.
+If the base model is near-zero-accuracy on the testbed, the metric is
+floored by construction, and every downstream comparison inherits that
+floor. The second is an **outcome-metric contamination**. "The
+generation changed from wrong to right" is only a measurement of
+semantic correction if the baseline generations are wrong *answers*.
+If a large share of them are degenerate repetition loops, then an
+intervention that "fixes" them may only have broken the loop -- a
+generic perturbation effect, not a targeted semantic one.
 
-The number of methods applied to what is ultimately one question is
-deliberate: a passive layer-majority signal this small (a few points of
-AUROC) admits several mundane alternative explanations -- an uncontrolled
-prompt-template confound, a question-difficulty confound, a
-construct-invalid outcome metric, an underpowered causal test -- and each
-additional method rules out exactly one of these before the remaining
-result is taken at face value. That several of them ruled the effect
-out, rather than confirming it, is the finding.
+Both failure modes are cheap to detect and expensive to ignore. Both are
+invisible in the summary statistics such papers usually report. We found
+them while trying to answer a specific mechanistic question, and the
+mechanistic question is now the least reliable thing in this paper; the
+diagnostics are the most reliable.
 
-Why should a reader outside this specific mechanism's lineage care? Not
-because the paper discovers a new mechanism -- it doesn't. The reason is
-methodological and general: before this paper's causal-patching
-experiment can speak to "does FFN activity cause hallucination," it must
-survive the question "is the underlying flip-to-correct metric even
-measuring semantic correction, or is over half of it repetition-breaking
-on degenerate completions?" (§3.4 finds the latter, for 51.9-53.1\% of
-baseline "hallucinated" completions). Any researcher running a causal
-intervention on an LLM and reporting a flip-rate metric inherits this
-same risk, independent of which component or behavior is being tested.
-That transferable discipline, not the specific FFN finding, is this
-paper's most durable contribution.
+**The question we set out to answer.** ReDeEP (Sun et al., ICLR 2025)
+localized one mechanism by which fluency and factuality diverge in
+retrieval-augmented generation: FFN sublayers overriding retrieved
+context, a "Knowledge FFN" over-retrieval pattern. We asked whether an
+*analogous* asymmetry -- FFN sublayer activity relating more
+strongly to hallucination than Attention sublayer activity -- is
+detectable in pure closed-book generation, where there is no retrieved
+context to override. We stress at the outset that this is not a direct
+test of ReDeEP's mechanism. ReDeEP's mechanism is defined over response
+tokens with retrieved context present; every passive probe in this paper
+reads the model's forward pass over the *prompt only*, before
+generation (§3). These are different questions, and we describe our
+results only in terms of the question we actually ran.
 
-**Contributions, honestly scoped:**
-1. Localization of hallucination signal to layers 8-9 on GPT-2 under the
-   Jaccard label (6 converging methods, triangulating rigor rather than
-   a qualitatively new discovery -- mid-layer hallucination localization
-   is established prior art). A seventh method (DLA magnitude) peaks at
-   L10/L11 instead and is excluded from this count. **This convergence
-   itself does not survive relabeling**: under the validated judge label,
-   the four of these methods rerun on the full 534-sample relabel (dense
-   probe, sparse L1 probe, token-position probe, and DLA) move to L7, L7,
-   L6, and L11 respectively (§3.1) -- L8-9 is a property of the Jaccard
-   label's specific noise pattern on this dataset, not a label-independent
-   localization, and
-   this contribution should be read accordingly.
-2. FFN-vs-Attention component decomposition testing whether ReDeEP's
-   RAG-scoped mechanism extends to closed-book QA: a numerical FFN
-   majority on 3/3 architectures under a bare-template first pass, with
-   every per-architecture binomial test non-significant and the
-   layer-pooled test invalid (adjacent layers are not independent
-   trials) (§3.2-3.3).
-3. Identification of an instruction-tuning/template confound on Qwen0.5B
-   and its correction: rerunning with the proper chat template flips
-   both of Qwen0.5B's component-comparison metrics to Attention-favoring
-   under the Jaccard label, changing the honest architecture count to
-   2/3 -- though re-probing under a validated label (§3.3) restores
-   FFN's majority, so this reversal is itself label-sensitive.
-4. A targeted FFN-sublayer causal-patching experiment showing zero
-   measurable FFN-vs-Attention specificity, using a genuinely
-   Attention-derived direction (nearly orthogonal to the FFN direction)
-   as the actual component-specificity control -- McNemar
-   $p=0.08$-$1.00$ across four tested configurations at $n=467$ under an
-   independently validated label, none significant (§3.4).
+**What we found instead.** The intended test is not answerable on
+this testbed:
+
+-  GPT-2 answers 27/817 (3.3%) of TruthfulQA validation items
+ correctly under an independent LLM judge. Enlarging the judged pool
+ by 283 previously-unused items added exactly zero correct answers.
+ A flip-to-correct rate on such a testbed is floored near zero, so
+ the causal experiment is not underpowered in the ordinary sense --
+ the outcome variable barely exists (§4.1).
+
+-  51.9% and 53.1% of the nominally hallucinated completions in
+ our two causal-test pools -- and 53.6% of all baseline
+ completions in the full labeled pool -- are repetition loops, not
+ confabulations (§4.2). Degeneration is near-balanced across label
+ classes, so it contaminates both arms of a flip-rate comparison.
+
+-  The difference-of-means direction that the causal test patches in
+ cannot be validated. At the n=11 held-out split this testbed
+ supports, the validity check's exact null is a discrete
+ distribution over 25 attainable values, arising from
+ 11{3}=165 equiprobable label arrangements; no
+ *observed* AUROC below 0.875 is ever significant at one-sided
+ alpha=0.05; and a pure-noise direction passes a plausible gate
+ 6.7%-46.1% of the time depending on threshold (§4.3).
+
+Given all three, the causal null we do observe (no FFN-vs-Attention
+difference surviving correction at any tested configuration, under two
+labels, at two injection sites, at n=467 and n=750 -- the single
+nominal exception, a common-site p=0.049, does not survive Holm
+correction across even its own four tests) is not evidence that the two
+components are equally causal. It is what an uninformative instrument
+returns.
+
+**Contributions.**
+
+-  **A competence-ceiling diagnostic and its consequences** (§4.1).
+ We show that the testbed, not the sample size, is the binding
+ constraint, by judging every item in the benchmark split rather
+ than only the subset an earlier heuristic could score. This
+ converts "we need more data" into "more data of this kind cannot
+ help," which is a different and more actionable conclusion.
+
+-  **A degeneracy pre-filter for flip-rate metrics** (§4.2). A
+ single model-agnostic check (a 4-8 word phrase repeated 3+
+ times) flags over half of this pool's "hallucinations." We report
+ its rate on three pools, its balance across label classes, and its
+ effect on both the causal test and the passive probe.
+
+-  **A direction-validity gate with an exact
+ minimum-detectable-effect table** (§4.3, §5). We replace "n is
+ small" with the exact null distribution of a held-out AUROC over
+ all n_++n_{-}{n_+} label arrangements, and tabulate,
+ as a function of held-out size, the smallest detectable AUROC, the
+ attainable alpha, the false-accept rate of natural gate rules,
+ and power.
+
+-  **A ten-item validity checklist** (§5) -- eight for
+ causal-patching studies, two for passive probing -- distilled from
+ the above plus the controls this paper's own causal section required
+ (a genuinely different-source control direction, a
+ common-injection-site test, correctly-read random-direction
+ ensembles, equivalence testing for nulls).
+
+-  **A fold-seed sensitivity result for passive probes** (§4.5),
+ including an exact decomposition of a 0.037 AUROC discrepancy this
+ repository itself contained, and evidence that the argmax "peak
+ layer" is not a well-identified quantity at this sample size.
+
+-  **A worked case study in interpreting a grouped-CV
+ "collapse"** (§4.10). A leave-one-category-out diagnostic on
+ TruthfulQA looked like category leakage; a subsequent review argued
+ it was estimator variance; two permutation controls, a pair-type
+ decomposition, and a group-variable-only ceiling calculation show it
+ is neither, and leave a narrower claim -- standard K-fold CV
+ overstates unseen-topic performance by 0.13-0.17 AUROC, by a
+ mechanism these experiments cannot identify. We report all three
+ interpretations and the checks that separate them.
+
+We deliberately do not claim a mechanistic finding. The peak-versus-peak
+FFN-vs-Attention margins this literature compares are 0.003-0.011
+AUROC on our data -- three to ten times smaller than the spread a single
+cross-validation fold seed produces on the same features (+/-0.03
+range, ~0.037 between the two seeds this repository happened to
+use, §4.5) -- and on the 24-layer models the "peak layer" itself
+lands on four to six different layers across twelve fold seeds. A
+same-layer paired comparison is far more stable, but its *sign*
+depends on which layer is chosen. Meanwhile the causal instrument does not
+clear its own validity gate. What we can support is the negative
+methodological claim, and the checks that would need to pass before a
+positive one could be made.
 
 ## 2. Related Work
 
@@ -164,1447 +226,1561 @@ paper's most durable contribution.
 2022) and MEMIT (Meng et al. 2023) causally locate and edit specific
 facts by writing to mid-layer FFN weight matrices; Knowledge Neurons (Dai
 et al. 2022) independently identifies FFN-resident neurons whose
-activation correlates with specific factual recall. Our finding is a
-much weaker, aggregate, correlational claim than theirs: these works show
-FFN sublayers are *causally editable* loci of individual facts, whereas
-we find only that FFN sublayer activity *as a group* is a
-modestly-better-than-chance hallucination signal *on average*. We do not
-conflate the two.
+activation correlates with specific factual recall. Our claims are far
+weaker and of a different type: we do not establish an FFN-resident
+mechanism, and we do not claim to have refuted one. We report that a
+particular closed-book instrument cannot decide the question.
 
 **RAG-scoped FFN over-retrieval.** ReDeEP (Sun et al., ICLR 2025)
 established FFN override of retrieved context during RAG hallucination.
 Follow-up work (ParamMute, NeurIPS 2025; SEReDeEP, arXiv 2505.07528;
 FACTUM, arXiv 2601.05866; RAGLens, arXiv 2512.08892) refines this
 mechanism or extends it with sparse-autoencoder tooling, but all remain
-confirmed RAG-only and do not test the closed-book question this paper
-addresses.
+confirmed RAG-only. Our setting is closed-book and prompt-only (§3), so
+it is at best an analogue of theirs, not a replication attempt, and a
+null here says nothing about the RAG result.
 
 **Detection without correction.** An independent finding (arXiv
 2604.13068) reports that output-confidence baselines beat activation
 probes above ~410M parameters, and that residual-stream steering flips
 0/7 tested models' generated answers toward correct across 42
-configurations on GPT-2-scale models. We compare our probe against a
-matched 6-feature surface baseline (0.605 vs.\ 0.576,
-`code/05_run_surface_baseline.py`, MLP 5-fold CV AUROC
-$=0.5756\pm0.0684$) and find a directionally consistent, weak margin. Our
-FFN-sublayer causal-patching experiment (§3.4) directly tests whether a
-component-targeted intervention does better than their generic
-residual-stream result; it does not (McNemar $p=0.08$-$1.00$, none
-significant) -- an independent replication of their null at the
-component level.
+configurations on GPT-2-scale models. Our causal section reaches a
+compatible null at the component level, but we are explicit that our
+version of that null is uninterpretable for the reasons in §4.1-§4.3
+rather than being an independent confirmation.
 
 **Black-box detection.** Semantic entropy (Kuhn et al. 2023) and
 SelfCheckGPT (Manakul et al. 2023) operate purely on output text and
 generalize to closed API-only models where hidden states are
-unavailable -- the actual production-relevant baseline this paper's
-mechanistic probes would need to beat. We make no such comparison here
-and flag its absence explicitly.
+unavailable -- the actual production-relevant baseline mechanistic probes
+would need to beat. We make no such comparison here and flag its absence
+explicitly.
 
-**Sparsity and steering method provenance.** The 100/768-dimension sparse
-probe result (§3.1) is consistent with Kantamneni et al. ("Are Sparse
-Autoencoders Useful? A Case Study in Sparse Probing," arXiv 2502.16681),
-which finds dense L1 probes often match or beat trained SAE probes; it is
-not evidence for a claim made by the superficially similar "A Single
-Direction of Truth" (arXiv 2507.23221), which does not make this
-comparison. The difference-of-means steering method used throughout
+**Sparsity and steering method provenance.** The 100/768-dimension
+sparse probe result (§4.9) is consistent with Kantamneni et al. ("Are
+Sparse Autoencoders Useful? A Case Study in Sparse Probing," arXiv
+2502.16681), which finds dense L1 probes often match or beat trained SAE
+probes; it is not evidence for a claim made by the superficially similar
+"A Single Direction of Truth" (arXiv 2507.23221), which does not make
+this comparison. The difference-of-means steering method used throughout
 descends from Inference-Time Intervention (Li et al. 2023, arXiv
 2306.03341).
 
-**A recurring meta-pattern.** This paper's own confound-hunting -- the
-chat-template reversal (§3.3), the difficulty-matched control that turns
-out to test a weaker-than-assumed confound (§3.7) -- is not an isolated
-case. Related, independently-conducted work in adjacent areas of LLM
-interpretability and evaluation has repeatedly found that an initially
-plausible signal or severity estimate substantially weakens or changes
-character once a specific, previously-unexamined confound is directly
-tested, rather than merely acknowledged as possible. Passive linear and
-geometric probes on LLM hidden states are pervasively vulnerable to
-superficial confounds that are easy to overlook and consistently shrink
-or eliminate the apparent signal once tested directly.
+**Validity checklists and audits.** The closest relatives of this
+paper's contribution are not mechanism papers but protocol audits: work
+showing that reported detection AUROCs in this literature are frequently
+artifacts of a downstream selection step or of benchmark construction
+rather than of the signal claimed. Our checklist is scoped narrowly and
+complementarily: it targets intervention experiments (patching an
+estimated direction and reading a flip-rate), which those audits do not
+cover.
 
-## 3. Methods and Results
+## 3. Setup and Scope
 
-### 3.1 Layer localization (GPT-2, 6 converging methods, plus a corrected 7th)
+**Models, data, labels.** We use GPT-2 (124M), Pythia-410M, and
+Qwen2.5-0.5B-Instruct on the TruthfulQA generation validation split.
+Completions are greedy-decoded (40 new tokens) from a bare
+`"Q: {question} nA:"` prompt (and, for Qwen0.5B, a
+chat-templated variant, §4.6). Two labels are used throughout and always
+named explicitly: a *Jaccard* word-overlap heuristic against
+TruthfulQA's reference answers, and a *validated* label from an
+independent LLM judge (Qwen2.5-3B-Instruct). The two labels agree only
+52.2% of the time on GPT-2 (kappa=0.0417); per-architecture
+kappa is 0.032 (Pythia), 0.141 (Qwen0.5B-bare), and 0.084
+(Qwen0.5B-chat). §6 discusses what this does and does not license.
 
-All seven numbers below are reproducible directly from this repo
-(vendored at `results/vendored_mech_int/`, verified byte-identical to the
-unshipped mech-int project's own logs where an in-project copy already
-existed; `code/00_verify_vendored_mechint_numbers.py` reprints each for
-direct verification).
+**A disclosure that applies to every passive result in this paper.**
+Every passive probe and every estimated direction reported here is
+computed from the model's forward pass over the *prompt alone*,
+never over any token of the model's own generated completion
+(`mech-int/src/extraction/activations.py` runs one forward pass on
+the prompt string; `code/02_cross_arch_component_probe.py`
+hooks a single `model(**inputs)` on the same). The
+correct-vs-hallucinated label is a property of a separately-generated
+completion, but that completion's tokens are never passed through the
+model for these measurements. So the question every passive number here
+answers is: *does the model's pre-generation internal state predict
+whether its own upcoming answer will be judged correct?* That is a
+coherent question, and it is the one we report on. It is not the same
+question as probing an already-generated hallucinated answer for features
+of its content, and it is not ReDeEP's question, which is defined over
+response tokens with retrieved context present. Readers should not infer
+from "last-token activation" or "hidden-state probe" language that
+completion tokens were involved. We state this here, before any result,
+because it scopes all of them.
 
-Six methods converge on layers 8-9: dense probe peak L9 (0.5827); sparse
-L1 probe peak L9 (100/768 active dims, 87\% sparse, CV AUROC 0.589, not
-the inflated in-sample 0.874); token-position probe peak L8 last-token
-(0.6036); component probe FFN peak L8 (0.6053) vs.\ Attn peak L3
-(0.6165); steering peak improvement at L9; gold-token logit lens
-divergence at L8. A seventh method, DLA magnitude, does not join this
-convergence: L9 does not have the largest absolute DLA in the underlying
-data (L10 $+0.90$ and L11 $+0.71$ are larger), so L8-9 is supported by
-the other six methods, not DLA magnitude.
+**Two signatures, defined in advance.** For the closed-book analogue
+we set out to test, two independent signatures would jointly constitute a
+positive result: (a) a *passive* signature -- FFN-derived features
+detect the label with reliably higher AUROC than Attention-derived
+features at the two components' respective peak layers (§4.5-§4.6); and
+(b) an *active* signature -- patching an FFN-derived direction into
+the FFN sublayer during generation corrects more hallucinations than an
+equivalent, genuinely Attention-derived direction patched into the
+Attention sublayer (§4.4). Neither is observed reliably. §4.1-§4.3
+explain why, for (b), "not observed" does not mean "absent."
 
-Two of the six are weaker than "converges on L8-9" implies. Steering's
-"peak improvement" at L9 is $0.0015$ AUROC points, the argmax over a
-52-cell grid against per-layer CV standard deviations of $0.03$-$0.08$ --
-not distinguishable from argmax-over-noise. The logit-lens analysis
-computes two divergence-layer estimates from the same run: the plain
-correct-vs-hallucinated divergence peaks at layer 1, not layer 8; only
-the gold-token variant peaks at L8, which is the one reported above.
+## 4. Results
 
-**Re-checking layer localization under the validated label.** Since §4
-shows the Jaccard label agrees with an independent LLM judge only
-52\% of the time on GPT-2 ($\kappa=0.04$), we reran the four methods that
-consume only cached activations -- dense probe, sparse L1 probe,
-token-position probe, and DLA -- with the same full-534-sample judge
-label used throughout this validation effort
-(`code/29_gpt2_full_validated_relabel_rerun.py`, reusing the vendored
-mech-int probing code unmodified against the same cached
-`activations.pkl`, only the label array swapped). The peak layer shifts
-under the validated label rather than staying at L8-9: dense probe peaks
-at L7 ($0.6444$, up from L9's $0.5827$); sparse L1 probe also peaks at L7,
-now far sparser (19/768 active dims, 98\% sparse, vs.\ 100/768, 87\%
-sparse under Jaccard), CV AUROC $0.6260$; token-position probe peaks at
-L6 last-token ($0.6961$, up from L8's $0.6036$); DLA's largest FFN
-difference moves from L10 ($+0.90$) to L11 ($+1.81$). Absolute AUROCs
-rise under the validated label here exactly as they do for the other
-three architectures in §3.2, but the peak layer itself is not stable
-across labels -- L8-9 is a property of the Jaccard label's specific
-noise pattern, not a label-independent fact about where GPT-2 localizes
-this signal. **This localization result must be read together with the
-class-imbalance caveat in §3.2**: the validated label leaves only 27/534
-(5.1\%) of GPT-2 samples "correct," and cross-validated AUROC at this
-imbalance is substantially noisier (e.g.\ the token-position probe's peak
-SD is not separately reported here, but see §3.2's paired FFN/Attn SDs
-for the same 27/507 split, which roughly double under the validated
-label) -- so the specific new peak layers above should be read as
-suggestive of instability in the Jaccard-based localization, not as a
-newly-established, precise alternative localization.
+### 4.1 The testbed's competence ceiling
 
-### 3.2 FFN vs. Attention component decomposition (GPT-2)
+Every causal-patching result in this paper measures a flip-to-correct
+rate: the fraction of prompts whose baseline generation is labeled
+hallucinated and whose patched generation is labeled correct. That metric
+is bounded above by the model's ability to produce a correct answer at
+all.
 
-On GPT-2, FFN wins 8/12 layers (two-sided binomial $p=0.39$; one-sided
-$p=0.19$; neither significant). Peak FFN layer is L8 (AUROC 0.6053); peak
-Attn layer is L3 (AUROC 0.6165). **The single best-discriminating
-component on GPT-2 is Attention, not FFN.** At L8, FFN direct logit
-attribution is higher for hallucinated samples (5.08) than correct
-samples (4.85) -- an in-sample, non-cross-validated, suggestive but
-unconfirmed "over-retrieval" signature.
+Under the validated judge label, GPT-2 is correct on 27 of 534 items
+(5.1%) in the pool the original analyses used. That pool was itself
+the subset of TruthfulQA's 817-item validation split that an older
+Jaccard-label filter could score; 283 items had been discarded before
+the judge existed. We judged all 283
+(`kaggle_kernels/paper1-causal-patch-enlarged-pool/`):
+**zero were judged correct**. The full-split rate is therefore
+27/817 = 3.3%, exactly unchanged from the 27 correct in the original
+subset.
 
-**A category-leakage check the standard CV protocol never ran.** A
-fresh, independent adversarial review raised the single highest-priority
-missing check in this paper: TruthfulQA questions cluster into 38 topical
-categories (Misconceptions, Law, Health, Fiction, ...), and standard
-random K-fold CV -- the protocol every probe number in §3.1-3.2 uses --
-can place same-category, near-duplicate questions in both a fold's train
-and test split. Category is not independent of the hallucination label
-either: on this same 534-item GPT-2 pool, among the 10 most frequent
-categories (each n>=15), correct-answer rate ranges from 0% (Fiction,
-Paranormal, Stereotypes) to 10.5% (History, Conspiracies); across all 38
-categories including smaller ones the range is wider still (0% to 28.6%
-at Confusion: People, n=7 -- full per-category breakdown, including
-per-category n, in `results/category_leakage_diagnostic.json`'s
-`category_correct_rates` field), so a probe that learns to recognize
-*topic* could achieve an above-chance AUROC with zero genuine
-hallucination-related content.
+This is a testbed-validity problem, not a sample-size problem, and the
+distinction matters for what a reader should conclude. Enlarging the
+causal test's prompt pool from 467 to 750 judge-hallucinated prompts
+(a factor of 1.61, not "nearly double") leaves the null intact
+(FFN-vs-Attention common-site p=0.18-0.84 across all four
+configurations) but does not raise the flip-rate ceiling at all,
+because the added prompts contributed no correct answers to flip toward.
+It also does not monotonically improve resolution: the minimum detectable
+odds ratio moves to 2.5-8.0 at n=750 from 3.25-6.0 at n=467
+for the same common-site comparison -- tighter at three configurations
+(L8/alpha=20: 3.25->2.5; L8/alpha=40: 3.25->2.625;
+L9/alpha=40: 4.0->3.0) and *looser* at the fourth
+(L9/alpha=20: 6.0->8.0), because that comparison's discordant-pair
+count fell from 14 to 9 as the pool grew. Minimum detectable effect
+depends on discordant pairs, not on n.
 
-We ran this check for the component probe, GPT-2, L8 and L9. Using the
-identical judge-labeled pool and last-token FFN/Attn extraction as the
-causal-patching kernels (`code/47_category_leakage_diagnostic.py`), we
-compare the standard 5-fold CV AUROC against a leave-one-category-out CV
-(train on 37 categories, test on the 1 held out, repeated for every
-category with both classes represented in its held-out slice -- 16 of 38
-categories qualify; the remaining 22 have zero correct-labeled items and
-are skipped, a direct consequence of the same 27/534 class imbalance
-disclosed above). The result is unambiguous and severe: standard CV gives
-AUROC 0.622 (L8 FFN), 0.632 (L8 Attn), 0.616 (L9 FFN), 0.663 (L9 Attn) --
-closely matching the vendored numbers §3.1 reports above (L8 FFN 0.6053)
--- while leave-one-category-out CV collapses every one of these to
-chance or below: 0.479, 0.491, 0.482, 0.489 respectively (SD 0.27-0.35
-across the 16 held-out categories). **This is exactly the failure mode
-that would close the passive-probing line permanently**: the standard CV
-protocol's above-chance AUROC for the component probe does not survive
-removing category-clustering leakage, at either tested layer, for either
-component.
+The general form of the check is: before running an intervention that
+scores "did the output become correct," measure the base model's
+unassisted correct rate on the exact evaluation set, using the same
+scorer that will score the intervention. If it is near zero, the
+experiment cannot distinguish mechanisms, and no amount of additional
+data of the same kind will change that.
 
-**Extending this check to Pythia-410M and Qwen2.5-0.5B-Instruct: a
-heterogeneous, not a uniform, result.** We reran the identical
-generation/labeling/extraction methodology (Jaccard word-overlap
-labeling, mean-pooled per-layer FFN/Attention activations, bare
-"Q: {question}\nA:" prompts) on the full 817-item TruthfulQA validation
-split for both remaining architectures, extracting only at each
-architecture's own already-reported peak FFN and peak Attn layer
-(Pythia: L11/L4; Qwen0.5B: L8/L17;
-`kaggle_kernels/paper1-category-leakage-cross-arch/`) and comparing
-standard 5-fold CV against leave-one-category-out CV exactly as above.
-Unlike GPT-2's severely imbalanced pool (27/534 correct, 5.1%, which left
-only 16 of 38 categories usable for LOGO-CV), both of these
-architectures' Jaccard-labeled pools are well-balanced (Pythia: 282/605,
-46.6% correct, 37/38 categories usable; Qwen0.5B: 253/513, 49.3% correct,
-34/38 usable) -- a materially more reliable LOGO-CV estimate than GPT-2's.
-The result does not replicate GPT-2's collapse uniformly: **Pythia's
-component probe survives leave-one-category-out CV essentially
-unchanged** (L11 FFN: standard 0.618 -> LOGO 0.617; L4 Attn:
-0.612 -> 0.602), showing no detectable category-leakage contamination at
-either tested layer. **Qwen0.5B partially collapses at both
-components**: L8 FFN drops from 0.566 to 0.485 -- to
-chance or slightly below, the same qualitative pattern GPT-2 showed --
-while L17 Attn drops more modestly, from 0.563 to 0.526. The FFN drop is
-numerically larger, but at 34 LOGO folds (SD 0.20/0.22) this difference
-is only ~0.9 standard errors, not itself statistically tested; we
-report both point estimates and do not claim a significant
-component-specific asymmetry. **The honest,
-now-complete picture across all three architectures is heterogeneous, not
-a uniform artifact**: category-leakage contamination appears to explain
-GPT-2's component-probe signal almost entirely, explains a substantial
-part of Qwen0.5B's FFN signal specifically but only a modest part of its
-Attention signal, and is not detectable in Pythia at all. This means the
-broader claim below that "FFN wins a numerical majority of layers on all
-three architectures" cannot be uniformly dismissed as category-leakage
-artifact, but neither can it be trusted at face value for GPT-2 or (for
-FFN specifically) Qwen0.5B -- each architecture's passive-probe result
-now needs to be read on its own terms with respect to this confound, not
-assumed to transfer from one to the others in either direction. We did
-not (yet) rerun the other five converging methods in §3.1 (dense probe,
-sparse probe, token-position probe, steering, logit lens) under
-leave-one-category-out CV; given the heterogeneity just found across
-architectures for the same method, we no longer assume a uniform answer
-for those methods either, and flag this as the natural next check. Full
-per-architecture, per-layer results:
-`results/category_leakage_diagnostic.json` (GPT-2),
-`results/category_leakage_cross_arch_results.json` (Pythia, Qwen0.5B).
+### 4.2 Degeneracy contamination of the flip-rate outcome metric
 
-### 3.3 Cross-architecture data (GPT-2, Pythia-410M, Qwen2.5-0.5B-Instruct)
+The second precondition for a flip-rate metric is that the baseline
+"hallucinated" outputs are actually wrong *answers*. We checked
+this with a criterion that needs no model of hallucination content at
+all: flag a completion if some 4-, 5-, 6-, or 8-word phrase
+occurs 3 or more times in it
+(`code/04_degeneration_check.py`). The check is deterministic,
+model-agnostic, and costs nothing.
 
-[Full version: `draft/cross_architecture_section.md`; real Kaggle data,
-$N=605$ Pythia / $N=513$ Qwen0.5B.] FFN wins a numerical majority of
-layers on all three architectures (66.7\%, 66.7\%, 58.3\%) -- though
-**§3.2's category-leakage re-test (now run for all three architectures)
-shows this majority-of-layers signal is itself confounded**: largely
-explained by category leakage for GPT-2, partially so for Qwen0.5B
-(especially its FFN component), and not detectably confounded for
-Pythia; per-architecture two-sided p-values are 0.39/0.15/0.54, one-sided
-0.19/0.076/0.27 -- all non-significant. Pooled across all 60 layers,
-38/60 FFN wins gives a nominally significant one-sided $p=0.026$, but
-this is not a valid inferential instrument: 60 layers within only 3
-architectures are strongly autocorrelated, not independent trials. The
-only cleanly poolable count is architecture-level (3/3), directionally
-consistent but far too small an $n$ to test formally.
+On three separately constructed pools:
 
-On the paper's primary metric, peak AUROC, Attention is the single
-best-discriminating component on **one** of three architectures (GPT-2),
-not two. Pythia's peak AUROC favors FFN (L11$=0.6181$ vs.\ Attn
-L4$=0.6115$); Qwen0.5B's also favors FFN (L8$=0.5657$ vs.\ Attn
-L17$=0.5625$). Every one of these margins sits within a quarter to a
-fifth of the relevant peak's own cross-validation SD -- GPT-2's
-$0.011$ margin against SDs of $0.0557$/$0.0427$; Pythia's $0.0066$
-margin against $0.0442$/$0.0345$. **The honest, uniform statement is: the
-peak-component question is within measurement noise on all three
-architectures tested, not just Qwen.**
+-  The original 70/30-split causal test set (n=81): 42/81 =
+ 51.9% (Wilson 95% CI [41.1%, 62.4%]) are degenerate
+ repetition loops.
 
-**A paired test of the actual estimand, and a check for selection bias
-in "peak AUROC" itself.** The comparisons above are visual: two
-separately-estimated CV means checked against their own fold SDs, even
-though the FFN and Attention probes are fit on the *same* samples and
-folds -- they are paired, and the paper's real estimand is their
-difference, $\Delta=\text{AUROC}_{\text{FFN}}-\text{AUROC}_{\text{Attn}}$,
-which was never directly tested. Using already-cached raw per-sample
-features (Pythia and Qwen0.5B) and GPT-2's vendored mech-int activations
-(no new model inference for any architecture), we compute, for every
-layer on every architecture, out-of-fold predicted probabilities for
-both components from the same folds, and a BCa bootstrap 95\% CI on
-$\Delta$ over 2000 resamples of the samples themselves
-(`code/37_paired_component_delta_auroc.py`; this pools out-of-fold
-predictions into one AUROC per component rather than averaging five
-per-fold AUROCs, so the absolute point estimates below differ slightly
-from the mean-of-folds convention used elsewhere in this paper -- the
-CI is what is new here, not the point estimate). At each architecture's
-own naive FFN-peak layer: GPT-2 (L8) $\Delta=+0.067$, CI $[+0.012,
-+0.122]$ (excludes zero -- though L8 is exactly the cell §3.2's
-leave-one-category-out re-test shows collapsing from AUROC 0.62 to 0.48,
-so this CI-excludes-zero result should not be read as established signal
-independent of that confound); Pythia (L11) $\Delta=+0.047$, CI $[-0.002,
-+0.100]$; Qwen0.5B (L20) $\Delta=+0.053$, CI $[-0.007,+0.113]$. **Note a
-naming collision, disclosed here rather than left implicit:** this
-pooled-OOF aggregation's own argmax gives Qwen0.5B's FFN peak as L20 and
-Attn peak as L8 -- the reverse of the mean-of-folds peaks reported
-elsewhere in this paper (FFN L8, Attn L17, §3.3): L8 is "the FFN peak"
-under one aggregation convention and "the Attn peak" under the other for
-the same architecture, a consequence of pooled-OOF and mean-of-folds
-AUROC estimation genuinely disagreeing on which layer wins, not a typo.
-At each architecture's own naive Attn-peak layer (by this section's own
-pooled-OOF convention), the sign reverses as expected
-(Attn winning at its own peak): GPT-2 (L3) $\Delta=-0.085$, CI
-$[-0.137,-0.036]$; Pythia (L4) $\Delta=-0.113$, CI $[-0.162,-0.064]$;
-Qwen0.5B (L8) $\Delta=-0.032$, CI $[-0.084,+0.023]$. Averaged across
-*all* layers rather than only the peaks -- the summary least
-vulnerable to selection bias -- $\Delta$ is small on every architecture
-(GPT-2 $+0.0017\pm0.036$; Pythia $+0.0005\pm0.042$; Qwen0.5B
-$-0.0021\pm0.034$), and a layer-weighted pooled estimate across all
-three architectures gives $\Delta=-0.0003$ with between-architecture
-variance of only $3.9\times10^{-6}$ -- as close to a formal, properly
-pooled null result as this paper's data supports, replacing the earlier
-informal "3/3 architectures, too small to test."
+-  The maximum supportable scaled test set (n=228, a leaner 15/85
+ split, `code/10_ffn_causal_patch_scaled.py`): 121/228 =
+ 53.1% (CI [46.6%, 59.4%]).
 
-We also checked "peak AUROC" itself for winner's-curse-style selection
-bias, using nested cross-validation (select the peak layer on inner
-folds only, evaluate on a held-out outer fold). Nested-CV peaks are
-uniformly lower than the naive argmax peaks reported above -- GPT-2 FFN
-$0.643\to0.581$, GPT-2 Attn $0.632\to0.600$; Pythia FFN
-$0.632\to0.584$, Pythia Attn $0.666\to0.582$; Qwen0.5B FFN
-$0.563\to0.521$, Qwen0.5B Attn $0.570\to0.515$ -- confirming the
-selection bias this comparison is structurally exposed to. On GPT-2,
-this correction is large enough to flip which component is ahead: the
-naive comparison has FFN leading ($0.643$ vs.\ $0.632$), but the
-nested-CV-corrected comparison has Attention leading instead ($0.600$
-vs.\ $0.581$). We do not read this as evidence Attention "really" wins
-on GPT-2 -- the corrected margin is itself well within noise -- but it
-is a concrete demonstration that the peak-AUROC comparison this section
-otherwise relies on can select for the noisier, not the truer, of the
-two components on a given architecture.
+-  All 534 cached baseline completions, both label classes together
+ (`code/49_nondegenerate_subset_probe.py`): 286/534 =
+ 53.6%; restricted to Jaccard-hallucinated completions only,
+ 138/268 = 51.5%.
 
-Qwen2.5-0.5B (~494M parameters, the largest model tested, not the
-smallest) shows the weakest and most equivocal signal, and was queried
-with a bare `Q: ... A:` template rather than its chat template --
-genuinely out-of-distribution usage for an instruction-tuned model, and a
-more parsimonious explanation for its weak/reversed results than any
-story about scale. **Rerunning with the proper chat template**
-(`code/02_cross_arch_component_probe.py qwen05chat`; only the prompt
-construction changed) **reverses the peak-component result**: Attention
-becomes the clear peak (L4$=0.5988\pm0.0438$) over FFN (L4$=0.5704\pm0.0186$,
-same layer), and the layer-count result reverses too (FFN wins 11/24,
-45.8\%, a minority, versus 58.3\% before). Both reversals point the same
-direction: the bare-template run's FFN-favoring numbers were an artifact
-of the OOD confound, not a weaker version of the same signal. The
-corrected margin ($0.0284$) is still smaller than Attention's own CV SD
-($0.0438$), so "Attention now clearly wins" would overclaim in the same
-way "FFN wins 3/3" originally did -- the finding is the direction of the
-flip, not a newly-resolved winner. Peak-FFN depth fraction also shifts,
-from 33.3\% (L8/24, bare template) to 16.7\% (L4/24, chat template) --
-one more respect in which the original numbers described an artifact of
-prompting, not a property of the model.
+This is a stable property of GPT-2's TruthfulQA failure mode, not a
+small-sample artifact. One gap in coverage, disclosed rather than
+smoothed over: the 283 prompts added in §4.1 to enlarge the judged pool
+were never themselves degeneracy-checked, so the 53.6% figure covers
+the original 534-item pool and the n=750 causal run inherits an
+unmeasured degeneracy rate on its added prompts. Its consequence for the causal test is direct: for
+roughly half the test set, an intervention that "flips" the output to a
+reference-matching string is at least as consistent with breaking a
+repetition loop as with correcting a hallucinated claim.
 
-**Re-probing under a validated label.** Given the word-overlap label's
-validity concerns (§4), we relabeled every completion on all three
-architectures with the same LLM judge used throughout this paper and
-reran this component probe under both labels for direct comparison
-(`code/24_llm_judge_score_all_architectures.py`,
-`results/llm_judge_relabel_summary.json`), and separately extended the
-same check to GPT-2 itself
-(`code/29_gpt2_full_validated_relabel_rerun.py`, all 534 samples).
-Absolute AUROCs rise substantially under the validated label on every
-architecture (GPT-2 $0.605$/$0.617\to0.698$/$0.717$ FFN/Attn peak;
-Pythia $0.615\to0.735$/$0.749$; Qwen0.5B-bare $0.566\to0.713$/$0.699$;
-Qwen0.5B-chat $0.570$/$0.599\to0.660$/$0.641$), and FFN's numerical
-majority is restored on Qwen0.5B-chat specifically (11/24 layers under
-Jaccard, a minority, to 18/24 under the validated label, a majority) --
-the template-reversal finding above is thus itself sensitive to which
-label is used. **The full layer-majority picture, stated completely
-rather than selectively:** under the validated label, FFN's numerical
-majority actually *rises* on three of four architectures (Pythia
-$16/24\to18/24$; Qwen0.5B-bare $14/24\to20/24$; Qwen0.5B-chat
-$11/24\to18/24$) and only GPT-2 moves the other way, reversing further
-toward Attention ($8/12\to2/12$). At the architecture level, using the
-same four-way tally under both labels, this leaves FFN holding a
-layer-count majority on 3 of 4 architectures under the validated label --
-unchanged in count from Jaccard's own 3 of 4 (GPT-2, Pythia,
-Qwen0.5B-bare), but with different member architectures: GPT-2 flips
-out of FFN's majority as Qwen0.5B-chat flips in. Neither a clean
-strengthening nor a clean reversal of the original picture.
+**Degeneration is near-balanced across label classes, which makes
+it worse, not better.** Under the Jaccard label, 148/266 (55.6%) of
+*correct*-labeled completions and 138/268 (51.5%) of
+hallucinated-labeled ones are degenerate; under the validated judge
+label, 10/27 (37.0%) and 276/507 (54.4%). A word-overlap
+heuristic credits repetition loops as correct about as often as it
+penalizes them. So degeneration does not merely add noise to one arm of a
+flip-rate comparison; it is present on both sides of the label boundary
+and on both sides of the intervention comparison.
 
-Which component peaks is, if anything, *less* stable across labels than
-the layer-count tally: only 2 of 4 architectures keep the same
-peak-AUROC winner under both labels (GPT-2: Attention both times;
-Qwen0.5B-bare: FFN both times), while the other 2 flip in opposite
-directions (Pythia: FFN under Jaccard $\to$ Attention under the
-validated label; Qwen0.5B-chat: Attention under Jaccard $\to$ FFN under
-the validated label). An earlier version of this paragraph described
-Pythia as "Attention still peaks" and both Qwen0.5B variants as "FFN
-still peaks" -- both wrong: "still" implies no change, and two of the
-four architectures' peak component changes label to label. This
-re-check strengthens the case that a real, larger signal than the noisy
-label suggested exists, without resolving the paper's core
-FFN-vs-Attention specificity question either way -- and if anything
-underscores how unstable the specific peak-component assignment is.
+**Effect on the causal test.** Restricting the n=228 scaled test
+to the 107 prompts confirmed non-degenerate, the FFN-found-vs-FFN-random
+null holds if anything more uniformly (McNemar p=1.000, 1.000, 1.000,
+0.503 at L8/alpha=20, L8/alpha=40, L9/alpha=20,
+L9/alpha=40, versus p=0.522, 0.868, 1.000, 0.659 unfiltered).
+Filtering does not rescue an effect.
 
-**A class-imbalance caveat that applies to every validated-label number
-above.** The judge label is not just different from Jaccard, it is
-severely imbalanced toward "hallucinated": GPT-2 27/534 correct (5.1\%),
-Pythia 29/605 (4.8\%), Qwen0.5B-bare 63/513 (12.3\%), Qwen0.5B-chat
-73/433 (16.9\%) -- confirmed directly from each architecture's judge
-confusion matrix. Cross-validated AUROC at this level of imbalance is
-substantially noisier: on GPT-2, the FFN/Attn peak AUROC standard
-deviations roughly double under the validated label relative to Jaccard
-(FFN $0.0557\to0.1115$; Attn $0.0427\to0.1253$), so GPT-2's own
-$0.698$/$0.717$ margin ($0.019$) is well within one SD of either peak,
-not a more confident finding than the Jaccard-label near-tie it
-reverses. The rising absolute AUROCs and the layer-majority reversals
-above are real properties of the validated-label re-analysis, not
-artifacts of a coding error, but they should be read as suggestive of a
-real, currently under-characterized effect of label quality on this
-probe, not as tighter estimates than the Jaccard-label numbers they
-revise -- a larger, class-balanced validated-label sample would be needed
-to state the post-correction peak margins with the same confidence the
-original Jaccard-label numbers (wrongly) conveyed.
+**Effect on the passive probe.** A live alternative explanation for
+the passive probe's above-chance AUROC is that it detects
+degeneracy-propensity -- "this prompt will send GPT-2 into a loop" --
+rather than hallucination content. We tested this by rerunning
+`code/02`'s exact probe protocol on the non-degenerate subset
+only, at every layer, for both components, under both labels
+(`code/49_nondegenerate_subset_probe.py`; n=248 of 534
+survive the filter, 118 of them Jaccard-correct and 17 judge-correct).
+Because a single fold seed moves these estimates by more than several of
+the effects this paper compares (§4.5), each number below is a mean over
+six CV fold seeds (0-5) rather than a single seed; per-cell values at
+`code/02`'s own seed 42 are in the result JSON and do not change
+any conclusion here.
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.75\textwidth]{figures/ffn-attn-comparison.pdf}
-\caption{Peak AUROC for FFN vs.\ Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in all four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template.}
-\label{fig:ffn-attn-comparison}
-\end{figure}
+**Under the Jaccard label, the passive signal survives the filter
+and in fact strengthens.** FFN's peak rises from 0.6155 (L8, full pool)
+to 0.6305 (L8, non-degenerate); Attention's peak rises from 0.6160
+(L3) to 0.6812 (L3); and the average AUROC across all 12 layers rises
+for both components (FFN 0.5619->0.6015; Attn 0.5551->0.5923). The
+FFN layer-count majority is essentially unchanged (8/12->7/12).
+**So the passive probe is not merely a degeneracy detector** -- if it
+were, removing every degenerate completion from both classes should have
+collapsed it, and instead every summary improves. Some of that
+improvement plausibly reflects a cleaner label (the Jaccard heuristic's
+worst errors are exactly the repetition loops it credits as correct,
+§6), which is itself informative: the filter removes label noise, not
+signal.
 
-### 3.4 Causal verification: FFN-sublayer patching (GPT-2, Pythia, Qwen)
+**Under the validated judge label the same test is uninformative,
+and we say so rather than pick the favorable half.** The filter leaves
+only 17 judge-correct items, and at that positive count the estimates
+are unstable and mostly fall: FFN's peak moves from 0.6429 (L5, full)
+to 0.5756 (L11, non-degenerate) and its all-layer average falls from
+0.5757 to 0.4941 (below chance), while Attention's peak is roughly
+unchanged (0.6772 at L5 -> 0.6813 at L5) and its all-layer average
+falls from 0.6083 to 0.5442. We do not read the FFN drop as evidence
+that FFN's signal specifically was degeneracy-driven: with 17 positives
+split across five CV folds, neither component's estimate here is powered
+to distinguish a real change from noise. What the two labels agree on is
+that this test does not rescue an FFN-specific reading, and the
+Jaccard-label version -- the one with enough positives to estimate at all
+-- rules out the degeneracy-propensity alternative for the passive probe
+as a whole.
 
-[Real data: `results/ffn_causal_patch_results.json`,
-`results/ffn_causal_patch_scaled_results.json`.] A difference-of-means
-"truthfulness direction," computed on FFN sublayer output (train split
-only), is injected additively into the FFN sublayer during generation,
-tested at L8/L9, $\alpha\in\{20,40\}$, against a random-direction control
-and an attention-sublayer-patch control.
+### 4.3 A direction-validity gate, and its exact power
 
-**Construct validity, checked before trusting the outcome metric.** We
-scanned baseline "hallucinated" completions for a repeated 4-8 word
-phrase occurring 3+ times. On the original 70/30-split test set ($n=81$):
-42/81 (51.9\%, Wilson 95\% CI [41.1\%, 62.4\%]) are degenerate repetition
-loops, not confident false statements. Re-checked at the dataset's
-maximum $n=228$ (a leaner 15/85 split, `code/10_ffn_causal_patch_scaled.py`):
-121/228 (53.1\%, CI [46.6\%, 59.4\%]) -- a stable property of GPT-2's
-TruthfulQA failure mode, not a small-sample artifact. This means a large
-additive intervention "flipping" the output to a reference-matching
-string is, for roughly half this test set, at least as consistent with
-breaking a repetition loop as with correcting a hallucinated claim.
+Before any direction is injected, does it separate the two classes on
+genuinely held-out data? We split the 58-prompt training pool (18
+judge-correct, 40 judge-hallucinated) into a direction-fit set (47)
+and a held-out validity set (11: 3 correct, 8 hallucinated),
+estimated each difference-of-means direction on the former, and measured
+its scalar projection's AUROC on the latter.
 
-**Result, at adequate power -- for the FFN-vs-random comparison only.**
-At the maximum supportable $n=228$ (27-46 discordant pairs per
-configuration -- enough that a real, moderate effect should be visible
-if one existed), all four FFN-found-vs-FFN-random McNemar tests are
-decisively non-significant ($p=0.522, 0.868, 1.000, 0.659$ at
-L8/$\alpha{=}20$, L8/$\alpha{=}40$, L9/$\alpha{=}20$, L9/$\alpha{=}40$).
-Restricting further to the 107 prompts confirmed non-degenerate, the
-null holds if anything more uniformly ($p=1.000, 1.000, 1.000, 0.503$).
-This comparison's scope is FFN-found-vs-FFN-random only: the
-"Attention" condition in this same script patches the FFN-derived
-direction at the Attention sublayer's site, not a direction derived from
-Attention's own activations, so it cannot support an FFN-vs-Attention
-component-specificity claim (Appendix B). The genuine version of that
-test, with a real Attention-derived direction, is reported below.
+At neither tested layer does either direction clear chance in the helpful
+direction: L8 FFN/Attn AUROC =0.083/0.083 (bootstrap 95% CI
+[0.0,0.333] both), L9 FFN =0.0 (CI [0.0,0.0]), L9 Attn =0.125 (CI
+[0.0,0.5]). Three of the four CIs exclude 0.5 entirely, and an exact
+Mann-Whitney test at this n_+=3, n_{-}=8 split finds them nominally
+significant in the *anti-predictive* direction. All p-values here
+are exact and two-sided: L8 FFN/Attn p=0.0485 each, L9 FFN p=0.0121;
+L9 Attn p=0.0848 is not significant. (An earlier draft quoted 0.0242
+for the L8 cells -- the one-sided value -- alongside two-sided values for
+L9; that mixed convention is corrected here, and on the correct convention
+the two L8 cells sit just under 0.05 rather than comfortably below it.)
+Under Bonferroni across the four cells (alpha=0.0125), only L9 FFN
+survives. These four p-values are recomputed and saved by
+`code/51_direction_validity_mde_table.py` alongside the exact
+null they come from.
 
-A non-trivial fraction of interventions in every condition produce a
-degenerate/unparseable completion rather than a clean correct-or-wrong
-answer, ranging $10.1\%$-$46.5\%$ across all twelve found/random/
-attn-found conditions at both layers and alphas
-(`results/ffn_causal_patch_scaled_results.json`). Found and random
-directions are at broadly similar rates in most configurations but
-diverge sharply at L8/$\alpha{=}40$ (FFN-found $40.8\%$ vs.\ FFN-random
-$25.4\%$) -- the found direction is, if anything, a \emph{stronger}
-disruptor of coherent generation than a random direction of equal norm
-at this configuration, consistent with much of the flip-rate signal
-being generic generation perturbation, not targeted semantic correction.
-Because unparseable completions are scored as not-flipped in every
-condition, this differential degeneration could mechanically penalize
-whichever arm degenerates more; we do not attempt a competing-risks
-correction here and flag this as an unresolved limitation of the outcome
-metric.
+**This particular anti-predictive result is a single unlucky draw.**
+Redrawing which items land in the fit and holdout roles at 200 random
+seeds on the identical 534-item judge-labeled pool
+(`code/46_direction_validity_resplit_diagnostic.py`), the
+held-out AUROC has mean 0.54-0.58 and SD 0.20-0.22, with range
+[0.083,1.0] at L8 and [0.0,1.0] at L9 -- centered at or slightly
+above chance. The kernel's single seed sits in the extreme low tail: only
+1.5% (L8 FFN), 1.5% (L8 Attn), 0.5% (L9 FFN) and 4% (L9 Attn)
+of resplits produce an AUROC at or below it. A second, independent draw
+from a differently-ordered pool (the enlarged-pool run) gives
+0.375/0.333 (L8 FFN/Attn) and 0.167/0.25 (L9 FFN/Attn) -- inside
+the typical range. Two alternative estimators (logistic-regression
+weights, Fisher LDA) fit on the identical split do no better: all 12
+layer/component/estimator combinations land at or below AUROC 0.167
+(`code/44_alternative_direction_estimators.py`).
 
-**Extending beyond GPT-2.** The same test on Pythia-410M and
-Qwen2.5-0.5B-Instruct (chat-templated), at each architecture's own
-established peak layer, is too underpowered to support any claim. On
-Pythia, valid pairs collapse from $n=22$ at $\alpha=10$ ($p=0.25$) to
-$n=7$ at $\alpha=20$ to $n=0$ at $\alpha=40$ (generation degenerates
-entirely). On Qwen0.5B-chat, valid pairs are $n=2,1,0$ at
-$\alpha=10,20,40$ -- uninformative rather than merely underpowered, since
-this instruction-tuned model's chat-style responses rarely clear the
-word-overlap labeling threshold even at baseline. Neither extension
-supports or contradicts the GPT-2 finding; Pythia's pattern is consistent
-with GPT-2's, and Qwen0.5B-chat's failure is a labeling-threshold
-mismatch, not evidence about the causal question itself.
+**The gate cannot pass at this n, and we can say exactly how
+badly.** Under the null that a direction carries no information, the
+held-out AUROC is a rescaled Mann-Whitney U statistic whose
+distribution is exact and enumerable over all
+n_++n_{-}{n_+} label arrangements. We compute it exactly
+(`code/51_direction_validity_mde_table.py`); Table~the table below
+reports it as a function of held-out size at this paper's own 3{:}8
+class ratio. At n=11 the null arises from only 165 equiprobable label
+arrangements and the AUROC takes just 25 attainable values (spacing
+1/24), so the smallest *observable* AUROC that could ever be called
+significant at one-sided alpha=0.05 is 0.875 (attained exact size
+0.0424). This is a statement about the observable statistic, not about
+the true effect: true effects well below 0.875 can clear the threshold,
+just rarely (power 0.31 at a true AUROC of 0.75, 0.72 at 0.90).
+In the other direction, a pure-noise direction passes a naive "held-out
+AUROC >0.5" gate 46.1% of the time, a ">= 0.75" gate 13.9%
+of the time, and a ">= 0.80" gate 6.7% of the time. Reaching a
+gate that both admits moderate true effects (MDE ~ 0.68) and
+rejects noise at the 1% level needs roughly n=37 (10 positives).
+That is nominally supplyable from this testbed's 27 correct items, but
+only by spending 10 of them on the holdout and leaving 17 to fit the
+direction -- so the binding constraint is not the holdout alone but the
+trade-off between gate power and direction quality, which 27 positives
+cannot satisfy simultaneously.
 
-**Validating the null against the label itself.** The most serious
-objection to every result above is that the Jaccard label defining both
-the test set and the flip-to-correct outcome is unreliable (§4 quantifies
-this at $\kappa=0.04$ on GPT-2). We addressed this directly rather than
-leaving it as a caveat: an independent LLM judge relabeled all 534 of
-GPT-2's original completions ($\kappa=0.03$ against Jaccard, consistent
-with the GPT-2-only audit), and we reran the causal-patching
-protocol -- found-direction computed from a judge-labeled train split
-($n=18$ judge-correct, $n=40$ judge-hallucinated -- the small correct-class
-count is a direct consequence of the severe class imbalance disclosed in
-§3.2, and is itself a caveat on how stable this direction estimate can
-be), patched generation, every output scored by the same judge -- on all
-467 judge-hallucinated test prompts (nearly double the $n=228$ used
-above). FFN-found-vs-FFN-random flip-to-correct rates collapse to
-1.3-3.0\% at every layer/alpha under the validated label, with no
-configuration distinguishable from its random-direction control
-(McNemar $p\geq0.52$ throughout).
+*Exact operating characteristics of a held-out direction-validity gate, as a function of held-out sample size, at this paper's own 3{:}8 positive:negative ratio. "MDE" is the smallest *observable* held-out AUROC that can be significant at one-sided alpha=0.05 under the exact null (a property of the statistic, not a bound on the true effect -- the power columns give the chance a given true effect clears it); "exact alpha" is that test's true size (discreteness makes it smaller than 0.05); "false-accept" columns give the exact probability that a pure-noise direction passes the stated gate rule; power is Monte Carlo (20{,}000 draws) under a binormal alternative. The first row is this paper's own gate.*
 
-**The corrected FFN-vs-Attention component-specificity test.** The
-comparison this section previously reported as "McNemar $p=1.000$ in
-every configuration" for FFN-found vs.\ Attention-found was never
-actually a test of Attention specificity (previous paragraph, and
-Appendix discussion above): the "Attention" arm always injected the
-FFN-derived direction at the Attention sublayer's site, not a direction
-derived from Attention's own activations. We fixed this by computing a
-genuine Attention-derived direction -- identical difference-of-means
-methodology to the FFN direction, just extracting last-token Attention
-sublayer output instead of FFN output, from the same judge-labeled train
-split -- and rerunning the full protocol with this real direction injected
-at the Attention site
-(`kaggle_kernels/paper1-causal-patch-real-attn-direction/`,
-`results/causal_patch_real_attn_direction_results.json`). The two
-directions are nearly orthogonal (cosine similarity $-0.054$ at L8,
-$-0.056$ at L9), confirming they are genuinely different directions, not
-an accidental near-duplicate. On this actually-valid test, at the same
-$n=467$ judge-hallucinated prompts: FFN-found vs.\ Attention-found gives
-McNemar $p=0.167$ (L8/$\alpha{=}20$), $0.607$ (L8/$\alpha{=}40$), $1.000$
-(L9/$\alpha{=}20$), $0.077$ (L9/$\alpha{=}40$) -- not significant at any
-configuration, and the smallest (L9/$\alpha{=}40$, $p=0.077$) would not
-survive even a mild multiple-comparison correction across the four
-configurations tested.
+- n | n_+ | arrangements | MDE | exact alpha | FA >0.5 | FA >=0.75 | pow. @0.75 | pow. @0.90
 
-**What this test can and cannot rule out, stated explicitly.** Discordant
-pairs per configuration are $19$ (L8/$\alpha{=}20$), $15$ (L8/$\alpha{=}40$),
-$9$ (L9/$\alpha{=}20$), $16$ (L9/$\alpha{=}40$) -- fewer than the
-$27$-$46$ available at $n=228$ under the Jaccard label, because the much
-lower absolute flip rate under the validated label leaves fewer prompts
-where FFN-found and Attention-found disagree at all. At these counts, the
-minimum odds ratio an exact two-sided binomial test (McNemar) can detect
-at $p<0.05$ is $3.75$ (L8/$\alpha{=}20$), $4.00$ (L8/$\alpha{=}40$),
-$8.00$ (L9/$\alpha{=}20$), and $4.33$ (L9/$\alpha{=}40$) -- this test is
-powered only to detect a 4-to-8-fold asymmetry between the two
-conditions, not a moderate one. The observed odds ratios and their
-approximate 95\% confidence intervals (log-odds normal approximation)
-are $0.46$ $[0.18, 1.21]$, $0.67$ $[0.24, 1.87]$, $1.25$ $[0.34, 4.65]$,
-and $3.00$ $[0.97, 9.30]$ -- wide enough that the data are simultaneously
-consistent with FFN being several-fold worse than Attention and with FFN
-being several-fold better, at three of the four configurations. This is
-the honest scope of "no measurable difference": it is a demonstrated
-absence of a very large effect, not a demonstrated absence of a moderate
-one, and we did not run an equivalence test (e.g.\ TOST against a
-pre-specified $\delta$) that would let us make the stronger claim.
-Attention-found is also indistinguishable from
-its own random-direction control at every configuration ($p=0.84, 0.50,
-1.00, 0.18$), just as FFN-found is from FFN-random. The same test
-rerun under the original Jaccard label (same prompts and patches, scored
-by the cheaper heuristic instead) gives FFN-vs-Attention $p=0.439,
-0.355, 0.747, 0.399$ -- also uniformly non-significant.
+- 11 | 3 | 1.65x10^{2} | 0.875 | 0.0424 | 0.461 | 0.139 | 0.31 | 0.72
 
-**Each arm against its own random-direction control.** Of the eight
-found-vs-random tests this run computes (both components, both layers,
-both alphas), three are nominally significant: Attention-found is beaten
-by its own random control at L8 ($p=0.021$, $\alpha{=}20$; $p=0.0043$,
-$\alpha{=}40$), and FFN-found beats its own random control at
-L9/$\alpha{=}20$ ($p=0.0264$). Only the L8/$\alpha{=}40$ Attention
-comparison ($p=0.0043$) survives Holm-Bonferroni correction across all
-eight tests (threshold $0.05/8=0.00625$); the L8/$\alpha{=}20$ Attention
-comparison ($p=0.021$) does not. An Attention direction performing
-\emph{worse} than a random one is not evidence of Attention specificity
--- it is at least as consistent with generic large-perturbation
-disruption (above) as with any targeted effect. The FFN result does not
-survive correction and does not replicate under the validated judge
-label at the same configuration ($p=1.000$), consistent with Jaccard
-noise rather than a real effect.
+- 18 | 5 | 8.57x10^{3} | 0.769 | 0.0473 | 0.500 | 0.059 | 0.51 | 0.93
 
-**The null this
-paper reports -- no measurable causal difference between patching FFN
-and patching Attention at the 4-to-8-fold odds-ratio scale this test is
-powered to detect -- holds up under every test the corrected run
-computes, under both labels, not only the ones most favorable to that
-conclusion.** This is a materially different, more precisely scoped basis
-for the same conclusion the uncorrected version of this test claimed to
-support. But a further round of validation (below) found that this
-instrument's genuinely Attention-derived direction, like the FFN
-direction, was never shown to carry validated causal-relevant content in
-the first place -- so the honest reading of this null is narrower than
-"we tested a genuinely component-specific intervention on each side and
-found no difference": it is closer to "this specific instrument does not
-clear the bar needed to make its own null claim informative about
-component specificity." Appendix-A-equivalent detail on exactly what was
-wrong with the earlier (same-direction) version of this test, and why,
-is documented in this section rather than relegated to an appendix,
-since it bears directly on this paper's single most load-bearing claim.
+- 29 | 8 | 4.29x10^{6} | 0.708 | 0.0464 | 0.490 | 0.021 | 0.69 | 0.99
 
-**The judge-parser fix (§4, Appendix B) checked directly on this specific
-test, not just on the underlying relabel.** Because this specific test
-scores 467 test prompts times seventeen conditions (baseline plus
-sixteen patched variants) with the judge, we reran it end to end with
-the corrected parser as a direct check, not an inference from the
-relabel result (Appendix B). The output is byte-identical to the
-pre-fix version at every one of the $467\times17$ scored cells and every
-summary statistic reported above.
+- 37 | 10 | 3.48x10^{8} | 0.681 | 0.0488 | 0.493 | 0.010 | 0.79 | 1.00
 
-We do not carry forward the previous version's interpretive claim about
-the gap between Jaccard's and the judge's absolute flip rates (33-42\%
-vs.\ 1.3-3.0\%) reflecting "superficial word overlap" specifically: 226
-of these 467 judge-hallucinated test prompts (48.4\%) were already
-Jaccard-labeled *correct* at baseline, before any patching, so a
-substantial share of Jaccard's higher "flip-to-correct" rate reflects
-prompts that did not need to flip at all, not a cleanly interpretable
-gap between the two labels' sensitivity to superficial correctness. The
-judge-labeled test set, by construction (selected as judge-hallucinated),
-does not have this problem, and is the version of this comparison we
-rely on. Full methodology and per-configuration numbers:
-`kaggle_kernels/paper1-causal-patch-judge-label/` (original,
-non-component-specific test, retained for the FFN-found-vs-FFN-random
-result and superseded for the FFN-vs-Attention comparison),
-`kaggle_kernels/paper1-causal-patch-real-attn-direction/` (the corrected
-component-specificity test), `results/causal_patch_judge_label_results.json`,
-`results/causal_patch_real_attn_direction_results.json`.
+- 55 | 15 | 1.19x10^{13} | 0.647 | 0.0493 | 0.496 | 0.002 | 0.92 | 1.00
 
-**A dosage-mismatch check on the FFN-vs-Attention comparison itself
-(Appendix B documents two errors an earlier version of this diagnostic
-made and how they were fixed).** The same $\alpha$ is added to both
-sublayers' output in every configuration above; whether this is a fair
-comparison depends on what that $\alpha$ is actually competing with. The
-quantity the intervention actually competes with, at the point it
-enters the computation, is the residual stream's own norm at that
-layer, which both the FFN-site and Attention-site hooks add into almost
-identically (both accumulate the same embedding-plus-all-prior-layers
-history, differing only by one attention-sublayer contribution at layer
-8-9, small relative to eight-plus layers of accumulation). Measured
-correctly (`code/26_ffn_attn_dosage_diagnostic.py`, $n=100$
-correctly-formatted prompts): residual-stream norm is $124.7$ (L8) and
-$166.0$ (L9), giving a relative perturbation of $16.0\%$/$12.0\%$ of the
-residual stream at $\alpha=20$ and $32.1\%$/$24.1\%$ at $\alpha=40$ --
-\emph{identical for both the FFN-site and Attention-site interventions},
-not the $2$-$3\times$ asymmetry the uncorrected version reported (which
-also shrinks to $1.3$-$1.5\times$ on the correct prompts alone, before
-even fixing the denominator). There is therefore no dosage asymmetry
-between the two arms to explain the observed FFN-vs-Attention
-non-difference away in either direction; both intervention sites receive
-the same relative push into the residual stream. This does not by
-itself validate the FFN-vs-Attention causal test's design -- the
-Attention arm's more serious problem, that it never used a genuinely
-Attention-derived direction, is addressed next -- but it rules out
-dosage imbalance specifically as a confound.
+- 73 | 20 | 4.30x10^{17} | 0.626 | 0.0495 | 0.498 | 0.000 | 0.97 | 1.00
 
-**Eight further checks, run on the flagship configuration
-(`kaggle_kernels/paper1-causal-patch-tier1-validated/`), a fresh audit
-identified as missing.** These checks do not simply reinforce the null
-reported above; they surface a more fundamental limitation of this
-specific instrument that the paper must disclose honestly rather than
-narrate past.
+- 110 | 30 | 8.37x10^{26} | 0.603 | 0.0498 | 0.499 | 0.000 | 1.00 | 1.00
 
-*Direction validity -- the central finding of this round.* **Disclosure,
-made explicit here for the first time:** every direction and every
-validity-AUROC measurement in this paper is computed from the model's
-last-token activation on the *prompt alone* (`"Q: {question}\nA:"`),
-never on any token of GPT-2's actual generated completion. The
-judge/Jaccard correct-vs-hallucinated label used to supervise the
-direction is a property of that separately-generated completion, but the
-completion's own tokens are never passed through the model for this
-measurement -- the direction is asked to separate, from the model's
-internal state *before it has generated anything*, prompts that will go
-on to receive a correct answer from prompts that will not. This is a
-coherent question (does the model's pre-generation state predict its own
-upcoming failure?), but it is a substantially harder and different
-question than probing completion tokens for features of an
-already-hallucinated answer, and a reader should not assume otherwise
-from "last-token activation" language alone. Before any
-direction is injected, does it actually separate correct from
-hallucinated activations on genuinely held-out data? We split the
-58-prompt training pool into a direction-fit set (47) and a held-out
-validity set (11: 3 correct, 8 hallucinated), estimated each direction on
-the former, and measured its scalar projection's AUROC on the latter. At
-neither tested layer does either direction clear chance in the helpful
-direction (L8 FFN/Attn AUROC$=0.083$/$0.083$, bootstrap 95\% CI
-$[0.0,0.333]$ both; L9 FFN AUROC$=0.0$, CI $[0.0,0.0]$; L9 Attn
-AUROC$=0.125$, CI $[0.0,0.5]$). **Correction:** an earlier draft
-described all four CIs as "consistent with chance"; three of the four in
-fact exclude $0.5$ (chance) entirely, and an exact Mann-Whitney test at
-this $n_{\text{pos}}=3$, $n_{\text{neg}}=8$ split finds them nominally
-significant in the *anti-predictive* direction (L8 FFN/Attn $p=0.0242$
-each, L9 FFN $p=0.0121$; only L9 Attn, $p=0.0848$, is not significant).
-Under a Bonferroni correction across these four cells ($\alpha=0.0125$),
-only L9 FFN survives.
+The conclusion we draw is narrow and, we think, unavoidable: the
+directions this paper patches were never shown to carry label-relevant
+signal, and at this testbed's held-out size they could not have been.
 
-A further correction to the power analysis itself matters here: an
-earlier draft's Monte Carlo power criterion was one-sided (CI-lower-bound
-$>0.5$ only), structurally blind to power in the anti-predictive
-direction the observed data actually falls in. Recomputed with a
-two-sided criterion (CI excludes $0.5$ on either side), this test at
-$n=11$ is asymmetric but reasonably well-powered exactly where the
-observed AUROCs land: $80\%$ power is reached at a true AUROC of $0.05$
-in the anti-predictive direction (versus $0.95$ in the helpful
-direction), and power at the true AUROCs closest to the observed point
-estimates is substantial (e.g. $73\%$ at a true AUROC of $0.10$, $89\%$
-at $0.05$). This means the nominally significant anti-predictive
-p-values above are *not* simply underpowered noise -- this test can and
-does detect deviations of this size reliably. What it cannot resolve, at
-a single realization with $n=11$, is whether this specific sample's
-anti-predictive ranking reflects a real property of these directions on
-this validity split, or a chance draw from a null distribution that this
-small, discrete sample space (only $\binom{11}{3}=165$ possible rank
-assignments) makes coarse enough that "nominally significant" and "one
-unlucky draw" are not yet distinguishable without a second, independent
-validity split.
+### 4.4 The causal-patching null, and why it is not interpretable
 
-**A 200-resplit diagnostic resolves this.** Using the identical 534-item
-judge-labeled pool and train-pool construction (58 items: 18 correct + 40
-hallucinated, an 80/20 direction-fit/validity-holdout split per class)
-but redrawing which specific items land in each role at 200 different
-random seeds instead of the kernel's single seed, the held-out AUROC
-varies substantially (mean $0.54$-$0.58$, SD $\approx0.20$; range
-$[0.083,1.0]$ at L8 FFN/Attn, $[0.0,1.0]$ at L9 FFN/Attn) and is centered
-at or slightly *above* chance, not below it. The original seed's anti-predictive AUROCs
-sit in the extreme low tail of this distribution: only $1.5\%$ of
-resplits (L8 FFN, L8 Attn), $0.5\%$ (L9 FFN), and $4\%$ (L9 Attn) of the
-200 resplits produce an AUROC at or below what the kernel's single split
-happened to draw. **This settles the question the exact Mann-Whitney
-test above could not**: the original split's nominally significant
-anti-predictive result is an atypical, unlucky single draw, not a stable
-property of these directions on this pool -- the broader resampling
-distribution is consistent with chance (if anything, mildly above it),
-matching the causal-patching test's own independent finding (random-
-direction ensemble, TOST, permutation cosine null, all below) that the
-found directions carry no detectable signal in either direction. Full
-per-resplit results: `results/direction_validity_resplit_diagnostic.json`
-(`code/46_direction_validity_resplit_diagnostic.py`). Two
-further checks confirm this is not an artifact of the estimator or the
-sample size: logistic-regression weights and Fisher LDA, fit on the
-identical split, do no better (all 12 layer/component/estimator
-combinations at or below AUROC $0.167$); and the same power analysis
-shows this test only reaches 80\% power in the helpful direction once
-the true held-out AUROC is $\approx0.95$ -- confirming that direction
-validity, specifically, remains impossible to confirm at any single
-$n=11$ split, which is exactly why the resampling view above, not any
-one split, is the trustworthy picture.
+**Design.** A difference-of-means "truthfulness direction,"
+computed on FFN sublayer output over a train split only, is injected
+additively into the FFN sublayer during generation, tested at L8/L9,
+alpha{20,40}, against a random-direction control and against a
+genuinely Attention-derived direction injected at the Attention site. The
+two directions are nearly orthogonal (cosine similarity -0.054 at L8,
+-0.056 at L9), so the component-specificity control is a real control
+and not a relabeled copy of the treatment
+(`kaggle_kernels/paper1-causal-patch-real-attn-direction/`).
 
-*Random-direction ensemble -- the strongest single check.* At the
-flagship configuration (L8, $\alpha=40$, 60 test prompts), the found FFN
-and Attention directions' flip rates were compared against 20
-independently-drawn random directions on the identical prompts. The
-found directions produced **zero flips** -- sitting at the **50th**
-(FFN) and **40th percentile** (Attention) of the random-direction
-distribution (range $0.0$-$0.067$). The found direction's causal effect
-is not merely statistically indistinguishable from random -- it sits
-squarely where a direction with no special relationship to the label
-would be expected to land.
+**Results, under the validated label at n=467
+judge-hallucinated prompts.** Flip-to-correct rates sit at 1.3-3.0%
+in every one of the sixteen found/random x component x
+layer x alpha conditions. FFN-found vs. Attention-found gives McNemar
+p=0.167 (L8/alpha=20), 0.607 (L8/alpha=40), 1.000
+(L9/alpha=20), 0.077 (L9/alpha=40) -- none significant, and
+the smallest would not survive a mild multiple-comparison correction
+across four configurations. Each arm is also indistinguishable from its
+own random-direction control (FFN: p>=0.52 throughout; Attention:
+p=0.84, 0.50, 1.00, 0.18). Rerunning the same prompts and patches
+scored by the Jaccard heuristic instead gives FFN-vs-Attention p=0.439,
+0.355, 0.747, 0.399 -- also uniformly non-significant.
 
-*Five further checks, summarized.* A permutation-based cosine null
-(2000 draws) finds the FFN/Attention directions' cosine similarity
-($-0.0058$/$-0.0051$; corrected from a $10\times$ transcription error in
-an earlier draft) statistically indistinguishable from two
-label-uninformed directions (both within 1 SD of the empirical null). A
-common-injection-site test (patching both directions at the shared
-post-block residual stream, disentangling "which direction" from "where
-injected") confirms FFN-native-site and FFN-common-site are
-mathematically identical for GPT-2 (verified byte-for-byte), and finds
+**What this null can and cannot exclude.** Discordant pairs per
+configuration are 19, 15, 9, 16. At those counts, the minimum odds
+ratio an exact two-sided McNemar test can detect at p<0.05 is 3.75
+(L8/alpha=20), 4.00 (L8/alpha=40), 8.00 (L9/alpha=20),
+4.33 (L9/alpha=40). **This 3.75-8.00 range belongs to the
+native-site FFN-found-vs-Attention-found test, whose directions are fit
+on the full 58-item train pool**; it should not be conflated with the
+3.25-6.00 range quoted in §4.1, which belongs to a different test --
+the common-injection-site comparison from the tier-1 validated kernel,
+whose directions are fit on the 47-item direction-fit subset after the
+validity holdout is removed. Both are at n=467 prompts; they differ in
+comparison, injection site, and direction-fit set, and their discordant
+counts differ accordingly (19/15/9/16 versus 17/17/14/15). The
+observed odds ratios and approximate 95% CIs (log-odds normal) are
+0.46 [0.18, 1.21], 0.67 [0.24, 1.87], 1.25 [0.34, 4.65], and
+3.00 [0.97, 9.30]. Only one of the four (L9/alpha=20,
+[0.34,4.65]) is simultaneously consistent with FFN being several-fold
+worse and several-fold better than Attention; the other three exclude one
+direction or the other at the several-fold scale while still failing to
+exclude a moderate effect.
+
+**Equivalence testing.** A TOST search finds no cell establishes
+equivalence at the pre-registered OR=2.0 bound; the smallest achievable
+equivalence bounds across the eight tested cells (native and common site
+x four configurations) range 2.85 to 10.85
+(`code/38_tier1_tost_competing_risks.py`). So this test cannot
+assert equivalence either.
+
+**The random-direction ensemble, read correctly.** At the flagship
+configuration (L8, alpha=40, 60 test prompts) the found FFN and
+Attention directions' flip rates were compared against 20
+independently-drawn random directions. **The found directions
+produced 0/60 flips each; 10 of 20 random FFN directions and 8 of
+20 random Attention directions also produced 0/60.** The reported
+"50th percentile" (FFN) and "40th percentile" (Attention) are
+therefore tie counts at the floor of the statistic, not meaningful
+locations in a distribution. **This check is uninformative at this
+flip-rate floor and should not be read as evidence the found direction is
+special** -- in either direction. The same applies to the enlarged-pool
+rerun, where the found directions land at the "95th" (FFN) and
+"100th" (Attention) percentile: those are driven by 2/60 and 3/60
+flip events respectively against an ensemble whose members mostly score
+0/60 or 1/60. We report both runs and treat neither as evidence.
+
+**Injection-site and dosage controls.** A common-injection-site test
+(patching both directions at the shared post-block residual stream)
+confirms FFN-native-site and FFN-common-site patching are mathematically
+identical for GPT-2's block structure (verified byte-for-byte), and finds
 the genuinely new Attention-common-site comparison non-significant at
-every configuration (one nominal $p=0.049$ does not survive Holm
-correction across even these four tests). A TOST equivalence search
-finds no cell establishes equivalence at the pre-registered OR$=2.0$
-bound; the smallest achievable bounds range $2.85$-$10.9$. A
-competing-risks (flip/no-flip/degenerate) $2\times3$ chi-square finds
-one nominal $p=0.010$ that does not survive correction either. A
-low-dose sweep ($\alpha\in\{2.5,5,10\}$ at the common site, Jaccard
-label for speed) finds flip rates flat across all three doses
-($42$-$52\%$), no monotone dose-response. All five are consistent with,
-and do not add beyond, the two findings above.
+every configuration (p=0.1435, 0.049, 0.7905, 0.6072; the nominal
+0.049 does not survive Holm correction across even these four tests). A
+2x3 competing-risks (flip / no-flip / degenerate) chi-square finds
+one nominal p=0.0097 that likewise does not survive correction. On
+dosage: measured on 100 correctly-formatted prompts, the
+residual-stream norm at the injection point is 124.7 (L8) and 166.0
+(L9), giving relative perturbations of 16.0%/12.0% at alpha=20
+and 32.1%/24.1% at alpha=40
+(`code/26_ffn_attn_dosage_diagnostic.py`). **This
+quantity is equal for the FFN-site and Attention-site arms by
+construction, not by measurement**: the script computes a single shared
+denominator (the residual-stream norm at that layer) for both arms, so
+the two arms' relative perturbation is necessarily identical. What the
+diagnostic establishes is that the *correct* denominator is the
+residual stream rather than each sublayer's own output norm -- which
+removes the apparent 2-3x asymmetry an earlier, wrong-denominator
+version of this diagnostic reported (Appendix A). It does not
+independently demonstrate the absence of a dosage asymmetry, because with
+this denominator no asymmetry could have been observed.
 
-**Attempting to grow the held-out set: the bottleneck is GPT-2's
-competence, not sample size.** The direction-validity gate's $n=11$
-holdout is bottlenecked by GPT-2's judge-validated correct rate on
-TruthfulQA (27/534, 5.1\%) -- itself a consequence of an old Jaccard-label
-filter that discarded 283 of the full 817-item TruthfulQA validation
-split before this judge existed. We judged all 283 previously-discarded
-items and merged them into the pool
-(`kaggle_kernels/paper1-causal-patch-enlarged-pool/`): \textbf{zero of
-them were judged correct} (27/817 correct overall, exactly unchanged from
-27/534) -- GPT-2's near-zero success rate on TruthfulQA is a genuine
-competence ceiling, not an artifact of which 534 items happened to be
-scorable by the old heuristic. The direction-validity holdout therefore
-remains $n=11$; re-drawn from a differently-ordered pool, its AUROC point
-estimates move (L8 FFN/Attn$=0.375$/$0.333$, L9 FFN/Attn$=0.167$/$0.25$,
-all CIs still consistent with chance) -- a second independent
-illustration of how much a single held-out AUROC estimate swings at this
-$n$. The 200-resplit diagnostic above resolves what this single second
-draw could only illustrate: across many resplits the held-out AUROC
-centers near chance (mean $0.54$-$0.58$), and this second draw's point
-estimates (0.167-0.375) sit well inside that typical range, unlike the
-original seed's (0.0-0.125), which was an extreme low-tail draw.
-The causal test itself reruns cleanly at nearly double the power
-($n=750$ hallucinated prompts, up from 467): the null holds throughout
-(FFN-vs-Attention common-site $p=0.18$-$0.84$ across all four
-configurations), with minimum-detectable odds ratios of $2.5$-$8.0$
-(previously $3.25$-$6.0$ at $n=467$) -- tighter at three configurations
-(L8/$\alpha{=}20$: $3.25\to2.5$; L8/$\alpha{=}40$: $3.25\to2.625$;
-L9/$\alpha{=}40$: $4.0\to3.0$), *looser* at the fourth (L9/$\alpha{=}20$:
-$6.0\to8.0$, because the number of discordant pairs this specific
-comparison produces actually fell from 14 to 9 at the larger $n$, not
-simply grown with it) -- still not a qualitative change in what this
-test can rule out, but a reminder that MDE depends on discordant-pair
-count, not sample size directly. The
-random-direction-ensemble check, rerun on this enlarged pool (a
-different specific 60-prompt subset, since the underlying prompt
-ordering shifted), now places the found directions at the 95th (FFN)
-and 100th (Attention) percentile rather than the original run's 50th and
-40th -- driven by 2-3 flip events out of 60, the kind of count this
-check cannot stably resolve either way. We report both results rather
-than the more favorable one: this specific check is itself too
-underpowered at $n=60$ to trust in either direction, which is consistent
-with, not a reversal of, this section's overall conclusion.
+**A low-dose sweep.** At the common site with alpha{2.5,5,10}
+(Jaccard label, for speed), flip rates are flat: FFN 50.00%,
+45.00%, 51.67%; Attention 50.00%, 48.33%, 41.67% -- a
+41.67-51.67% range overall. There is **no monotone increase**
+with dose in either arm; the Attention arm is in fact monotone
+*decreasing* across the three doses, the opposite of what a genuine
+dose-responsive steering effect would produce.
 
-**What this means for the flagship result.** These checks do not
-simply add further support to the existing FFN-vs-Attention null; taken
-together, they show that neither direction in this test was ever
-demonstrated to carry validated causal-relevant content in the first
-place. A null result from an instrument that cannot be shown to measure
-anything is not informative about component specificity one way or the
-other -- it is uninterpretable between "FFN and Attention are equally
-(un)causal for hallucination" and "we injected two vectors indistinguishable
-from noise, so of course nothing differed." The common-site and TOST
-results are consistent with the paper's existing null, and the achievable
-equivalence bounds line up with the previously-reported power
-calculation -- but the direction-validity and random-direction-ensemble
-findings are the more consequential result of this round: this specific
-causal test, as designed (an 18-vs-40-sample difference-of-means
-direction), does not clear the bar needed to make its own null claim
-meaningful, independent of anything about FFN or Attention specifically.
-We report this as an honest limitation of the instrument, not a claim
-that has been strengthened.
+**A differential-degeneration confound in the outcome metric
+itself.** A non-trivial fraction of interventions in every condition
+produce a degenerate or unparseable completion rather than a clean
+correct-or-wrong answer, ranging 10.1%-46.5% across all twelve
+found/random/attn-found conditions at both layers and alphas
+(`results/ffn_causal_patch_scaled_results.json`). Found and
+random directions are at broadly similar rates in most configurations but
+diverge at L8, where the found direction degenerates *more* than a
+random direction of equal norm (alpha=20: 25.9% vs. 16.7%;
+alpha=40: 40.8% vs. 25.4%). This does not generalize: at L9
+the ordering reverses (alpha=20: 11.0% vs. 15.4%;
+alpha=40: 19.3% vs. 22.8%). We note the L8 pattern because it
+is consistent with the flip-rate signal being generic perturbation rather
+than targeted correction, but two of four cells run the other way and we
+do not claim it as a general property. These numbers come from the
+n=228, Jaccard-label scaled run
+(`results/ffn_causal_patch_scaled_results.json`), not from the
+n=467 validated-label run this subsection otherwise reports. Because unparseable completions are scored as
+not-flipped in every condition, this differential degeneration could
+mechanically penalize whichever arm degenerates more; we do not attempt a
+competing-risks correction and flag it as unresolved.
 
-### 3.5 ROME-style causal tracing: a stronger causal test
+**Extension beyond GPT-2, for completeness.** The same test on
+Pythia-410M and Qwen2.5-0.5B-Instruct (chat-templated) is too underpowered
+to support any claim. On Pythia, valid pairs collapse from n=22 at
+alpha=10 (p=0.25) to n=7 at alpha=20 to n=0 at alpha=40
+(generation degenerates entirely). On Qwen0.5B-chat, valid pairs are
+n=2,1,0 at alpha=10,20,40 -- uninformative rather than merely
+underpowered, since this instruction-tuned model's chat-style responses
+rarely clear the word-overlap labeling threshold even at baseline.
 
-Additive mean-shift steering (§3.4) is a comparatively weak causal
-instrument. We replace it with causal tracing (Meng et al. 2022),
-adapted to closed-book QA (corrupting the whole question span, since no
-single clean "subject span" applies): a clean run scores a forced-choice
-$\text{logit\_diff}$ between the correct and incorrect reference answer's
-first token; a corrupted run adds Gaussian noise to the question-span
-embeddings; a restoration sweep patches each (layer, component)
-one at a time and records the normalized restoration score; a
-specificity control repeats this with a mismatched example's activation
-instead of the example's own (`code/08_rome_style_causal_tracing.py`).
+**The honest reading.** Every one of these tests returns a null.
+None of them is informative about component specificity, because §4.3
+shows neither injected direction was ever demonstrated to carry
+label-relevant content, §4.1 shows the outcome variable is floored by the
+model's competence, and §4.2 shows over half the outcome events that do
+occur are confounded with loop-breaking. A null from an instrument that
+cannot be shown to measure anything is uninterpretable between "FFN and
+Attention are equally (un)causal for hallucination" and "we injected two
+vectors indistinguishable from noise, so of course nothing differed." We
+report it as the latter possibility not being excluded, which is the same
+as reporting the instrument as inconclusive.
 
-**Result, at the maximum powered sample ($n_{\text{valid}}=67$, the
-dataset's supportable maximum, pre-registering the joint 24-test
-correction as primary).** FFN shows no specific restoration effect
-anywhere. Attention's strongest candidate (L9, own$-$shuffled $=+0.151$)
-does not survive the joint Holm-Bonferroni threshold ($p=0.012$ vs.\
-$0.05/24=0.00208$) -- attenuated from the paper's original, lower-powered
-$n=45$ pass, where the same cell was larger ($+0.214$, $p=0.0026$) and
-had survived only a less conservative per-family (not joint) scoping.
-Instead, MLP L9 -- an *anti-specific* result, where a
-mismatched example's activation restores discrimination *better* than
-the example's own -- clears the strict joint threshold
-($p=0.00086$, own$-$shuffled $=-0.203$). More data did not vindicate the
-one borderline Attention-favoring signal this test produced; it did not
-reverse sign -- it stayed positive in both passes, shrinking from
-$+0.214$ to $+0.151$ while losing significance under the stricter joint
-correction. We read this as consistent with the original Attn L9
-finding being noise around a lenient-scoping threshold, not a real effect
-suppressed by low power, and it reinforces rather than complicates this
-paper's overall causal null. We do not claim the anti-specific MLP L9
-result is itself a stable finding rather than one more stopping point in
-a noisy series.
+### 4.5 Passive component probes: effect sizes against fold-seed noise
 
-**Extending beyond GPT-2.** Neither Pythia-410M nor Qwen2.5-0.5B shows
-any layer or component surviving correction under either the joint or
-per-family framing -- a clean null at both architectures
-(`code/09_multi_arch_rome_style_causal_tracing.py`). Pythia's smallest
-uncorrected $p=0.0645$ (Attn L20); Qwen's smallest is $p=0.0041$ (Attn
-L15), numerically close to GPT-2's result but still short of Qwen's own
-stricter 24-layer per-family threshold. The one causal signal this test
-found anywhere (GPT-2 Attn L9, itself only surviving under a
-non-default, per-family correction scoping) does not replicate in either
-extension architecture.
+On GPT-2 under the Jaccard label, FFN wins 8/12 layers (two-sided
+binomial p=0.39; one-sided p=0.19; neither significant). Peak FFN
+layer is L8 (AUROC 0.6053); peak Attn layer is L3 (AUROC 0.6165) --
+so the single best-discriminating component on GPT-2 is Attention, not
+FFN. At L8, FFN direct logit attribution is higher for hallucinated
+samples (5.08) than correct samples (4.85): an in-sample,
+non-cross-validated, suggestive but unconfirmed "over-retrieval"
+signature.
 
-**Rerun under the validated judge label -- a more structural dependence
-on the Jaccard label than §3.4 had, closed by a fresh audit.** Every
-result above filters candidates on Jaccard label$=1$ ("clean" examples).
-§4 establishes that only $27/534$ GPT-2 samples are actually judge-correct
--- so most of the "clean" examples driving this section's own
-self-declared *stronger* causal test were, on this paper's own validated
-numbers, likely hallucinations. We reran the sweep filtering on the
-validated judge label instead (`code/40_rome_style_causal_tracing_validated.py`),
-averaging $10$ independent corruption draws per example (removing the
-original's selection on a single noisy realization: the old
-"clean$>$corrupted" filter is dropped entirely, and all candidates are
-retained regardless of any one draw's degradation) and ensembling the
-mismatched-donor control over $10$ random donors instead of one
-deterministic ring-neighbor. The judge-correct pool is small --
-$17$ usable candidates out of $27$ total judge-correct GPT-2 samples,
-after requiring a parseable correct/incorrect answer pair -- and this is
-disclosed as a genuine power limitation, not silently absorbed. Across
-individual corruption draws, only $53.5\%$ show real degradation from
-corruption (clean$>$corrupted), underscoring why averaging over draws,
-rather than selecting on one, is the right correction. No cell survives
-Holm-Bonferroni correction at either this test's own 24-comparison
-family or a stricter $120$-test family spanning all three
-architectures' equivalent sweeps; the two smallest uncorrected p-values
-are both Attention layers (L10 $p=0.026$, L11 $p=0.023$, both
-own$-$shuffled positive), consistent in direction with this section's
-Jaccard-label result above but clearing neither correction threshold at
-this sample size. The one-instance-name limitation this round does not
-address, disclosed rather than silently left as-is: the forced-choice
-score remains first-token log-odds, not a length-normalized
-full-sequence log-probability -- implementing the latter would require a
-materially larger redesign of the causal-tracing hook machinery than was
-tractable alongside the label-validity and averaging fixes in this
-round.
+**How large is a fold seed worth?** Two numbers this repository
+reports for the *same* features (GPT-2 FFN L8) differ: 0.6053 in
+this section and 0.643 in the paired-delta analysis of
+`code/37_paired_component_delta_auroc.py`. An earlier draft
+attributed this to an aggregation-convention difference (mean-of-folds
+versus pooled out-of-fold predictions). That explanation is wrong. The
+real cause is the cross-validation fold seed:
+`code/02_cross_arch_component_probe.py` uses
+`StratifiedKFold(random_state=42)`, `code/37` uses
+`random_state=0`. Decomposing exactly
+(`code/50_cv_seed_sensitivity_sweep.py`): mean-of-folds at seed
+42 is 0.6053; mean-of-folds at seed 0 is 0.6418 (seed component
++0.0365); pooled-OOF at seed 0 is 0.6427 (aggregation component
++0.0010). **The seed accounts for 0.0365 of the 0.0374 total
+gap; the aggregation convention accounts for 0.0010.**
 
-### 3.6 Toward active causal control: beyond a single linear direction
+**A 50-seed sweep, and what it does and does not undermine.** We
+swept `StratifiedKFold`'s `random_state` over 50 values,
+changing nothing else in `code/02`'s protocol, at each
+architecture's own reported peak FFN and peak Attn layer. Individual
+component AUROCs move substantially: GPT-2 L8 FFN spans [0.5868,
+0.6422] (mean 0.6154, SD 0.0132); Qwen0.5B L17 Attn spans [0.4953,
+0.5948] (mean 0.5519, SD 0.0220), and Qwen0.5B L17 FFN spans
+[0.4807,0.5724] (mean 0.5219, SD 0.0174) -- straddling chance. Across all twelve
+architecture/layer/component cells swept, the full range over 50 seeds
+is 0.055-0.100 AUROC and the SD is 0.013-0.022. A single-seed
+estimate on this data therefore carries roughly a tenth of an AUROC point
+of fold-assignment spread -- an order of magnitude larger than the
+0.003-0.011 peak-versus-peak margins §4.6 compares, and several times
+the 0.019-0.028 margins elsewhere in this paper.
 
-Section 3.4's intervention is a single dense linear direction injected at
-fixed strength; at $n=81$-228 this design cannot distinguish "FFN resists
-causal correction in principle" from "a dense direction is simply the
-wrong intervention class." A dense mean-difference direction averages
-over every latent factor that differs between conditions (topic, length,
-confidence, and any genuine truthfulness signal); if a correction signal
-exists but is carried by a small number of sparse, near-monosemantic
-features, additive steering along the dense direction would dilute it.
-Sparse autoencoders (SAEs) are designed to recover exactly this
-structure.
+**The paired same-layer difference, by contrast, is stable, and we
+report that rather than overstating the seed result.** Because both
+components are fit on the same folds, their difference cancels most of
+the fold-assignment noise: at GPT-2 L8, Delta=+0.0688+/-0.0155 with
+FFN ahead in 50/50 seeds; at Pythia L11, +0.0512+/-0.0209, FFN ahead
+in 98%; at Qwen0.5B L8, +0.0118+/-0.0204, FFN ahead in 70%. The
+sign is layer-dependent, not architecture-dependent: at Pythia L4,
+Delta=-0.0569+/-0.0212 with FFN ahead in 0% of seeds, and at
+Qwen0.5B L17, -0.0300+/-0.0231, FFN ahead in 10%. **So the
+FFN-vs-Attention answer is determined by which layer is compared, and the
+peak-versus-peak comparison this literature (and this paper's earlier
+draft) relies on is precisely the fragile way to choose it**, because
+argmax over near-tied layers is the statistic most exposed to fold-seed
+noise.
 
-**Proposed protocol.** Train an SAE on FFN sublayer output activations
-(unit-norm decoder columns, to keep the $\ell_1$ sparsity penalty
-well-posed rather than evadable by shrinking the code while inflating
-decoder norm); score each feature for hallucination-relevance via a
-Mann-Whitney $U$ test (robust to the zero-inflation typical of SAE
-activations) followed by Benjamini-Hochberg FDR control at $q=0.05$
-(applied to $p$-values, not effect size, since ranking by $|d_j|$ alone
-does not control the false discovery rate); construct a reconstruction-space
-clamp on the top FDR-surviving feature(s) and inject it during
-generation; repeat the found-vs-random-feature and FFN-vs-Attention
-specificity controls from §3.4. Training an SAE from scratch at adequate
-scale was infeasible within this project's budget; the following
-substitutes a pretrained one for that step only.
+**A paired test of the actual estimand.** The peak-versus-peak
+comparisons above are visual: two separately-estimated CV means checked
+against their own fold SDs, though the FFN and Attention probes are fit on
+the same samples and folds. The paper's real estimand is their difference,
+Delta=AUROC_{FFN}-AUROC_{Attn}. Using
+already-cached raw per-sample features (Pythia, Qwen0.5B) and GPT-2's
+vendored mech-int activations (no new model inference), we compute
+out-of-fold predicted probabilities for both components from the same
+folds and a BCa bootstrap 95% CI on Delta over 2000 resamples
+(`code/37`). At each architecture's own FFN-peak layer under this
+aggregation: GPT-2 (L8) Delta=+0.067, CI [+0.012,+0.122]; Pythia
+(L11) Delta=+0.047, CI [-0.002,+0.100]; Qwen0.5B (L20)
+Delta=+0.053, CI [-0.007,+0.113]. At each architecture's own
+Attn-peak layer the sign reverses as expected: GPT-2 (L3)
+Delta=-0.085, CI [-0.137,-0.036]; Pythia (L4) Delta=-0.113, CI
+[-0.162,-0.064]; Qwen0.5B (L8) Delta=-0.032, CI [-0.084,+0.023].
 
-**What we ran, and what we found.** We substitute
-`jbloom/GPT2-Small-SAEs-Reformatted`'s layer-8 SAE ($d_{\text{sae}}=24{,}576$,
-trained on 300M tokens of OpenWebText) -- a disclosed mismatch on two
-axes at once: wrong hookpoint (residual stream, not FFN-sublayer output)
-and wrong training distribution (general text, not
-TruthfulQA-hallucination-specific). **0 of 24,576 features survive FDR
-on this paper's own 534-example dataset**
-(`results/sae_feature_clamp_paper1.json`; the generating script for this
-specific result predates the current numbered `code/` sequence and is
-not separately released -- the cached result is the sole surviving
-artifact), so
-the causal clamp step was never reached. This is a genuine null one
-stage earlier than §3.4's causal test, but bounded by instrument
-mismatch, not a clean absence-of-mechanism result: either axis of
-mismatch alone could explain zero surviving features without implying no
-sparse FFN-specific signal exists. Running the identical procedure on a
-companion paper's HaluEval dataset ($n=500$, same SAE, same layer) as a
-positive-control check of the pipeline itself
-(`code/15_sae_feature_gating_utility.py`) finds 331/24,576 features
-survive FDR there (best $p=4.8\times10^{-11}$), confirming the GPT-2 null
-above is not a feature-selection bug. Yet even with a passively
-significant feature in hand, the causal clamp test on that dataset shows
-no specificity at any strength ($p=1.000, 0.508, 1.000$ at
-$\eta=10,20,40$) -- convergent with, not contradicting, this paper's
-dense-direction causal null.
+Averaged across *all* layers rather than only the peaks -- the
+summary least vulnerable to selection bias -- Delta is small on every
+architecture (GPT-2 +0.0017+/-0.036; Pythia +0.0005+/-0.042;
+Qwen0.5B -0.0021+/-0.034), and a layer-weighted pooled estimate across
+all three architectures gives Delta=-0.0003 with between-architecture
+variance of 3.9x10^{-6}. That is the properly pooled null.
 
-### 3.7 Dissociating difficulty from hallucination signal
+**Peak layers are not stable, and the earlier "naming collision"
+explanation was wrong.** `code/37`'s pooled-OOF argmax puts
+Qwen0.5B's FFN peak at L20 and its Attn peak at L8, the reverse of the
+mean-of-folds peaks reported elsewhere in this paper (FFN L8, Attn L17).
+An earlier draft described this as pooled-OOF and mean-of-folds
+estimation "genuinely disagreeing on which layer wins." Given that the
+aggregation convention is worth 0.001 AUROC and the fold seed is worth
+0.037 on the same data, that attribution cannot be right: the two
+analyses also differ in fold seed, and argmax over 24 near-tied layers
+is exactly the statistic most sensitive to it.
 
-The $\approx0.03$ AUROC margin over the surface-feature baseline
-(0.605 vs.\ 0.576) is small enough that a generalized question-difficulty
+We measured this directly by recomputing the full per-layer AUROC profile
+at 12 different fold seeds and recording the argmax
+(`code/50`). On Qwen0.5B, the FFN peak lands on **four**
+different layers across 12 seeds (L12 in 6, L8 in 3, L20 in 2, L2
+in 1) and the Attention peak on **six** (L5 in 6, L8, L7, L12,
+L17, L23). Both of the "colliding" assignments -- FFN L8 / Attn L17
+from `code/02` and FFN L20 / Attn L8 from `code/37` -- are
+draws from that distribution. Pythia is similar (FFN peak on 3 distinct
+layers, modal L11 in 83% of seeds; Attention peak on 5, modal L4 in
+only 33%). GPT-2, with half as many layers, is the stable case for FFN
+(L8 in 12/12 seeds) but not for Attention (L3 in 6, L6 in 6).
+**There is no naming collision and no estimator disagreement to
+explain: "the peak layer" is not a well-identified quantity for either
+component on the 24-layer models at this sample size.** Any claim that
+depends on a specific peak layer -- including the peak-depth-fraction
+comparison in §4.6 -- inherits that instability.
+
+We also checked "peak AUROC" itself for winner's-curse selection bias
+using nested cross-validation (select the peak layer on inner folds only,
+evaluate on a held-out outer fold). Nested-CV peaks are uniformly lower
+than naive argmax peaks -- GPT-2 FFN 0.643->0.581, GPT-2 Attn
+0.632->0.600; Pythia FFN 0.632->0.584, Pythia Attn
+0.666->0.582; Qwen0.5B FFN 0.563->0.521, Qwen0.5B Attn
+0.570->0.515. On GPT-2 the correction flips which component leads
+(naive: FFN 0.643 vs. Attn 0.632; nested: Attn 0.600 vs. FFN
+0.581). We do not read this as Attention "really" winning -- the
+corrected margin is itself within noise -- but as a concrete
+demonstration that peak-AUROC comparisons can select the noisier rather
+than the truer component.
+
+### 4.6 Cross-architecture passive results
+
+[Real Kaggle data, N=605 Pythia / N=513 Qwen0.5B; per-layer numbers in
+`results/cross_arch_component_probe_*.json`.] Under the Jaccard label and a
+bare prompt template, FFN wins a numerical majority of layers on all
+three architectures (66.7%, 66.7%, 58.3%); per-architecture
+two-sided p-values are 0.39/0.15/0.54, one-sided 0.19/0.076/0.27 --
+all non-significant. Pooled across all 60 layers, 38/60 FFN wins
+gives a nominally significant one-sided p=0.026, but this is not a
+valid inferential instrument: 60 layers within only 3 architectures
+are strongly autocorrelated, not independent trials. The only cleanly
+poolable count is architecture-level (3/3), directionally consistent but
+far too small an n to test formally.
+
+On peak AUROC, Attention is the single best-discriminating component on
+**one** of three architectures (GPT-2). Pythia's peak favors FFN
+(L11 =0.6181 vs. Attn L4 =0.6115); Qwen0.5B's also favors FFN (L8
+=0.5657 vs. Attn L17 =0.5625). Every one of these margins is a small
+fraction of the relevant peak's own cross-validation SD: GPT-2's 0.011
+margin against SDs of 0.0557/0.0427 (about a quarter to a fifth),
+Pythia's 0.0066 against 0.0442/0.0345 (about a seventh to a fifth),
+and Qwen0.5B-bare's 0.0032 against 0.0628/0.0423 (about a twentieth
+to a thirteenth) -- and, per §4.5, all of them are a small fraction of
+what changing the fold seed alone is worth.
+**The uniform statement is: the peak-component question is within
+measurement noise on all three architectures tested.**
+
+**A template confound on Qwen0.5B.** Qwen2.5-0.5B (~494M
+parameters, the largest model tested) was queried with a bare
+`Q: ... A:` template rather than its chat template -- genuinely
+out-of-distribution usage for an instruction-tuned model. Rerunning with
+the proper chat template (`code/02_cross_arch_component_probe.py qwen05chat`; only prompt construction changed) reverses the
+peak-component result: Attention becomes the peak (L4 =0.5988+/-0.0438)
+over FFN (L4 =0.5704+/-0.0186), and the layer-count result reverses too
+(FFN wins 11/24, 45.8%, versus 58.3% before). The corrected
+margin (0.0284) is still smaller than Attention's own CV SD
+(0.0438), so "Attention now clearly wins" would overclaim in the same
+way "FFN wins 3/3" did. The finding is the direction of the flip, not a
+newly-resolved winner. Peak-FFN depth fraction also shifts, from 33.3%
+(L8/24, bare) to 16.7% (L4/24, chat).
+
+**Re-probing under the validated label.** We relabeled every
+completion on all three architectures with the LLM judge and reran the
+component probe under both labels
+(`code/24_llm_judge_score_all_architectures.py`,
+`results/llm_judge_relabel_summary.json`), and separately
+extended the check to GPT-2 itself
+(`code/29_gpt2_full_validated_relabel_rerun.py`, all 534
+samples). Absolute AUROCs rise substantially on every architecture (GPT-2
+0.605/0.617->0.698/0.717 FFN/Attn peak; Pythia
+0.6181/0.6115->0.7353/0.7494; Qwen0.5B-bare
+0.5657/0.5625->0.7127/0.6992; Qwen0.5B-chat
+0.5704/0.5988->0.6603/0.6412), and FFN's numerical majority is
+restored on Qwen0.5B-chat (11/24 under Jaccard to 18/24 under the
+validated label) -- so the template-reversal finding is itself
+label-sensitive. Stated completely: under the validated label FFN's
+majority *rises* on three of four architecture/template conditions
+(Pythia 16/24->18/24; Qwen0.5B-bare 14/24->20/24; Qwen0.5B-chat
+11/24->18/24) and only GPT-2 moves the other way, reversing further
+toward Attention (8/12->2/12). FFN holds a layer-count majority on 3
+of 4 conditions under either label -- with different members (GPT-2 flips
+out as Qwen0.5B-chat flips in). Which component *peaks* is less
+stable still: only 2 of 4 conditions keep the same peak winner under both
+labels (GPT-2: Attention both times; Qwen0.5B-bare: FFN both times), and
+the other two flip in opposite directions.
+
+**A class-imbalance caveat on every validated-label number above.**
+The judge label is severely imbalanced toward "hallucinated": GPT-2
+27/534 correct (5.1%), Pythia 29/605 (4.8%), Qwen0.5B-bare
+63/513 (12.3%), Qwen0.5B-chat 73/433 (16.9%). Cross-validated
+AUROC at this imbalance is substantially noisier: on GPT-2 the FFN/Attn
+peak AUROC standard deviations roughly double under the validated label
+(FFN 0.0557->0.1115; Attn 0.0427->0.1253), so GPT-2's own
+0.698/0.717 margin (0.019) is well within one SD of either peak.
+The rising absolute AUROCs and the layer-majority shifts are real
+properties of the re-analysis, not coding errors, but they are suggestive
+of a real, under-characterized effect of label quality on this probe --
+not tighter estimates than the numbers they revise.
+
+{figures/ffn-attn-comparison.pdf}
+
+*Peak AUROC for FFN vs. Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in all four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template. §4.5 shows that changing only the cross-validation fold seed moves these estimates by more than the margins shown.*
+
+### 4.7 Two further causal instruments
+
+**ROME-style causal tracing.** Additive mean-shift steering is a
+comparatively weak causal instrument. We replace it with causal tracing
+(Meng et al. 2022), adapted to closed-book QA (corrupting the whole
+question span, since no single clean "subject span" applies): a clean
+run scores a forced-choice logit_diff between the correct and
+incorrect reference answer's first token; a corrupted run adds Gaussian
+noise to the question-span embeddings; a restoration sweep patches each
+(layer, component) one at a time; a specificity control repeats this with
+a mismatched example's activation
+(`code/08_rome_style_causal_tracing.py`).
+
+At the maximum powered sample (n_{valid}=67, pre-registering the
+joint 24-test correction as primary), FFN shows no specific restoration
+effect anywhere. Attention's strongest candidate (L9, own-shuffled
+=+0.151) does not survive the joint Holm-Bonferroni threshold
+(p=0.012 vs. 0.05/24=0.00208) -- attenuated from an earlier,
+lower-powered n=45 pass where the same cell was larger (+0.214,
+p=0.0026) under a less conservative per-family scoping. Instead, MLP L9
+-- an *anti-specific* result, where a mismatched example's
+activation restores discrimination *better* than the example's own
+-- clears the strict joint threshold (p=0.00086, own-shuffled
+=-0.203). We do not claim the anti-specific MLP L9 result is a stable
+finding rather than one more stopping point in a noisy series. Neither
+Pythia-410M nor Qwen2.5-0.5B shows any layer or component surviving
+correction under either framing (Pythia's smallest uncorrected
+p=0.0645, Attn L20; Qwen's p=0.0041, Attn L15).
+
+Rerun under the validated judge label
+(`code/40_rome_style_causal_tracing_validated.py`), averaging
+10 independent corruption draws per example and ensembling the
+mismatched-donor control over 10 random donors, the judge-correct pool
+is small (17 usable candidates out of 27 total judge-correct GPT-2
+samples, after requiring a parseable correct/incorrect answer pair) --
+the same competence ceiling as §4.1, reappearing in a different
+instrument. Across individual corruption draws, only 53.5% show real
+degradation from corruption, underscoring why averaging over draws rather
+than selecting on one is the right correction. No cell survives
+Holm-Bonferroni at either this test's own 24-comparison family or a
+stricter 120-test family across all three architectures; the two
+smallest uncorrected p-values are both Attention layers (L10 p=0.026,
+L11 p=0.023). One limitation is disclosed rather than fixed: the
+forced-choice score remains first-token log-odds, not a length-normalized
+full-sequence log-probability.
+
+**A sparse-feature intervention.** A dense mean-difference direction
+averages over every latent factor that differs between conditions; if a
+correction signal exists but is carried by a small number of sparse
+features, additive steering along the dense direction would dilute it. We
+substitute `jbloom/GPT2-Small-SAEs-Reformatted`'s layer-8 SAE
+(d_{sae}=24{,}576, trained on 300M tokens of OpenWebText) -- a
+disclosed mismatch on two axes at once: wrong hookpoint (residual stream,
+not FFN-sublayer output) and wrong training distribution. **0 of
+24,576 features survive Benjamini-Hochberg FDR at q=0.05 on this
+paper's own 534-example dataset**
+(`results/sae_feature_clamp_paper1.json`), so the causal clamp
+step was never reached. This is a null one stage earlier than §4.4's
+test, but bounded by instrument mismatch: either axis alone could explain
+zero surviving features. Running the identical procedure on a companion
+dataset (HaluEval, n=500, same SAE, same layer) as a positive control
+(`code/15_sae_feature_gating_utility.py`) finds 331/24{,}576
+features surviving FDR (best p=4.8x10^{-11}), confirming the null
+above is not a feature-selection bug. Even there, the causal clamp shows
+no specificity at any strength (p=1.000, 0.508, 1.000 at
+eta=10,20,40).
+
+### 4.8 Difficulty controls
+
+The ~0.03 AUROC margin over a surface-feature baseline (0.605
+vs. 0.576) is small enough that a generalized question-difficulty
 signal remains a live alternative to a hallucination-specific one. We
 test this two ways on GPT-2, matching correct/hallucinated groups within
 10 quantile bins of (1) mean token-level output entropy and (2) the
 out-of-fold predicted probability of a logistic regression over all 6
-surface features, then re-probing the identical FFN/Attn component
-comparison on each matched set (`code/06_difficulty_matched_control.py`).
-Entropy-matching retains $n=492/534$; the stronger composite match
-retains $n=462/534$. Neither proxy correlates significantly with
-correctness before matching (entropy $r=0.045$, $p=0.295$; composite
-$r=0.024$, $p=0.578$) -- this dataset never had a statistically
-detectable difficulty confound for either proxy to remove, so this is
-evidence of survival under a weak test, not proof of dissociation under a
-strong one.
+surface features, then re-probing the identical FFN/Attn comparison on
+each matched set (`code/06_difficulty_matched_control.py`).
+Entropy-matching retains n=492/534; the composite match retains
+n=462/534. Neither proxy correlates significantly with correctness
+before matching (entropy r=0.045, p=0.295; composite r=0.024,
+p=0.578) -- this dataset never had a statistically detectable
+difficulty confound for either proxy to remove, so this is survival under
+a weak test, not dissociation under a strong one.
 
-**Result: the FFN/Attention signal survives both matches essentially
-unchanged**, including the stronger composite control (entropy-match:
-FFN $0.6085\pm0.0442$, Attn $0.6102\pm0.0285$; composite-match: FFN
-$0.6255\pm0.0510$, Attn $0.6253\pm0.0926$; vs.\ $0.6053\pm0.0557$ /
-$0.6165\pm0.0427$ unmatched). A label-permutation test (500 shuffles,
-replacing an invalid fold-std-as-SE z-test) gives both components
-$p=0.0020$ under both matching schemes -- the permutation floor at this
-shuffle count.
+The signal survives both matches essentially unchanged (entropy-match:
+FFN 0.6085+/-0.0442, Attn 0.6102+/-0.0285; composite-match: FFN
+0.6255+/-0.0510, Attn 0.6253+/-0.0926; vs. 0.6053+/-0.0557 /
+0.6165+/-0.0427 unmatched), with a label-permutation test (500
+shuffles) giving both components p=0.0020 -- the permutation floor at
+this shuffle count. Extending to the other architectures
+(`code/11_multi_arch_difficulty_matched_control.py`) splits by
+architecture: Pythia replicates GPT-2's survival (FFN 0.6327+/-0.0513,
+Attn 0.6093+/-0.0221, both p=0.0020, 89.3% retention), Qwen0.5B
+does not (FFN 0.5277+/-0.0434, p=0.230; Attn 0.5282+/-0.0320,
+p=0.206, 88.3% retention).
 
-Extending to Pythia-410M and Qwen2.5-0.5B (fresh entropy computed from
-each model's own greedy-decode logits;
-`code/11_multi_arch_difficulty_matched_control.py`) splits by
-architecture: Pythia replicates GPT-2's survival (FFN
-$0.6327\pm0.0513$, Attn $0.6093\pm0.0221$, both $p=0.0020$, 89.3\%
-retention), but Qwen0.5B does not (FFN $0.5277\pm0.0434$, $p=0.230$; Attn
-$0.5282\pm0.0320$, $p=0.206$, 88.3\% retention) -- a genuine architecture
-split, not a uniform confirmation.
+A gradient-reversal probe attaches a second head predicting the entropy
+proxy from the same shared representation, back-propagating its
+*negative* gradient
+(`code/17_gradient_reversal_adversarial_probe.py`). The
+adversarial pressure works: held-out R^2 for the entropy head is
+negative for both components (-0.71 FFN, -1.44 Attn). Hallucination
+AUROC nonetheless survives above chance for both (FFN 0.5944+/-0.0624,
+Attn 0.6134+/-0.0542, both p=0.0050 against a 200-shuffle floor).
 
-**A stronger, adversarial version.** A gradient-reversal probe attaches a
-second head predicting the entropy proxy from the same shared
-representation, back-propagating its *negative* gradient -- actively
-pushing the representation to discard whatever predicts difficulty while
-still classifying hallucination
-(`code/17_gradient_reversal_adversarial_probe.py`). The adversarial
-pressure works as intended: held-out $R^2$ for the entropy head is
-negative for both components ($-0.71$ FFN, $-1.44$ Attn), worse than
-predicting the mean. Despite this, hallucination AUROC survives
-significantly above chance for both (FFN $0.5944\pm0.0624$, Attn
-$0.6134\pm0.0542$, both $p=0.0050$ against a 200-shuffle permutation
-floor) -- the strictly stronger claim the matched-split control alone
-could not make: the signal is not explained by difficulty leaking through
-the representation, since it survives even when the representation is
-adversarially trained to discard exactly that information.
+Rerunning the matched controls under the validated label
+(`code/30_difficulty_matched_control_judge_label.py`) is
+inconclusive: the severe class imbalance leaves only 54/534 samples
+(10.1%) after matching, 27 per class, roughly 5 per CV fold, and
+the two proxies then disagree (entropy-only: FFN 0.7840, p=0.0060;
+Attn 0.7187, p=0.0200; composite: FFN 0.3987, p=0.82; Attn
+0.3680, p=0.89). We read neither as informative. This control also
+probes the Jaccard-label peak layers (FFN L8, Attn L3) rather than the
+validated label's own shifted peaks -- a layer mismatch we did not
+correct for. The difficulty-dissociation result should therefore be read
+as established only under the Jaccard label.
 
-**Attempting the same difficulty-matched control under the validated
-label: inconclusive, not confirmatory or disconfirmatory.** We reran the
-entropy- and composite-matched controls on GPT-2 with the same validated
-judge label used elsewhere in this section
-(`code/30_difficulty_matched_control_judge_label.py`). This control probes
-the Jaccard-label peak layers (FFN L8, Attn L3) inherited unchanged from
-§3.1-3.2's Jaccard analysis, not the validated label's own shifted peaks
-(FFN L5, Attn L6) -- a layer mismatch we did not correct for, disclosed
-here rather than left unremarked. The severe class
-imbalance noted in §3.2 (only 27/534 judge-labeled correct) collides
-directly with this control's per-bin matching procedure: with at most
-1-4 correct samples per difficulty decile, the matched set retains only
-54/534 samples (10.1\%, versus $\approx90\%$ under Jaccard above) --
-27 per class, split five ways for cross-validation, roughly 5 per fold.
-At this $n$, the two difficulty proxies give **inconsistent** answers: the
-entropy-only match shows both components significantly above chance (FFN
-$0.7840$, $p=0.0060$; Attn $0.7187$, $p=0.0200$ against a 500-shuffle
-floor), while the stronger 6-feature composite match shows both at or
-below chance and non-significant (FFN $0.3987$, $p=0.82$; Attn $0.3680$,
-$p=0.89$). We do not read either result as informative about whether the
-FFN/Attention signal survives a difficulty confound under the validated
-label: a 5-per-fold CV probe is not powered to distinguish a real effect
-from noise in either direction, and the retention collapse itself is a
-direct, mechanical consequence of the label's class imbalance rather
-than a property of the underlying difficulty-matching question. The
-difficulty-dissociation result above should therefore be read as
-established only under the Jaccard label; whether it holds under a
-validated label remains genuinely untested, not weakly confirmed or
-weakened, pending a larger validated-label sample with enough correct
-completions to support matching.
+### 4.9 Layer localization, and its label-dependence
 
-## 4. Discussion and Limitations
+For context on where the probes above are read, we report GPT-2 layer
+localization from the vendored mech-int artifacts (verified byte-identical
+to the originating project's logs;
+`code/00_verify_vendored_mechint_numbers.py` reprints each).
+Under the Jaccard label, six methods converge on layers 8-9: dense probe
+peak L9 (0.5827); sparse L1 probe peak L9 (100/768 active dims, 87%
+sparse, CV AUROC 0.589, not the inflated in-sample 0.874);
+token-position probe peak L8 last-token (0.6036); component probe FFN
+peak L8 (0.6053) vs. Attn peak L3 (0.6165); steering peak improvement
+at L9; gold-token logit-lens divergence at L8. A seventh method, DLA
+magnitude, does not join: L10 (+0.90) and L11 (+0.71) are larger than
+L9.
 
-**A validity checklist for causal-patching interpretability studies.**
-§3.4's flagship causal test went through five rounds of construct-
-validity scrutiny before its null could be trusted: a genuinely
-component-specific control direction (not a reused, wrong-component
-one), a dosage-match check, a direction-validity gate, a permutation-
-based cosine null, and a random-direction ensemble -- and even after all
-five, the direction-validity gate itself failed (neither the FFN nor
-the Attention direction clears chance-level held-out AUROC at any
-tested layer, §3.4). This paper's most transferable contribution is
-this checklist, distilled from that process, for any study patching a
-single estimated direction into a model's activations and drawing a
-causal conclusion from the result:
+Two of the six are weaker than "converges" implies. Steering's "peak
+improvement" at L9 is 0.0015 AUROC points, the argmax over a 52-cell
+grid against per-layer CV standard deviations of 0.03-0.08 -- not
+distinguishable from argmax-over-noise. The logit-lens analysis computes
+two divergence-layer estimates from the same run: the plain
+correct-vs-hallucinated divergence peaks at layer 1; only the gold-token
+variant peaks at L8.
 
-1. **Is the estimated direction itself validated on held-out data
-   before any intervention?** A direction that does not clear
-   chance-level AUROC on a genuinely held-out split has not been shown
-   to carry the signal an intervention experiment assumes it carries --
-   patching it in and observing no effect is then uninformative about
-   the underlying mechanism, not evidence against it.
-2. **Is the "control" direction genuinely from a different source, not
-   the same direction reused with a different label?** A control that
-   is mathematically identical or near-identical to the treatment
-   cannot establish specificity.
-3. **Does the injection site confound "which representation" with
-   "where in the computation"?** Patching two different sublayers at
-   different points in the block entangles component identity with
-   injection site; a common-site test disentangles them (§3.4) --
-   and can reveal that two apparently different interventions are
-   mathematically identical (as FFN-site and common-site patching are,
-   for GPT-2's block structure, verified by direct algebra and an
-   empirical byte-for-byte check).
-4. **Is a null distinguishable from a genuinely random direction, not
-   just from "no effect"?** A found direction whose causal effect sits
-   inside the empirical distribution of random-direction effects (as
-   this paper's does at the flagship configuration, 40th-50th percentile
-   of a 20-draw ensemble -- though the enlarged-pool rerun places it at
-   the 95th-100th percentile instead, and we report both rather than
-   only the more favorable one) has not been shown to be doing anything
-   a random direction would not also do.
-5. **Is statistical power reported at the resolution the claim needs?**
-   A null with a wide confidence interval (this paper's flagship test:
-   minimum detectable odds ratio 3.75-8.0) rules out large effects, not
-   small-to-moderate ones -- reporting the interval, not just the point
-   estimate and p-value, is what lets a reader judge which claim the
-   data actually support.
-6. **Does an alternative direction-estimation method change the
-   conclusion?** A single estimator's failure to validate is
-   ambiguous between "this estimator is a poor choice" and "the effect
-   is not there"; checking at least one alternative (this paper checks
-   logistic-regression weights and Fisher LDA against the same
-   held-out split, §3.4) helps distinguish the two.
+**This convergence does not survive relabeling.** Rerunning the four
+methods that consume only cached activations under the full-534 judge
+label (`code/29_gpt2_full_validated_relabel_rerun.py`, same
+probing code, only the label array swapped), the peak layer moves: dense
+probe L7 (0.6444), sparse L1 probe L7 (now 19/768 active dims, 98%
+sparse, CV AUROC 0.6260), token-position probe L6 (0.6961), DLA's
+largest FFN difference from L10 (+0.90) to L11 (+1.81). L8-9 is a
+property of the Jaccard label's noise pattern on this dataset, not a
+label-independent localization. Read together with the class-imbalance
+caveat in §4.6 and the fold-seed sensitivity in §4.5, the specific peak
+layers under either label should be treated as unstable, not as competing
+precise estimates.
 
-Applying this checklist to this paper's own flagship result is why its
-central claim is reported as a limitation of the instrument rather than
-as confirmatory evidence for or against FFN-specific causal control.
+### 4.10 A leave-one-category-out result whose interpretation changed twice
 
-**A second, distinct check for passive probing on category-structured
-benchmarks.** The checklist above targets causal-patching studies
-specifically. This paper's passive-probing results (§3.1-3.3) are
-subject to a different, equally basic validity question that a fresh
-review found this paper had never asked of itself: *does the probe's
-above-chance CV AUROC survive removing the benchmark's own topical
-category structure from the cross-validation split?* TruthfulQA clusters
-into 38 categories whose correct-answer rates vary by over 10 percentage
-points (§3.2), so a probe correlated with topic alone can look like a
-hallucination detector under ordinary random K-fold CV. We ran a
-leave-one-category-out re-test for the component probe on GPT-2 (§3.2):
-standard CV AUROC of 0.62-0.66 collapses to 0.48-0.49 -- chance or below
--- at every layer/component tested. Extending this to Pythia-410M and
-Qwen2.5-0.5B (§3.2) gives a heterogeneous result: Pythia's component
-probe is essentially unaffected (no detectable category-leakage
-contamination at either tested layer), while Qwen0.5B partially
-collapses at both components (0.566->0.485 FFN, 0.563->0.526 Attn, an
-untested numerical difference). Any study reporting a probe AUROC on TruthfulQA (or any
-other benchmark whose items cluster into topics correlated with the
-label) should run this check before treating a standard-CV AUROC as
-evidence of the signal it is claimed to measure -- the result is neither
-always contamination nor never contamination, so it cannot be assumed
-either way without checking. We did not run this check for this paper's
-other five converging methods (dense probe, sparse probe, token-position
-probe, steering, logit lens) before this draft; this check is cheap (a
-single re-partitioning of already-cached activations, no new model calls
-for GPT-2, and a single additional generation pass per architecture
-otherwise) and there was no principled reason it had been skipped until
-an outside review asked for it.
+We include this subsection in full, including the interpretations we
+abandoned, because it is the most directly useful part of this paper for
+a reader running similar diagnostics. An earlier draft reported its first
+half as a headline finding; an independent review then argued the whole
+thing was an estimator artifact; the controls reported here support
+neither reading exactly.
 
-**Data and code availability.** All code, cached result JSONs, and the
-paper source are included in the anonymized supplementary material for
-double-blind review, and will be released as a public GitHub repository
-under the authors' name upon publication.
-Every result that consumes only already-cached `results/*.json` artifacts
-is self-contained. Three scripts additionally require an unshipped
-sibling repository to *rerun from scratch* (as opposed to re-verifying
-already-saved outputs): `code/01_ffn_causal_patch.py` imports live code
-from a `mech-int` sibling project to regenerate labeled completions;
-`code/03_fisher_geometry_ffn_attn.py` and
-`code/06_difficulty_matched_control.py` depend on that same project's
-2.9GB `activations.pkl`; `code/15_sae_feature_gating_utility.py` reads
-cached hidden states from a second sibling project (`geom-proof`). Full
-end-to-end reproduction of §3.4, §3.7, and the SAE-gating result from raw
-data requires these two additional private repositories, not released
-with this paper.
+**The diagnostic, and its first reading.** TruthfulQA questions
+cluster into 38 topical categories, and standard random K-fold CV --
+the protocol every passive probe number in this paper uses -- can place
+same-category questions in both a fold's train and test split. Category is
+not independent of the label: on this 534-item GPT-2 pool, among the
+10 most frequent categories (each n>=15) the judge-correct rate
+ranges from 0% (Fiction, Paranormal, Stereotypes) to 10.5%
+(History, Conspiracies), and across all 38 from 0% to 28.6%
+(Confusion: People, n=7). We ran a leave-one-category-out (LOGO) CV
+re-test for the component probe at GPT-2 L8/L9
+(`code/47_category_leakage_diagnostic.py`): train on 37
+categories, test on the held-out one, repeated for every category with
+both classes present (16 of 38 qualify; the other 22 have zero
+correct-labeled items). Standard 5-fold CV gives AUROC 0.622 (L8 FFN),
+0.632 (L8 Attn), 0.616 (L9 FFN), 0.663 (L9 Attn); LOGO-CV gives
+0.479, 0.491, 0.482, 0.489 (SD 0.27-0.35 across folds). The
+first reading was: category-clustering leakage explains the probe's
+signal.
 
-**Reproducibility map.**
+**The objection: is the "collapse" just the LOGO estimator's own
+variance?** The objection has real force. The LOGO implementation averages
+*per-category* AUROCs, which is a different estimand from the
+per-fold average over random folds that standard CV reports. With 22 of
+38 categories having zero positives and the surviving ~16
+averaging ~1.7 positives each, each fold's AUROC is close to a
+coin flip. A naive standard-CV-versus-LOGO comparison is also not
+significant on its own terms (Welch p=0.09-0.16 across the four
+cells) -- but that comparison is between two different estimands, so its
+p-value does not answer the question either.
 
-| Claim | Section | Script | Cached result |
-|---|---|---|---|
-| Layer localization (7 methods) | §3.1 | `code/00_verify_vendored_mechint_numbers.py` | `results/*.json` (per-method) |
-| FFN vs. Attention decomposition | §3.2 | `code/02_cross_arch_component_probe.py` | `results/cross_arch_component_probe_*.json` |
-| Category-leakage re-test (LOGO-CV vs. standard CV), GPT-2 | §3.2 | `code/47_category_leakage_diagnostic.py` | `results/category_leakage_diagnostic.json` |
-| Category-leakage re-test, Pythia-410M and Qwen2.5-0.5B | §3.2 | `kaggle_kernels/paper1-category-leakage-cross-arch/run_category_leakage_cross_arch.py` | `results/category_leakage_cross_arch_results.json` |
-| Direction-validity 200-resplit diagnostic | §3.4 | `code/46_direction_validity_resplit_diagnostic.py` | `results/direction_validity_resplit_diagnostic.json` |
-| Paired ΔAUROC, nested-CV selection-bias check | §3.3 | `code/37_paired_component_delta_auroc.py` | `results/paired_component_delta_auroc.json` |
-| Qwen chat-template reversal | §3.3 | `code/02_cross_arch_component_probe.py qwen05chat` | `results/cross_arch_component_probe_qwen05chat.json` |
-| Difficulty-matched control | §3.7 | `code/06_difficulty_matched_control.py`, `code/11_multi_arch_difficulty_matched_control.py` | `results/difficulty_matched_control.json`, `results/multi_arch_difficulty_matched_control.json` |
-| FFN-sublayer causal patching | §3.4 | `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py`, `code/14_causal_patch_scaled_degeneration_filter.py` | `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`, `results/ffn_causal_patch_scaled_degeneration_filtered.json` |
-| ROME-style causal tracing | §3.5 | `code/08_rome_style_causal_tracing.py`, `code/09_multi_arch_rome_style_causal_tracing.py`, `code/18_rome_style_causal_tracing_scaled.py` | `results/rome_style_causal_tracing.json`, `results/multi_arch_rome_style_causal_tracing.json`, `results/rome_style_causal_tracing_scaled.json` |
-| Adversarial gradient-reversal probe | §3.7 | `code/17_gradient_reversal_adversarial_probe.py` | `results/gradient_reversal_adversarial_probe.json` |
-| SAE feature clamp, GPT-2 null (0/24,576 survive FDR) | §3.6 | generating script not released (predates current `code/` numbering) | `results/sae_feature_clamp_paper1.json`, `results/sae_feature_clamp_combined.json` |
-| SAE feature clamp, companion-dataset positive control (331/24,576 survive FDR) | §3.6 | `code/15_sae_feature_gating_utility.py` | `results/sae_feature_gating_utility.json` |
-| Label-validity audit (all 3 architectures) | §4 | `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` | `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json` |
-| Causal patching under validated label | §3.4 | `kaggle_kernels/paper1-causal-patch-judge-label/` | `results/causal_patch_judge_label_results.json` |
-| Corrected FFN-vs-Attention component-specificity test (real Attention direction) | §3.4 | `kaggle_kernels/paper1-causal-patch-real-attn-direction/` | `results/causal_patch_real_attn_direction_results.json` |
-| Direction-validity gate, permutation cosine null, common-site test, random-direction ensemble | §3.4 | `kaggle_kernels/paper1-causal-patch-tier1-validated/` | `kaggle_kernels/paper1-causal-patch-tier1-validated/output/causal_patch_tier1_validated_results.json` |
-| TOST equivalence bounds, competing-risks outcome table | §3.4 | `code/38_tier1_tost_competing_risks.py` | `results/tier1_tost_competing_risks.json` |
-| ROME-style causal tracing under validated judge label | §3.5 | `code/40_rome_style_causal_tracing_validated.py` | `results/rome_style_causal_tracing_validated.json` |
-| FFN/Attn dosage-mismatch diagnostic | §3.4 | `code/26_ffn_attn_dosage_diagnostic.py` | `results/ffn_attn_dosage_diagnostic.json` |
-| GPT-2 full-534 judge relabel | §3.1, §3.2, §3.7 | `kaggle_kernels/paper1-gpt2-full-judge-relabel/` | `results/gpt2_full_534_judge_labels.json` |
-| Surface-feature (length/lexical) baseline vs. validated judge label | §4 | `code/32_surface_baseline_vs_judge_label.py` | `results/surface_baseline_vs_judge_label.json` |
-| GPT-2 layer localization + component probe under validated label | §3.1, §3.2 | `code/29_gpt2_full_validated_relabel_rerun.py` | `results/gpt2_full_validated_relabel_rerun.json` |
-| GPT-2 difficulty-matched control under validated label | §3.7 | `code/30_difficulty_matched_control_judge_label.py` | `results/difficulty_matched_control_judge_label.json` |
-| Cheap baselines (last-layer probe, generation-confidence features) | §4 | `code/41_cheap_baselines.py` | `results/cheap_baselines.json` |
-| Low-dose alpha sweep (common site, Jaccard label) | §3.4 | `code/42_low_dose_alpha_sweep.py` | `results/low_dose_alpha_sweep.json` |
-| Direction-validity gate power/MDE analysis | §3.4 | `code/43_direction_validity_power_analysis.py` | `results/direction_validity_power_analysis.json` |
-| Alternative direction estimators (logistic regression, LDA) | §3.4 | `code/44_alternative_direction_estimators.py` | `results/alternative_direction_estimators.json` |
-| Enlarged-pool replication (283 previously-unused prompts judged, $n=750$ causal test) | §3.4 | `kaggle_kernels/paper1-causal-patch-enlarged-pool/` | `kaggle_kernels/paper1-causal-patch-enlarged-pool/output/causal_patch_enlarged_pool_results.json` |
+**Two permutation controls settle whether the estimator is to
+blame.** We rerun the identical LOGO procedure
+(`code/47::probe_leave_one_category_out`, reproduced
+unmodified) on group assignments that are random by construction, 100
+draws each (`code/48_permuted_pseudocategory_control.py`):
+*size-matched*, permuting the category-assignment vector so group
+sizes are preserved exactly; and *size- and class-matched*, permuting
+positives among positive slots and negatives among negative slots so that
+every pseudo-category has exactly the same n *and* the same number
+of correct-labeled items as the real category it replaces -- which makes
+the usable-fold count identical to the real one (16, versus 17.4 on
+average under size-matching alone), removing the alternative explanation
+that the 16 usable real categories are simply an unusual subset.
 
-**Label validity.** All results rest on a Jaccard word-overlap label,
-surface-form divergence rather than verified factual incorrectness. We
-quantified this on all three architectures with an independent LLM judge
-(Qwen2.5-3B-Instruct): a 100-item stratified GPT-2 sample gives 52\% raw
-agreement, Cohen's $\kappa=0.04$; full relabeling of every completion on
-Pythia, Qwen0.5B-bare, and Qwen0.5B-chat gives $\kappa=0.032$, $0.141$,
-and $0.084$ respectively -- next to chance throughout, not a GPT-2-specific
-artifact. The disagreement is consistently biased in one direction: the
-judge calls far more completions hallucinated than the word-overlap
-heuristic does (GPT-2: 98\% agreement on Jaccard-hallucinated calls, 6\%
-on Jaccard-correct calls), and manual reading of disagreement cases
-confirms the judge is usually right -- word-overlap frequently credits
-completions that share surface words with the reference but state a
-different specific fact (e.g., naming the wrong person or film), or that
-are degenerate repetition loops, as "correct." **A trivial length/lexical
-baseline check (Appendix B notes why this computation needed to exist
-before the claim below could be made).** We computed it
-(`code/32_surface_baseline_vs_judge_label.py`, the identical 6-feature
-surface classifier from §2/Related Work, rerun against the validated
-label on the same cached features): logistic regression CV AUROC
-$=0.5604\pm0.1047$, MLP $=0.5704\pm0.0971$ ($n=534$, 5-fold). This is
-not chance-level, and it is not meaningfully different from the same
-baseline's performance against the original Jaccard label
-($0.531$/$0.576$) -- so the validated label is not obviously *easier*
-for a surface-only classifier than the original label was. This is
-weak evidence against the alternative that the validated-label rise in
-hidden-state probe AUROC (§3.2-3.3, roughly $0.60\to0.70$) is driven
-purely by degeneracy detection: a purely-degeneracy-driven account
-would predict the surface baseline itself should also rise
-substantially under the validated label, since entropy and generation
-dynamics are the most direct surface signal of a repetition loop, and
-it does not. This is not a strong exclusion -- both baselines remain
-well short of the hidden-state probes' AUROC, and we did not restrict
-either analysis to the confirmed-non-degenerate subset -- but it is
-evidence, not merely an asserted fact with no computation behind it.
+**Random groupings do not reproduce the collapse.** Under both
+controls, LOGO on pseudo-categories recovers approximately the standard-CV
+AUROC rather than chance:
 
-**Cheap baselines, on the same validated label.** Before attributing any
-discriminative power to the FFN/Attention decomposition specifically, we
-checked whether trivial generation-confidence signals do comparably well
-(`code/41_cheap_baselines.py`, same $n=534$ validated label): an
-undecomposed last-layer (final resid\_post) probe reaches AUROC
-$=0.610\pm0.126$; teacher-forced generation-confidence features (mean
-log-prob, min log-prob, mean/min per-token max-softmax) individually
-reach $0.54$-$0.64$, with min-max-softmax the strongest single feature at
-$0.643\pm0.065$, and all four combined at $0.635\pm0.077$. These sit in
-the same range as this paper's own FFN/Attention component probes
-($0.53$-$0.75$ depending on layer and label), meaning the specific
-FFN-vs-Attention decomposition this paper studies does not obviously
-outperform a simple, mechanism-agnostic confidence signal on this task --
-consistent with this paper's overall finding that the component-level
-mechanistic story is harder to establish than the raw AUROC numbers
-alone would suggest.
+*Leave-one-category-out AUROC on real TruthfulQA categories versus two permuted-pseudo-category nulls (100 draws each), GPT-2, judge label. Empirical two-sided p is computed against the corresponding null; 0.020 is the attainable floor at 100 permutations.*
 
-Given this, we reran the paper's decisive causal test under
-the validated label rather than leave the concern unresolved (§3.4): the
-causal null holds within this test's power limits, corroborated by a
-floor-level flip rate and zero separation between conditions at that
-floor, though (as discussed in §3.4) the number of test prompts nearly
-doubled while the number of statistically informative discordant pairs
-actually fell. We extended this same validated-label relabeling
-to all 534 of GPT-2's completions (not just the 100-item audit sample,
-$\kappa=0.042$, consistent) and reran layer localization, component
-decomposition, and the difficulty-matched control under it as well
-(§3.1, §3.2, §3.7); the validated label there is severely imbalanced
-toward "hallucinated" (27/534 correct, 5.1\%), which we flag explicitly
-wherever it affects how much weight a resulting number should carry.
-This paper's "correct" label should still be read
-as "cleared a word-overlap threshold," not as "an independent judge
-would also call this correct" -- but the paper's central causal claim no
-longer depends on that distinction mattering. One residual limitation:
-the same judge model both defines the found-direction's train split and
-scores every generated output in §3.4's validated-label test, so that
-result's validity rests on the judge's own accuracy, which we have
-checked only by manual spot-reading and the surface-feature control
-above (not chance-level, but not meaningfully different from the same
-baseline's performance under the original label either), not an
-independent second judge or human annotation.
+- Cell | standard 5-fold CV | real LOGO | size-matched null (p) | size+class-matched null (p)
 
-**A parser fix, checked and confirmed to have zero effect on this
-paper's reported labels (Appendix B).** All seven judge-scoring
-implementations now check for `"HALLUCINAT"` and `"INCORRECT"` before
-treating a bare `"CORRECT"` substring match as label $1$. Rerunning the
-full 534-sample GPT-2 relabel
-(`kaggle_kernels/paper1-gpt2-full-judge-relabel/`) end to end with the
-corrected parser gives a result byte-identical to the original: all 534
-labels unchanged, same $27$ correct / $507$ hallucinated split, same
-$\kappa=0.0417$. We reran the §3.4 flagship causal test with the same
-corrected parser as a further check, given how directly that result
-depends on judge scoring; see §3.4 for the outcome.
+- L8 FFN | 0.6215 | 0.4788 | 0.6160+/-0.0405 (0.020) | 0.6152+/-0.0407 (0.020)
 
-**No inference-economy claim.** This paper localizes a signal and tests
-a causal intervention; it does not propose an early-exit, routing, or
-compute-saving mechanism, and none of its AUROCs (0.53-0.62) are strong
-enough to gate anything at usable precision. We tested this directly on
-the one passively-significant signal this project produced (the SAE
-feature from §3.6's positive control, $p=4.8\times10^{-11}$):
-thresholding it as a single-feature classifier reaches AUROC$=0.5614$,
+- L8 Attn | 0.6318 | 0.4907 | 0.5869+/-0.0461 (0.079) | 0.5812+/-0.0423 (0.059)
+
+- L9 FFN | 0.6157 | 0.4816 | 0.6135+/-0.0355 (0.020) | 0.6107+/-0.0411 (0.020)
+
+- L9 Attn | 0.6632 | 0.4891 | 0.6160+/-0.0418 (0.020) | 0.6180+/-0.0413 (0.040)
+
+The per-category-averaging estimand is therefore *not* biased
+downward at this sample size: on random groupings of identical size and
+class composition it returns 0.58-0.62, within noise of the
+standard-CV values. The real-category LOGO value sits below that null at
+every cell, and outside it at three of four (0, 0, and 1 of 100
+size- and class-matched draws fall at or below the real value at L8 FFN,
+L9 FFN, and L9 Attn; L8 Attn is the exception at 2/100, empirical
+p=0.059). **The collapse is specific to real topic structure, not
+an artifact of the estimator.** We report this having expected, and
+initially predicted, the opposite outcome.
+
+**A second thing LOGO changes, which has to be separated out.**
+Leave-one-category-out alters the protocol in two ways at once, and only
+one of them is about leakage. (i) It changes which pairs enter the AUROC:
+a per-category AUROC compares a positive and a negative drawn from the
+*same* category, whereas standard K-fold CV pools all pairs, of
+which only 4.9% (675 of 13{,}689) are within-category on this pool.
+(ii) It removes same-category items from the training split. We separate
+these by decomposing the *standard* CV's own out-of-fold scores into
+within- and between-category pairs (`code/48`); this holds the
+training protocol fixed and varies only the pair set:
+
+*Where the standard-CV AUROC's discrimination lives. Computed on the identical out-of-fold predicted probabilities from standard 5-fold CV, split by whether the (positive, negative) pair comes from the same TruthfulQA category. "LOGO" repeats the within-category restriction *and* removes same-category items from training.*
+
+- Cell | pooled OOF | between-topic | within-topic | LOGO
+
+-  | (13,689 pairs) | (13,014 pairs) | (675 pairs) | (within, disjoint train)
+
+- L8 FFN | 0.6152 | 0.6193 | 0.5363 | 0.4788
+
+- L8 Attn | 0.6153 | 0.6163 | 0.5970 | 0.4907
+
+- L9 FFN | 0.6067 | 0.6094 | 0.5541 | 0.4816
+
+- L9 Attn | 0.6494 | 0.6475 | 0.6844 | 0.4891
+
+Pair composition explains part of the gap but not most of it, and at one
+cell none of it: within-topic AUROC on the same scores is 0.536-0.684,
+and at L9 Attn it is *higher* than the between-topic value. The
+remaining drop -- from 0.54-0.68 with same-topic items in training to
+0.48-0.49 without them -- is the part attributable to training-set
+topic overlap, i.e. to what "category leakage" should have meant. It is
+substantial (0.06 to 0.20 AUROC depending on cell, largest at L9
+Attn) and, per the permutation controls above, not estimator noise.
+
+**But we cannot name the mechanism, and the original naming was
+wrong.** The originally claimed mechanism -- the probe reading off each
+topic's correct-answer rate -- makes a checkable prediction: a classifier
+given *only* the category label should recover much of the
+0.62-0.66 AUROC. Computed on the identical pool and labels
+(`code/48`), an in-sample per-category correct-rate rule reaches
+AUROC 0.7938, but leave-one-out gives 0.5054 and this paper's own
+5-fold CV protocol gives 0.4863 (pooled-OOF) and 0.4789
+(mean-of-folds). **Estimated the way any real probe would have to
+estimate it, topic identity alone is at or below chance.** We are careful
+about what this does and does not license: the in-sample value of 0.7938
+shows that *if* per-category rates were known exactly they would
+suffice to exceed the probe's own AUROC, so a topic-base-rate account
+cannot be excluded on effect-size grounds; what it shows is that with 27
+positives spread over 38 categories those rates cannot be estimated
+accurately enough for that account to be tested directly here. The
+competing accounts are not separated by any experiment we ran, and we do
+not claim to distinguish them. They include: per-topic base rates
+themselves; *continuous* topic-correlated features, which a
+768-dimensional probe fit on ~427 items can exploit far more
+efficiently than a 38-level lookup table estimated from ~1.7
+positives per level, and which is the account the ceiling calculation is
+*least* able to exclude; within-topic near-duplicate and paraphrase
+structure; and topic-specific feature geometry that simply does not
+transfer.
+
+**What survives, stated narrowly.** Both readings we started from
+overreach. What the evidence supports is: *a standard random
+K-fold AUROC for this probe on TruthfulQA overstates its performance on
+an unseen topic, by roughly 0.13-0.17 AUROC, and cross-topic
+performance at the two layers tested is at chance.* The drop is specific
+to real topic structure rather than to the estimator (permutation
+controls), is only partly explained by the change in which pairs are
+compared (Table~the table below), and is not attributable to any single
+mechanism we can identify.
+
+**Consequences for this paper's other numbers.** Every passive AUROC
+in §4.5, §4.6 and §4.9 should be read as a *within-distribution*
+number that includes cross-topic comparisons -- not as an estimate of what
+the probe would do on a new topic. This does not differentially favor
+either component (FFN and Attention drop by 0.14, 0.14, 0.13 and
+0.17 AUROC), so it does not change the FFN-vs-Attention comparison, and
+it does not affect any causal result in §4.3-§4.4, which use no K-fold
+CV. It does mean the passive signature defined in §3 was never
+demonstrated in a form that would transfer to a new topic.
+
+**Scope of this check, and what we removed.** It covers GPT-2 only,
+at L8/L9, for the component probe, under the judge label, with 16
+usable folds. We did not run it for the other layer-localization methods
+in §4.9. An earlier draft extended the same LOGO check to Pythia and
+Qwen0.5B and reported a "heterogeneous," architecture-dependent leakage
+result; **we have removed that analysis rather than repair it**,
+because it was confounded independently of anything above: the GPT-2
+diagnostic used last-token extraction, judge labels, and a 5.1%
+positive rate, while the cross-architecture kernel used mean-pooled
+extraction, Jaccard labels, and a ~47% positive rate -- three
+simultaneous protocol differences fully aliased with architecture, so no
+architecture-specific conclusion was identifiable from it. The files are
+retained in the repository for the audit trail and are not cited as
+evidence.
+
+**The transferable lesson.** A grouped-CV "collapse" is ambiguous
+between three quite different things -- group leakage, a change of
+estimand, and failure to generalize across groups -- and the ambiguity is
+resolvable cheaply. Run all three checks: (a) a permuted-group control,
+size- and class-matched, which separates estimator behavior from real
+group structure; (b) a group-variable-only ceiling under the same CV
+protocol, which tests whether the group variable could carry the claimed
+effect at all; and (c) an explicit statement of which estimand each
+protocol computes. We ran none of the three before first making the
+claim, and each of the three changed our conclusion.
+
+## 5. The Causal-Patching Validity Checklist (and Two Checks for Passive Probing)
+
+The constructive contribution of this paper is a checklist, exportable
+independent of anything about FFNs. It applies to any study that
+estimates a direction (or feature, or activation) from labeled data,
+patches it into a model, measures an outcome rate, and draws a causal
+conclusion. Each item below is one this paper's own flagship experiment
+either failed or needed in order to be read correctly; the section
+references point to where.
+
+-  **Is the outcome metric floored by the base model's
+ competence?** Measure the unassisted correct rate on the exact
+ evaluation set with the exact scorer that will score the
+ intervention, and report it. If it is near zero, a flip-to-correct
+ rate cannot separate mechanisms, and more data of the same kind will
+ not help (§4.1: 27/817 = 3.3%; 0 of 283 added items correct).
+
+-  **Are the baseline "failures" the failure mode you think they
+ are?** Run a degeneracy pre-filter before trusting a flip-rate.
+ Ours is a single deterministic check -- a 4-8 word phrase
+ repeated 3+ times -- and flags 51.9% and 53.1% of the
+ nominally hallucinated completions in our two causal-test pools, and
+ 53.6% of all baseline completions in the full labeled pool,
+ near-balanced across label classes (§4.2). Report the rate on both arms and on both label
+ classes; a filter that removes items from only one arm creates its
+ own confound.
+
+-  **Is the estimated direction validated on held-out data before
+ any intervention, with a stated minimum detectable effect?** Do not
+ report "n is small." The exact null distribution of a held-out
+ AUROC is enumerable over all n_++n_{-}{n_+} label
+ arrangements; report the resulting MDE, the attainable alpha, and
+ the false-accept rate of the gate rule actually used
+ (Table~the table below). At this paper's own n=11 the gate cannot
+ detect any true AUROC below 0.875, and a pure-noise direction
+ passes plausible gates 6.7%-46.1% of the time. A patching
+ result whose direction has not cleared such a gate is uninformative
+ about the mechanism in either direction (§4.3).
+
+-  **Is the "control" direction genuinely from a different
+ source?** A control that is the treatment direction relabeled, or
+ injected at a different site, cannot establish component
+ specificity. This paper's earlier version made exactly that mistake
+ (Appendix A); the corrected control is a difference-of-means
+ direction estimated from the other component's own activations, and
+ is verified near-orthogonal to the treatment (cosine -0.054/-0.056)
+ before use (§4.4).
+
+-  **Does the injection site confound "which representation"
+ with "where in the computation"?** Patching two different sublayers
+ at different points in a block entangles component identity with
+ injection site. A common-site test disentangles them -- and can
+ reveal that two apparently different interventions are
+ mathematically identical, as FFN-site and common-site patching are
+ for GPT-2's block structure (verified by direct algebra and a
+ byte-for-byte empirical check, §4.4). Relatedly, if a dosage
+ diagnostic normalizes both arms by a single shared denominator, its
+ finding of "equal dosage" is true by construction and should be
+ labeled as such (§4.4).
+
+-  **Is a null distinguishable from a genuinely random
+ direction -- and is the ensemble check even informative at the
+ observed rate?** A found direction whose effect sits inside the
+ empirical distribution of random-direction effects has not been
+ shown to do anything a random direction would not. But read the
+ percentile correctly: when the found direction scores 0/60 and
+ half the random ensemble also scores 0/60, the resulting "50th
+ percentile" is a tie count at the floor and carries no information
+ (§4.4). Report the raw counts alongside any percentile.
+
+-  **Is a null reported at the resolution the claim needs, and is
+ equivalence tested rather than assumed?** Report the minimum
+ detectable odds ratio (or effect size) from the discordant-pair
+ count, not from n; the two can move in opposite directions as data
+ grows (§4.1: 6.0->8.0 at one cell as n went 467->750). If
+ the claim is "no difference," run an equivalence test against a
+ pre-specified bound and report the smallest bound achievable
+ (§4.4: no cell reaches OR=2.0; achievable bounds 2.85-10.85).
+
+-  **Does an alternative direction-estimation method change the
+ conclusion?** A single estimator's failure to validate is ambiguous
+ between "poor estimator" and "no effect"; checking at least one
+ alternative distinguishes them (§4.3 checks logistic-regression
+ weights and Fisher LDA).
+
+Two further checks belong to passive probing rather than patching.
+
+-  **Report a fold-seed sensitivity band alongside any
+ cross-validated AUROC whose claimed effect is of comparable
+ magnitude.** On this data the fold seed alone moves a component
+ AUROC over a range of 0.055-0.100 (SD 0.013-0.022 over 50
+ seeds) while the margins being compared are 0.003-0.011 (§4.5).
+ Argmax peak-layer stability varies by architecture and must be
+ checked, not assumed: over twelve seeds, GPT-2's FFN peak is
+ perfectly stable (12/12 at L8) while its Attention peak splits
+ two ways, Pythia's peaks take 3 and 5 distinct values, and
+ Qwen0.5B's take 4 and 6. If a claim rests on which layer peaks,
+ it needs a seed sweep before it can be made at all. A paired
+ same-layer difference is much more stable and is the better estimand
+ where the question allows it.
+
+-  **If a grouped-CV diagnostic appears to collapse a probe's
+ AUROC, run three checks before interpreting it.** A collapse is
+ ambiguous between group leakage, a change of estimand, and failure
+ to generalize across groups. (a) A permuted-group control, matched
+ on both group size and per-group class composition, separates
+ estimator behavior from real group structure. (b) Decompose the
+ *standard* CV's own out-of-fold scores into within- and
+ between-group pairs; grouped CV silently restricts the AUROC to
+ within-group pairs, which on our data are only 4.9% of the pairs
+ the pooled estimate is built from, so part of any "collapse" is a
+ change of estimand rather than a change of performance. (c) A
+ group-variable-only ceiling under the same CV protocol tests whether
+ the group variable could carry the claimed effect at all -- and
+ report both its in-sample and its cross-validated value, since the
+ gap between them bounds what the check can conclude. In our case
+ these moved the conclusion twice and left a claim narrower than
+ either starting point (§4.10).
+
+## 6. Discussion and Limitations
+
+**What this paper does and does not claim.** We do not claim FFN
+over-retrieval is present in closed-book generation, and we do not claim
+it is absent. Each of our three instruments is compromised in a way we
+can name: the passive probe's margins are smaller than its fold-seed
+noise, the causal patch's direction cannot be validated at the available
+held-out size, and its outcome metric is floored by model competence and
+contaminated by degeneration. We claim only that this testbed and these
+instruments cannot answer the question, and we give the checks that would
+have to pass first.
+
+**Scoped out: a RAG positive control.** The single most valuable
+missing experiment is a positive control -- reproducing ReDeEP's original
+asymmetry on a retrieval-augmented dataset with this exact pipeline, to
+show that the pipeline *can* detect the effect where it is known to
+exist. We did not attempt it, and our claims are scoped accordingly.
+Without it, we cannot distinguish "the effect is absent in the
+closed-book setting" from "this pipeline could not detect the effect
+anywhere." We regard this as the correct next experiment for anyone
+extending this line, and as a limitation that would need to be closed
+before any positive or negative mechanistic claim.
+
+**Scoped out: enlarging the judged pool further.** Enlarging GPT-2's
+judged pool beyond the full 817-item validation split (e.g. by moving to
+a different benchmark, or by sampling rather than greedy decoding) and
+rerunning the causal kernel could further probe the competence-ceiling
+finding. We did not do it, and the current thesis does not require it: the
+point is that *this* testbed cannot answer the mechanistic question,
+not that a larger sample of the same kind would rescue it -- and §4.1's
+0/283 result is direct evidence that it would not.
+
+**Also scoped out.** We did not run the grouped-CV or fold-seed
+checks for the other five layer-localization methods in §4.9 (dense
+probe, sparse probe, token-position probe, steering, logit lens). Given
+§4.10's conclusion -- that the component probe does not generalize across
+TruthfulQA topics -- the grouped-CV check on those five methods is now a
+higher priority than we previously judged, not a lower one, and both
+checks are cheap. We also did not test whether the cross-topic failure in
+§4.10 is driven by within-topic near-duplicates or by non-transferring
+topic-specific geometry; separating those would need a
+paraphrase-controlled split we did not construct. We
+make no comparison against black-box detectors (semantic entropy,
+SelfCheckGPT), which are the production-relevant baseline. We do not
+address benchmark contamination.
+
+**Label validity.** All original results rest on a Jaccard
+word-overlap label -- surface-form divergence rather than verified factual
+incorrectness. We quantified this on all three architectures with an
+independent LLM judge (Qwen2.5-3B-Instruct): a 100-item stratified GPT-2
+sample gives 52% raw agreement, Cohen's kappa=0.04; full relabeling
+of every completion gives kappa=0.032 (Pythia), 0.141
+(Qwen0.5B-bare), and 0.084 (Qwen0.5B-chat) -- next to chance
+throughout. Extending the relabel to all 534 GPT-2 completions gives
+kappa=0.0417. The disagreement is consistently one-directional: the
+judge calls far more completions hallucinated than the heuristic does
+(on the full 534-item GPT-2 relabel the judge agrees with 97.0% of
+Jaccard's hallucinated calls but only 7.1% of its correct calls,
+computed directly from
+`results/gpt2_full_534_judge_labels.json`), and manual reading
+of disagreement cases confirms
+the judge is usually right -- word overlap frequently credits completions
+that share surface words with the reference but state a different specific
+fact, or that are degenerate repetition loops, as "correct" (§4.2
+quantifies the latter at 55.6% of Jaccard-correct completions).
+
+A trivial length/lexical baseline check
+(`code/32_surface_baseline_vs_judge_label.py`, the same
+6-feature surface classifier rerun against the validated label on the same
+cached features) gives logistic-regression CV AUROC =0.5604+/-0.1047
+and MLP =0.5704+/-0.0971 (n=534, 5-fold). This is not chance-level,
+and not meaningfully different from the same baseline's performance
+against the Jaccard label (0.531/0.576) -- so the validated label is
+not obviously *easier* for a surface-only classifier. That is weak
+evidence against the alternative that the validated-label rise in
+hidden-state probe AUROC (§4.6, roughly 0.60->0.70) is driven purely by
+degeneracy detection, since a purely-degeneracy-driven account would
+predict the surface baseline should also rise substantially. It is not a
+strong exclusion: both baselines remain well short of the hidden-state
+probes. §4.2's non-degenerate re-probe is the more direct test.
+
+One residual limitation: the same judge model both defines the
+found-direction's train split and scores every generated output in §4.4's
+validated-label test, so that result's validity rests on the judge's own
+accuracy, checked here only by manual spot-reading and the surface-feature
+control -- not by an independent second judge or human annotation.
+
+**Cheap baselines.** Before attributing discriminative power to the
+FFN/Attention decomposition specifically, we checked whether trivial
+generation-confidence signals do comparably well
+(`code/41_cheap_baselines.py`, same n=534 validated label): an
+undecomposed last-layer probe reaches AUROC =0.610+/-0.126;
+teacher-forced generation-confidence features individually reach
+0.54-0.64, with min-max-softmax strongest at 0.643+/-0.065, and all
+four combined at 0.635+/-0.077. These sit in the same range as this
+paper's FFN/Attention component probes (0.53-0.75 depending on layer
+and label), so the specific decomposition studied here does not obviously
+outperform a mechanism-agnostic confidence signal.
+
+**No inference-economy claim.** This paper does not propose an
+early-exit, routing, or compute-saving mechanism, and none of its AUROCs
+are strong enough to gate anything at usable precision. We tested this
+directly on the one passively-significant signal this project produced
+(the SAE feature from §4.7's positive control, p=4.8x10^{-11}):
+thresholding it as a single-feature classifier reaches AUROC =0.5614,
 but the feature's raw activation is at or near zero for nearly every
-sample: no threshold above zero clears even 50\% recall at any of the
-four target-recall operating points tested, so the PR-curve search
-collapses to "predict everything positive," giving precision pinned at
-the 4.8\% base rate throughout (`code/15_sae_feature_gating_utility.py`)
--- extreme statistical significance under simultaneous testing does not
-translate into any usable gating concentration.
+sample, so no threshold above zero clears even 50% recall at any of the
+four target-recall operating points tested and precision is pinned at the
+4.8% base rate throughout -- extreme statistical significance under
+simultaneous testing does not translate into usable gating concentration.
 
-## 5. Conclusion
+**Data and code availability.** All code, cached result JSONs, and
+the paper source are included in the anonymized supplementary material for
+double-blind review, and will be released as a public repository upon
+publication. Every result that consumes only already-cached
+`results/*.json` artifacts is self-contained. Four scripts
+additionally require an unshipped sibling repository to *rerun from
+scratch* (as opposed to re-verifying saved outputs):
+`code/01_ffn_causal_patch.py` imports live code from a
+`mech-int` sibling project to regenerate labeled completions;
+`code/03_fisher_geometry_ffn_attn.py`,
+`code/06_difficulty_matched_control.py`, and the feature-cache
+step of `code/49_nondegenerate_subset_probe.py` depend on that
+project's 2.9GB `activations.pkl`;
+`code/15_sae_feature_gating_utility.py` reads cached hidden
+states from a second sibling project. Cached intermediate feature files (`*.npz`) are excluded from the
+released repository and regenerated by the scripts that consume them. One
+consequence to state plainly: `code/50_cv_seed_sensitivity_sweep.py`
+reads GPT-2 features from a cache written by
+`code/49_nondegenerate_subset_probe.py`, which in turn requires
+the unshipped `activations.pkl`; so `code/50`'s GPT-2 rows
+inherit that same unshipped dependency for a from-scratch rerun, while its
+Pythia and Qwen rows do not.
 
-Whether ReDeEP's RAG-scoped FFN mechanism extends to closed-book
-generation remains an open question after this study, not a confirmed
-finding. FFN shows a directionally consistent but individually
-non-significant numerical majority across three architectures under a
-bare-template first pass; the layer-pooled test is not statistically
-valid regardless of one- or two-sided scoring, due to within-architecture
-autocorrelation. Correcting the Qwen0.5B chat-template confound (§3.3)
-drops the architecture-level count to 2/3 and flips the single
-best-discriminating component to Attention on two of three architectures
-under the Jaccard label -- though re-probing under the validated label
-(§3.3) restores FFN's majority on Qwen0.5B-chat specifically, so this
-particular reversal should be read as label-sensitive, not settled.
-A direct causal test, using a genuinely Attention-derived direction
-(nearly orthogonal to the FFN direction) as the actual
-component-specificity control rather than the FFN direction injected at
-a different site, shows no measurable FFN-specificity (McNemar
-$p=0.08$-$1.00$ across four tested configurations, none significant),
-extending rather than contradicting an independent finding
-that activation interventions fail to causally correct hallucinated
-answers at this model scale. This null does not depend on trusting the
-paper's word-overlap label: relabeling every completion with an
-independent LLM judge and rerunning the causal test end to end -- on
-nearly double the test prompts, though with fewer statistically
-informative discordant pairs than the Jaccard-label version, since the
-much lower absolute flip rate leaves fewer prompts where conditions
-disagree -- leaves the null intact within this test's power limits
-(minimum detectable odds ratio 3.75-8.0; §3.4 reports the exact
-confidence intervals), corroborated by both a
-floor-level flip rate and zero separation between conditions at that
-floor. This is the paper's most methodologically scrutinized result --
-the one shown to survive the paper's own most
-serious methodological objection, both the label-validity concern and a
-genuine (rather than fabricated) Attention-specific control -- but its
-power to exclude a moderate effect remains limited, and we do not claim
-more than that.
+**Reproducibility map.** Entries are ordered by this paper's
+emphasis: the validity checks first, the mechanism experiments second.
 
-We report this candidly as a modest, largely null-leaning contribution.
-Closed-book FFN over-retrieval (§1's operational definition: a passive
-AUROC signature plus an active causal-patching signature) is a plausible
-but empirically unconfirmed extension of ReDeEP -- neither signature was
-observed reliably on any architecture tested. The paper's main value is
-in what it honestly rules out -- clean FFN-specific causal control, a
-clean scale story -- rather than what it positively establishes.
+- **Competence ceiling (27/817; 0/283 newly judged)** (§4.1) `kaggle_kernels/paper1-causal-patch-enlarged-pool/` -> `kaggle_kernels/paper1-causal-patch-enlarged-pool/output/causal_patch_enlarged_pool_results.json`
 
-## Appendix B: Correction History
+- **Degeneracy check and non-degenerate re-probe** (§4.2) `code/04_degeneration_check.py`, `code/14_causal_patch_scaled_degeneration_filter.py`, `code/49_nondegenerate_subset_probe.py` -> `results/ffn_causal_patch_scaled_degeneration_filtered.json`, `results/nondegenerate_subset_probe.json`
 
-**This appendix documents bugs found and fixed during iterative review,
-and checks run to confirm each fix's actual effect on reported numbers.**
-§3.4 and §4 state the paper's results directly; nothing below is
-required to verify them.
+- **Direction-validity gate: exact MDE/power table** (§4.3, §5) `code/51_direction_validity_mde_table.py` -> `results/direction_validity_mde_table.json`
 
-**A fabricated-looking claim, removed.** An earlier version of §3.4
+- **Direction-validity gate, 200-resplit diagnostic** (§4.3) `code/46_direction_validity_resplit_diagnostic.py` -> `results/direction_validity_resplit_diagnostic.json`
+
+- **Direction-validity gate, alternative estimators; one-/two-sided power** (§4.3) `code/44_alternative_direction_estimators.py`, `code/43_direction_validity_power_analysis.py` -> `results/alternative_direction_estimators.json`, `results/direction_validity_power_analysis.json`
+
+- **Permuted-pseudo-category control and topic-only AUROC ceiling** (§4.10) `code/48_permuted_pseudocategory_control.py` -> `results/permuted_pseudocategory_control.json`
+
+- **Original LOGO-CV diagnostic (interpretation revised by the controls above)** (§4.10) `code/47_category_leakage_diagnostic.py` -> `results/category_leakage_diagnostic.json`
+
+- **CV fold-seed sensitivity sweep and gap decomposition** (§4.5) `code/50_cv_seed_sensitivity_sweep.py` -> `results/cv_seed_sensitivity_sweep.json`
+
+- **Causal patching, base runs** (§4.4) `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py` -> `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`
+
+- **Causal patching under the validated label** (§4.4) `kaggle_kernels/paper1-causal-patch-judge-label/` -> `results/causal_patch_judge_label_results.json`
+
+- **Component-specificity test with a real Attention direction** (§4.4) `kaggle_kernels/paper1-causal-patch-real-attn-direction/` -> `results/causal_patch_real_attn_direction_results.json`
+
+- **Permutation cosine null, common-site test, random-direction ensemble** (§4.4) `kaggle_kernels/paper1-causal-patch-tier1-validated/` -> `kaggle_kernels/paper1-causal-patch-tier1-validated/output/causal_patch_tier1_validated_results.json`
+
+- **TOST equivalence bounds, competing-risks table** (§4.4) `code/38_tier1_tost_competing_risks.py` -> `results/tier1_tost_competing_risks.json`
+
+- **Low-dose alpha sweep** (§4.4) `code/42_low_dose_alpha_sweep.py` -> `results/low_dose_alpha_sweep.json`
+
+- **FFN/Attn dosage diagnostic** (§4.4) `code/26_ffn_attn_dosage_diagnostic.py` -> `results/ffn_attn_dosage_diagnostic.json`
+
+- **FFN vs. Attention component decomposition** (§4.5, §4.6) `code/02_cross_arch_component_probe.py` -> `results/cross_arch_component_probe_*.json`
+
+- **Paired DeltaAUROC and nested-CV selection-bias check** (§4.5) `code/37_paired_component_delta_auroc.py` -> `results/paired_component_delta_auroc.json`
+
+- **Qwen chat-template reversal** (§4.6) `code/02_cross_arch_component_probe.py qwen05chat` -> `results/cross_arch_component_probe_qwen05chat.json`
+
+- **ROME-style causal tracing** (§4.7) `code/08_rome_style_causal_tracing.py`, `code/09_multi_arch_rome_style_causal_tracing.py`, `code/18_rome_style_causal_tracing_scaled.py`, `code/40_rome_style_causal_tracing_validated.py` -> `results/rome_style_causal_tracing*.json`
+
+- **SAE feature clamp (GPT-2 null; companion positive control)** (§4.7) generating script for the GPT-2 null not released (predates current numbering); `code/15_sae_feature_gating_utility.py` -> `results/sae_feature_clamp_paper1.json`, `results/sae_feature_gating_utility.json`
+
+- **Difficulty-matched and adversarial controls** (§4.8) `code/06_difficulty_matched_control.py`, `code/11_multi_arch_difficulty_matched_control.py`, `code/17_gradient_reversal_adversarial_probe.py`, `code/30_difficulty_matched_control_judge_label.py` -> `results/difficulty_matched_control*.json`, `results/multi_arch_difficulty_matched_control.json`, `results/gradient_reversal_adversarial_probe.json`
+
+- **Layer localization (7 methods), Jaccard and validated label** (§4.9) `code/00_verify_vendored_mechint_numbers.py`, `code/29_gpt2_full_validated_relabel_rerun.py` -> `results/vendored_mech_int/`, `results/gpt2_full_validated_relabel_rerun.json`
+
+- **Label-validity audit and surface baselines** (§6) `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py`, `code/32_surface_baseline_vs_judge_label.py`, `code/41_cheap_baselines.py` -> `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json`, `results/surface_baseline_vs_judge_label.json`, `results/cheap_baselines.json`
+
+- **GPT-2 full-534 judge relabel** (§6) `kaggle_kernels/paper1-gpt2-full-judge-relabel/` -> `results/gpt2_full_534_judge_labels.json`
+
+## 7. Conclusion
+
+We set out to test whether an FFN-vs-Attention hallucination asymmetry
+analogous to ReDeEP's appears in closed-book generation on small models.
+The answer this paper can support is that the question is not answerable
+on this testbed with these instruments, and we can now say precisely why.
+
+GPT-2 answers 3.3% of TruthfulQA validation items correctly under an
+independent judge, and adding 283 previously-unjudged items added zero
+correct answers -- so the flip-to-correct outcome variable is floored
+regardless of any mechanism. Over half of the nominally hallucinated
+completions in each causal-test pool we constructed (51.9% at n=81,
+53.1% at n=228; 53.6% of all 534 baseline completions
+regardless of class) are degenerate repetition loops rather than
+confabulations, near-balanced across label classes, so the outcome events
+that do occur are confounded with loop-breaking. And the difference-of-means direction the causal test
+injects never cleared a held-out validity check -- one which, at the
+n=11 holdout this testbed supports, cannot declare any *observed*
+AUROC below 0.875 significant, has power 0.31 against a true AUROC of
+0.75, and passes a pure-noise direction 6.7%-46.1% of the time
+depending on where its threshold is set.
+
+We therefore do *not* report the causal null as surviving scrutiny.
+The causal instrument does not provide interpretable evidence either way,
+because the directions it patches never passed the validity gate. That is
+a limitation of the instrument, stated as such.
+
+The passive side is weaker than an earlier version of this work claimed,
+in a different way. The peak-versus-peak FFN-vs-Attention margins
+(0.003-0.011 AUROC) are three to ten times smaller than the spread a
+single cross-validation fold seed produces on the same features, and on
+both 24-layer models the argmax "peak layer" is not a well-identified
+quantity at all -- it lands on four to six different layers across twelve
+seeds. A same-layer paired comparison is stable, but its sign flips
+between layers within the same architecture, so which layer is compared
+determines the answer. And a leave-one-category-out re-test, with two
+permutation controls, a pair-type decomposition, and a
+group-variable-only ceiling calculation, establishes that a standard
+random K-fold AUROC for these probes on TruthfulQA overstates
+unseen-topic performance by 0.13-0.17 AUROC, with cross-topic
+performance at the layers tested at chance -- while leaving the mechanism
+behind that gap unidentified (§4.10).
+
+What we offer instead is transferable: two validity checks (a competence
+ceiling measurement and a degeneracy pre-filter) that are cheap,
+model-agnostic, and would have changed how we read our own flagship
+result had we run them first; an exact minimum-detectable-effect
+calculation for held-out direction validation that replaces "n is
+small" with a number; and a checklist assembling these with the controls
+a component-specificity patching claim requires. Any researcher running an
+intervention on an LLM and reporting a flip-rate inherits these same
+risks, independent of which component or behavior is being tested.
+
+## 8. Appendix A: Correction History
+
+This appendix is a transparent audit trail of errors found during
+iterative internal and external review, and of the checks run to confirm
+each fix's effect on reported numbers. The main text states final,
+corrected numbers directly; nothing below is required to verify them.
+
+-  **A fabricated-looking claim, removed.** An earlier version
 claimed "a direct FFN-found-vs-Attention-found comparison gives McNemar
-$p=1.000$ in every configuration." This was never actually computed:
+p=1.000 in every configuration." This was never computed:
 `code/01_ffn_causal_patch.py` and its scaled variants save an
-Attention-found flip rate but never run a McNemar test against it, and
-in any case that condition patches the FFN-derived direction at the
+Attention-found flip rate but never run a McNemar test against it, and in
+any case that condition patches the FFN-derived direction at the
 Attention site rather than a direction derived from Attention's own
-activations, so no version of this script could have supported an
-FFN-vs-Attention specificity claim. The genuine test (§3.4) uses a real
-Attention-derived direction instead. A related paragraph's degeneracy
-rate ("19.8-29.6\% across conditions") was similarly only the FFN-found
+activations, so no version of that script could have supported an
+FFN-vs-Attention specificity claim. The genuine test (§4.4) uses a real
+Attention-derived direction. A related paragraph's degeneracy rate
+("19.8-29.6% across conditions") was similarly only the FFN-found
 arm at L8 from an earlier, smaller pass, not the full range across all
 twelve conditions it was presented as describing; the correct range
-($10.1\%$-$46.5\%$) is now what §3.4 reports.
+(10.1%-46.5%) is what §4.4 now reports.
 
-**Judge-parser substring bug (checked directly against the flagship
-causal test, not just the underlying relabel).** Every judge-scoring
-function in this project originally classified a verdict as "correct"
-if the string `"CORRECT"` appeared in it and `"HALLUCINAT"` did not --
-`"CORRECT"` is a substring of `"INCORRECT"`, so a judge output of
-"INCORRECT" would have been silently scored as label $1$ (correct) in
-seven separate implementations. We had never persisted the judge's raw
-verdict strings, only the parsed integer labels, so this was
-unfalsifiable from existing artifacts until a fresh review flagged it.
-Fixed by checking for `"HALLUCINAT"` and `"INCORRECT"` before treating a
-bare `"CORRECT"` as label $1$, in all seven implementations, then reran
-the full 534-sample GPT-2 relabel end to end with the corrected parser:
-byte-identical to the original (same $27$/$507$ split, same
-$\kappa=0.0417$). We additionally reran the §3.4 flagship causal test
-(467 test prompts $\times$ 17 conditions) with the corrected parser as a
-direct check, given how directly that specific result depends on judge
-scoring, rather than inferring it was unaffected from the relabel result
-alone: byte-identical at every one of the $467\times17$ scored cells.
-For this judge model and this dataset, Qwen2.5-3B-Instruct reliably
-complied with the one-word instruction and never actually produced a
-verdict the buggy parser would have mishandled -- the bug was real and
-needed fixing, but it did not change any number this paper reports.
+-  **Judge-parser substring bug, fixed and checked.** Every
+judge-scoring function in this project originally classified a verdict as
+"correct" if the string `"CORRECT"` appeared and
+`"HALLUCINAT"` did not -- and `"CORRECT"` is a substring of
+`"INCORRECT"`, so a verdict of "INCORRECT" would have been
+silently scored as label 1 in seven separate implementations. We had
+never persisted raw verdict strings, so this was unfalsifiable from
+existing artifacts until a review flagged it. Fixed in all seven
+implementations by checking for `"HALLUCINAT"` and
+`"INCORRECT"` first, then reran the full 534-sample GPT-2
+relabel end to end: byte-identical to the original (same 27/507
+split, same kappa=0.0417). We additionally reran the §4.4 flagship
+causal test (467 test prompts x 17 conditions) with the
+corrected parser and compared against the then-current saved per-sample
+labels: identical at every one of the 467x17 scored cells. One
+caveat a reader should know: the pre-fix run's artifacts were overwritten
+rather than retained, and raw judge verdict strings were never persisted
+at all, so this particular comparison cannot be re-verified from the
+released supplement -- only the post-fix artifacts are shipped. The bug
+was real and needed fixing, and on our own check changed no reported
+number.
 
-**Dosage-mismatch diagnostic, corrected after a review caught two
-errors in an earlier version.** An earlier version of
-`code/26_ffn_attn_dosage_diagnostic.py` (1) measured on bare TruthfulQA
-questions rather than the "Q: \{question\}\textbackslash nA:" formatted
-prompts the causal test actually patches, and (2) normalized $\alpha$
-against each sublayer's own raw output norm -- the wrong denominator,
-since `patched_generate`'s hook replaces that output with
-$(\text{out}+\alpha\cdot\text{direction})$ and this combined value is
-then added into the residual stream by the transformer block's own
-forward code, so the quantity the intervention actually competes with
-is the residual stream's own norm at that layer, not the sublayer's own
-output norm. The uncorrected version reported a $2$-$3\times$ dosage
-asymmetry between the FFN and Attention arms; correcting only the
-prompt format (keeping the wrong denominator) shrinks this to
-$1.3$-$1.5\times$; correcting both gives the $16.0\%/12.0\%$
-($\alpha=20$) and $32.1\%/24.1\%$ ($\alpha=40$) relative-perturbation
-numbers reported in §3.4, with no asymmetry between the two arms.
+-  **Dosage-mismatch diagnostic, corrected twice.** An earlier
+version of `code/26_ffn_attn_dosage_diagnostic.py` (a) measured
+on bare TruthfulQA questions rather than the
+`"Q: {question} nA:"` prompts the causal test
+patches, and (b) normalized alpha against each sublayer's own raw
+output norm -- the wrong denominator, since the patching hook replaces
+that output with (out+alpha) and the block's
+own forward code then adds the combined value into the residual stream.
+The uncorrected version reported a 2-3x dosage asymmetry between
+arms; correcting only the prompt format shrinks it to 1.3-1.5x;
+correcting both gives the 16.0%/12.0% (alpha=20) and
+32.1%/24.1% (alpha=40) numbers in §4.4. A further correction, made
+in this round: because the corrected script uses one shared
+residual-stream denominator for both arms, the resulting arm-to-arm
+equality is true by construction and is now labeled as such in §4.4
+rather than presented as an empirical finding of "no dosage asymmetry."
 
-**Surface-baseline computation, flagged as missing by a fresh review.**
-An earlier version of §4's label-validity discussion asserted that a
-trivial length/lexical baseline does not explain the judge label's
-structure at chance-level AUROC -- no such computation existed anywhere
-in this project at the time, and a fresh review correctly flagged this
-as an unsupported claim. `code/32_surface_baseline_vs_judge_label.py`
-was written to actually compute it (the result, not chance-level but not
-meaningfully different from the same baseline's performance against the
-original Jaccard label, is reported directly in §4).
+-  **Surface-baseline computation, flagged as missing.** An
+earlier version of the label-validity discussion asserted that a trivial
+length/lexical baseline does not explain the judge label's structure at
+chance-level AUROC -- no such computation existed in this project at the
+time. `code/32_surface_baseline_vs_judge_label.py` was written
+to actually compute it; the result (not chance-level, and not meaningfully
+different from the same baseline against the Jaccard label) is reported in
+§6.
 
-**Direction-validity CI misdescribed as "consistent with chance," and a
-10x cosine transcription error.** A subsequent, independent review found
-two separate transcription/interpretation errors in §3.4: (1) the four
-direction-validity bootstrap CIs at n=11 were described as "all
-consistent with chance," when in fact three of the four exclude 0.5
-entirely, and an exact Mann-Whitney test at this n_pos=3, n_neg=8 split
-finds them nominally significant in the anti-predictive direction (L8
-FFN/Attn p=0.0242, L9 FFN p=0.0121). (2) The permutation-based
-cosine-similarity check reported "-0.058/-0.051"; the underlying result
-file gives -0.0058/-0.0051, a 10x transcription error. Both are
-corrected in §3.4. Fixing (1) in turn exposed that the power analysis
-(`code/43`) used to argue this test is uninformative was itself one-sided
-(only checking whether the CI's lower bound exceeds 0.5), structurally
-unable to detect power in the anti-predictive direction the data
-actually fall in. Recomputed two-sided, this test turns out to be
-reasonably well-powered (73-99%) at exactly the AUROCs observed, meaning
-the anti-predictive p-values are not simply underpowered noise. This
-motivated a genuinely new check
-(`code/46_direction_validity_resplit_diagnostic.py`): redrawing the
-direction-fit/validity-holdout split at 200 different random seeds
-(instead of the kernel's single seed) on the identical 534-item labeled
-pool, with activations extracted once and cached. Across resplits, the
-held-out AUROC centers near or slightly above chance (mean 0.54-0.58,
-full range 0.0-1.0), and the original single seed's anti-predictive
-result sits in the extreme low tail of this distribution (0.5%-4%
-percentile at the four cells) -- resolving the open question the
-two-sided power analysis alone could not: the original result was an
-atypical, unlucky single draw, not a stable property of these
-directions.
+-  **Direction-validity CIs misdescribed, and a 10x cosine
+transcription error.** (a) The four direction-validity bootstrap CIs at
+n=11 were described as "all consistent with chance"; three of the four
+in fact exclude 0.5 entirely, and an exact Mann-Whitney test finds them
+nominally significant in the anti-predictive direction (§4.3); a further
+correction this round made those p-values consistently two-sided (L8
+FFN/Attn 0.0485, not the one-sided 0.0242 quoted before). (b) The
+permutation-based cosine-similarity check reported "-0.058/-0.051";
+the underlying result file gives -0.0058/-0.0051. To avoid a
+confusion this correction has caused before: that -0.0058/-0.0051 is
+the tier-1 kernel's own pair of directions (fit on 47 items), and is a
+different quantity from the -0.054/-0.056 reported in §4.4 and §5,
+which is the cosine between the FFN and the genuinely Attention-derived
+direction in the component-specificity kernel (fit on 58 items). Both
+are correct for their own run; neither supersedes the other. Fixing (a) exposed
+that the power analysis used to argue the test was uninformative
+(`code/43`) was itself one-sided, structurally unable to detect
+power in the direction the data fall in. Recomputed two-sided, the test is
+reasonably well-powered (73-99%) at the observed AUROCs, which
+motivated the 200-resplit diagnostic
+(`code/46_direction_validity_resplit_diagnostic.py`) reported in
+§4.3. That diagnostic resolved the question: the original seed's
+anti-predictive result was an atypical low-tail draw, not a stable
+property of these directions.
 
-**A category-leakage check, identified as the single highest-priority
-missing experiment by an independent review, run for the first time this
-round.** TruthfulQA's 38 topical categories have correct-answer rates
-ranging from 0% to 10.5% among the 10 most frequent categories on this
-GPT-2 pool (wider still, 0%-28.6%, across all 38 including smaller
-ones), so a probe correlated with
-topic alone could produce an above-chance AUROC under standard random
-K-fold CV with zero genuine hallucination signal -- `code/02`'s
-component-probe CV protocol never checked for this.
-`code/47_category_leakage_diagnostic.py` reruns the identical last-token
-FFN/Attn extraction at L8/L9 on the same 534-item pool, this time with
-each item's TruthfulQA category attached, and compares standard 5-fold CV
-against leave-one-category-out CV (16 of 38 categories have both classes
-represented in their held-out slice; the remaining 22 are skipped,
-single-class, itself a consequence of the same class imbalance disclosed
-in §3.2). The result: standard CV AUROC of 0.616-0.663 collapses to
-0.479-0.491 -- chance or below -- at every layer and component tested.
-This is now reported prominently in §3.2 and the abstract rather than
-only here, given its bearing on every passive-probe number this paper
-reports. A follow-up Kaggle run
-(`kaggle_kernels/paper1-category-leakage-cross-arch/`,
-`results/category_leakage_cross_arch_results.json`) extended this same
-check to Pythia-410M and Qwen2.5-0.5B at each architecture's own peak
-FFN/Attn layers, over the full 817-item TruthfulQA split: the result is
-heterogeneous rather than a uniform replication of GPT-2's collapse --
-Pythia's component probe is essentially unaffected (L11 FFN
-0.618->0.617; L4 Attn 0.612->0.602), while Qwen0.5B partially collapses
-at both components (0.566->0.485 FFN, 0.563->0.526 Attn, an untested
-numerical difference between them). See §3.2
-for the full result and its remaining disclosed scope (the other five
-converging methods have not yet been checked under leave-one-category-out
-CV for any architecture).
+-  **Random-direction-ensemble percentiles, misread as
+informative.** An earlier version described the random-direction ensemble
+as "the strongest single check" and reported the found directions at the
+"50th" and "40th" percentile of a 20-draw ensemble. Both the framing
+and the reading were wrong: the found directions produced 0/60 flips,
+and 10 of 20 random FFN directions and 8 of 20 random Attention
+directions also produced 0/60, so those percentiles are tie counts at
+the statistic's floor. The same applies to the enlarged-pool rerun's
+"95th"/"100th" percentiles, which are driven by 2/60 and 3/60 flip
+events. §4.4 now reports raw counts and states that this check is
+uninformative at this flip-rate floor.
 
-## References
+-  **A CV-seed effect misattributed to an aggregation
+convention.** An earlier version explained the gap between two AUROCs
+reported for the same GPT-2 L8 FFN features (0.6053 and 0.643) as a
+difference between mean-of-folds and pooled out-of-fold aggregation, and
+separately explained a peak-layer disagreement for Qwen0.5B as the two
+aggregation conventions "genuinely disagreeing." Both attributions were
+wrong. `code/02` uses `StratifiedKFold(random_state=42)`
+and `code/37` uses `random_state=0`; the seed accounts for
++0.0365 of the +0.0374 total gap and the aggregation convention for
++0.0010 (`code/50_cv_seed_sensitivity_sweep.py`). §4.5 now
+reports the decomposition and the resulting fold-seed sensitivity band,
+and attributes the peak-layer instability to seed sensitivity.
+
+-  **A category-leakage claim, twice revised and finally
+narrowed.** An earlier version reported, in its abstract and headline
+results, that a leave-one-category-out CV re-test collapsed the component
+probe's AUROC from 0.62-0.66 to 0.48-0.49, attributed this to
+category-clustering leakage (specifically, the probe learning per-topic
+correct-answer rates), and extended the claim to a "heterogeneous"
+across-architecture leakage result. An independent review then argued the
+entire effect was an artifact of the LOGO estimator's per-category
+averaging at n_+~1.7. We ran the controls that separate these
+(`code/48_permuted_pseudocategory_control.py`); *both*
+readings turned out to be wrong, in different directions.
+(a) Two permutation controls (size-matched, and size- and class-matched)
+show random groupings recover 0.58-0.62, not chance, so the estimator
+is not biased downward at this n and the collapse is specific to real
+topic structure (0-2 of 100 matched draws fall at or below the real
+value across the four cells). We predicted the artifact outcome before
+running this control and were wrong.
+(b) A group-variable-only ceiling calculation shows the originally claimed
+mechanism cannot be demonstrated: topic identity alone yields AUROC
+0.7938 in-sample but 0.5054 leave-one-out and 0.4863/0.4789 under
+this paper's own 5-fold CV. We initially wrote this up as ruling the
+mechanism out; that too was an overreach, since the in-sample value
+exceeds the probe's own AUROC and the shortfall out of fold is an
+estimation-noise problem at 27 positives over 38 categories, not a
+demonstration that topic base rates carry no signal. The text now says
+only that the account cannot be tested here.
+(c) A third check, added last, decomposes the standard CV's own
+out-of-fold scores by pair type and shows that LOGO silently changes the
+estimand: only 4.9% of standard-CV pairs are within-topic, and
+within-topic AUROC on the same scores is 0.536-0.684 rather than
+chance. Part of the "collapse" is therefore this change of estimand and
+part is the removal of same-topic training data; §4.10 separates them.
+The surviving claim is that standard random K-fold CV overstates
+unseen-topic performance for this probe by 0.13-0.17 AUROC, with the
+mechanism unidentified. The cross-architecture extension is removed
+regardless, being confounded by three simultaneous protocol differences
+aliased with architecture.
+
+-  **Small numeric and labeling corrections made in this round.**
+(a) The GPT-2 534-item judge-vs-Jaccard kappa was stated as 0.03 in
+one place; the correct value is 0.0417 (0.03 is Pythia's kappa,
+mislabeled). (b) Pythia's Jaccard-label peak FFN AUROC was stated as
+0.615 in one place and 0.6181 in another; the artifact-verified value
+is 0.6181. (c) Two different minimum-detectable-odds-ratio ranges
+(3.75-8.0 and 3.25-6.0, both at n=467) were presented as though
+they described the same test; they are the native-site
+FFN-vs-Attention comparison (directions fit on 58 items) and the
+common-site comparison (directions fit on 47 items) respectively, and
+are now labeled (§4.1, §4.4). (d) The TOST equivalence-bound range was
+stated as 2.85-10.9; the maximum achieved in the underlying grid
+search is 10.85 (`results/tier1_tost_competing_risks.json`).
+An earlier version of this correction added that "10.9 is not a grid
+point"; that justification was itself wrong -- `code/38` searches
+`np.arange(1.05, 15.0, 0.05)`, which does contain 10.90. The
+number is simply not the one the search returns. (e) The low-dose sweep range was
+stated as 42-52%; the computed range is 41.67-51.67%, and the
+claim of "no monotone dose-response" was inaccurate -- the Attention arm
+is strictly monotone decreasing across the three doses, so the accurate
+statement is "no monotone increase." (f) The enlarged-pool replication
+was described as "nearly double the power" at n=750 versus n=467;
+the ratio is 1.61x, and (per §4.1) discordant-pair counts, not n,
+determine resolution.
+
+-  **Correction confessions relocated.** Earlier drafts narrated
+several of the above corrections inline in the results sections. All are
+now collected here, and the main text states final numbers directly.
+
+## 9. References
 
 Full citations below, compiled from exactly the bibliographic detail
 already verified in-text or in `related_work/related_work_notes.md`;
@@ -1645,3 +1821,11 @@ Sparse Probing. arXiv 2502.16681.
 Li, K., Patel, O., Viégas, F., Pfister, H., & Wattenberg, M. (2023).
 Inference-Time Intervention: Eliciting Truthful Answers from a Language
 Model. *NeurIPS 2023*. arXiv 2306.03341.
+
+Kuhn, L., Gal, Y., & Farquhar, S. (2023). Semantic Uncertainty:
+Linguistic Invariances for Uncertainty Estimation in Natural Language
+Generation. *ICLR 2023*. arXiv 2302.09664.
+
+Manakul, P., Liusie, A., & Gales, M. (2023). SelfCheckGPT: Zero-Resource
+Black-Box Hallucination Detection for Generative Large Language Models.
+*EMNLP 2023*. arXiv 2303.08896.

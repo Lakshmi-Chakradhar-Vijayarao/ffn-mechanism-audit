@@ -1,3 +1,17 @@
+> **SUPERSEDED (kept for the audit trail only).** This note was written
+> during an earlier framing of the project and its "Honest narrative"
+> section below argues that FFN's layer-majority replicates across
+> architectures as "cross-architecture evidence for the closed-book
+> FFN-over-retrieval mechanism." **The paper no longer makes that claim.**
+> The layer-majority margins are smaller than the effect of changing the
+> cross-validation fold seed, the per-architecture peak comparisons sit
+> within their own CV noise, and the argmax peak layer is not a
+> well-identified quantity on either 24-layer model. See the paper's
+> "Passive component probes" and "Cross-architecture passive results"
+> subsections for the current reading. Nothing in this file is cited as
+> evidence; the per-layer numbers it summarises are in
+> `results/cross_arch_component_probe_*.json`.
+
 # Paper 1 — Cross-Architecture Replication Section (real Kaggle data)
 
 ## Results table
