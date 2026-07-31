@@ -1,8 +1,7 @@
 # Two Failure Modes That Make Interpretability Intervention Nulls Uninterpretable: A Closed-Book Case Study
 
-**Lakshmi Chakradhar Vijayarao**
-Independent Researcher
-`lakshmichakradhar.v@gmail.com`
+**Anonymous Author(s)**
+Paper under double-blind review
 
 ## Abstract
 
@@ -35,7 +34,7 @@ causal-test pools -- and 53.6% (286/534) of all baseline completions
 in the full labeled pool -- are degenerate repetition loops rather than
 confabulations, identifiable by a single cheap, model-agnostic check that
 needs no model of hallucination content. Degeneration is close to
-balanced across the word-overlap label's classes (55.6% of "correct"
+balanced across the word-overlap (Jaccard) label's classes (55.6% of "correct"
 versus 51.5% of "hallucinated" completions), so it contaminates both
 arms of a flip-rate comparison rather than only one; under the validated
 judge label the split is 37.0% versus 54.4%, a difference that is
@@ -56,7 +55,7 @@ result for the passive side: on these features, changing only the
 cross-validation fold seed moves a component's AUROC estimate over a range
 of 0.055-0.100 (SD 0.013-0.022 over 50 seeds), which is an order of
 magnitude larger than the peak-versus-peak FFN-vs-Attention margins at
-issue (0.003-0.011), and the argmax "peak layer" lands on four to
+issue (0.003-0.011), and the argmax "peak layer" lands on three to
 six different layers across twelve seeds on both 24-layer models. The
 paired same-layer difference is by contrast stable, but its sign flips
 between layers within an architecture.
@@ -68,7 +67,8 @@ matching pseudo-categories to real ones on both size and per-category
 class composition -- show the LOGO collapse (0.62-0.66 under standard
 CV to 0.48-0.49) is specific to real topic structure and *not* an
 artifact of per-category averaging: random groupings recover
-0.58-0.62. Decomposing the standard-CV out-of-fold scores by pair type
+0.58-0.62, and the real value falls outside that null at three of the
+four cells tested (the fourth, p=0.059). Decomposing the standard-CV out-of-fold scores by pair type
 shows only part of the collapse comes from LOGO restricting comparisons to
 within-topic pairs (within-topic AUROC 0.54-0.68; only 4.9% of
 standard-CV pairs are within-topic), the rest from removing same-topic
@@ -213,7 +213,7 @@ AUROC on our data -- three to ten times smaller than the spread a single
 cross-validation fold seed produces on the same features (+/-0.03
 range, ~0.037 between the two seeds this repository happened to
 use, §4.5) -- and on the 24-layer models the "peak layer" itself
-lands on four to six different layers across twelve fold seeds. A
+lands on three to six different layers across twelve fold seeds. A
 same-layer paired comparison is far more stable, but its *sign*
 depends on which layer is chosen. Meanwhile the causal instrument does not
 clear its own validity gate. What we can support is the negative
@@ -285,7 +285,8 @@ chat-templated variant, §4.6). Two labels are used throughout and always
 named explicitly: a *Jaccard* word-overlap heuristic against
 TruthfulQA's reference answers, and a *validated* label from an
 independent LLM judge (Qwen2.5-3B-Instruct). The two labels agree only
-52.2% of the time on GPT-2 (kappa=0.0417); per-architecture
+52.2% of the time on GPT-2 (kappa=0.0417, on the full 534-item
+relabel); per-architecture
 kappa is 0.032 (Pythia), 0.141 (Qwen0.5B-bare), and 0.084
 (Qwen0.5B-chat). §6 discusses what this does and does not license.
 
@@ -475,10 +476,9 @@ direction: L8 FFN/Attn AUROC =0.083/0.083 (bootstrap 95% CI
 Mann-Whitney test at this n_+=3, n_{-}=8 split finds them nominally
 significant in the *anti-predictive* direction. All p-values here
 are exact and two-sided: L8 FFN/Attn p=0.0485 each, L9 FFN p=0.0121;
-L9 Attn p=0.0848 is not significant. (An earlier draft quoted 0.0242
-for the L8 cells -- the one-sided value -- alongside two-sided values for
-L9; that mixed convention is corrected here, and on the correct convention
-the two L8 cells sit just under 0.05 rather than comfortably below it.)
+L9 Attn p=0.0848 is not significant. On a consistently two-sided
+convention the two L8 cells sit just under 0.05 rather than comfortably
+below it (Appendix A, item 5).
 Under Bonferroni across the four cells (alpha=0.0125), only L9 FFN
 survives. These four p-values are recomputed and saved by
 `code/51_direction_validity_mde_table.py` alongside the exact
@@ -586,18 +586,25 @@ validity holdout is removed. Both are at n=467 prompts; they differ in
 comparison, injection site, and direction-fit set, and their discordant
 counts differ accordingly (19/15/9/16 versus 17/17/14/15). The
 observed odds ratios and approximate 95% CIs (log-odds normal) are
-0.46 [0.18, 1.21], 0.67 [0.24, 1.87], 1.25 [0.34, 4.65], and
+0.46 [0.18, 1.21], 0.67 [0.24, 1.87], 1.25 [0.34, 4.66], and
 3.00 [0.97, 9.30]. Only one of the four (L9/alpha=20,
-[0.34,4.65]) is simultaneously consistent with FFN being several-fold
+[0.34,4.66]) is simultaneously consistent with FFN being several-fold
 worse and several-fold better than Attention; the other three exclude one
 direction or the other at the several-fold scale while still failing to
-exclude a moderate effect.
+exclude a moderate effect. These are properties of the observed
+discordant counts, not evidence about the two components: see "the
+honest reading" at the end of this subsection for why no reading of
+these intervals is licensed.
 
 **Equivalence testing.** A TOST search finds no cell establishes
 equivalence at the pre-registered OR=2.0 bound; the smallest achievable
 equivalence bounds across the eight tested cells (native and common site
 x four configurations) range 2.85 to 10.85
-(`code/38_tier1_tost_competing_risks.py`). So this test cannot
+(`code/38_tier1_tost_competing_risks.py`). Both sites here are
+the *tier-1* kernel's, whose directions are fit on the 47-item
+subset; its native-site discordant counts are 17/13/17/18, so this is
+again not the 19/15/9/16 test reported two paragraphs above, for the
+same reason given there. So this test cannot
 assert equivalence either.
 
 **The random-direction ensemble, read correctly.** At the flagship
@@ -706,10 +713,10 @@ signature.
 **How large is a fold seed worth?** Two numbers this repository
 reports for the *same* features (GPT-2 FFN L8) differ: 0.6053 in
 this section and 0.643 in the paired-delta analysis of
-`code/37_paired_component_delta_auroc.py`. An earlier draft
-attributed this to an aggregation-convention difference (mean-of-folds
-versus pooled out-of-fold predictions). That explanation is wrong. The
-real cause is the cross-validation fold seed:
+`code/37_paired_component_delta_auroc.py`. The cause is the
+cross-validation fold seed, not the aggregation convention (mean-of-folds
+versus pooled out-of-fold predictions) that might be suspected first
+(Appendix A, item 7):
 `code/02_cross_arch_component_probe.py` uses
 `StratifiedKFold(random_state=42)`, `code/37` uses
 `random_state=0`. Decomposing exactly
@@ -721,8 +728,13 @@ gap; the aggregation convention accounts for 0.0010.**
 
 **A 50-seed sweep, and what it does and does not undermine.** We
 swept `StratifiedKFold`'s `random_state` over 50 values,
-changing nothing else in `code/02`'s protocol, at each
-architecture's own reported peak FFN and peak Attn layer. Individual
+changing nothing else in `code/02`'s protocol, at two layers per
+architecture and both components at each. For Pythia (L11/L4) and
+Qwen0.5B (L8/L17) those two layers are that architecture's own reported
+peak FFN and peak Attn layer; for GPT-2 they are L8/L9, the pair the
+causal experiments patch, so GPT-2's reported Attn peak (L3) is not
+itself in this 50-seed sweep (the 12-seed full-profile sweep reported
+below does cover every layer). Individual
 component AUROCs move substantially: GPT-2 L8 FFN spans [0.5868,
 0.6422] (mean 0.6154, SD 0.0132); Qwen0.5B L17 Attn spans [0.4953,
 0.5948] (mean 0.5519, SD 0.0220), and Qwen0.5B L17 FFN spans
@@ -766,6 +778,19 @@ Attn-peak layer the sign reverses as expected: GPT-2 (L3)
 Delta=-0.085, CI [-0.137,-0.036]; Pythia (L4) Delta=-0.113, CI
 [-0.162,-0.064]; Qwen0.5B (L8) Delta=-0.032, CI [-0.084,+0.023].
 
+**These do not all agree with the 50-seed sweep above, and the
+disagreement is the same effect again.** Two cells are measured by both
+procedures. They agree at GPT-2 L8 (+0.067 versus +0.0688) and Pythia
+L11 (+0.047 versus +0.0512), and they disagree at the other two:
+Pythia L4 gives -0.113 here against a sweep mean of -0.0569, and
+Qwen0.5B L8 gives -0.032 here against +0.0118 -- a sign flip. The
+sweep is a mean over 50 fold seeds at `code/02`'s aggregation;
+`code/37` is one seed at pooled-OOF aggregation. So the "stable"
+claim we make for the paired difference is a within-protocol claim: at a
+fixed aggregation, Delta varies little across fold seeds (SD
+0.016-0.023). It is not a claim that two different protocols agree on
+Delta at a given layer, and at two of four shared cells they do not.
+
 Averaged across *all* layers rather than only the peaks -- the
 summary least vulnerable to selection bias -- Delta is small on every
 architecture (GPT-2 +0.0017+/-0.036; Pythia +0.0005+/-0.042;
@@ -773,14 +798,12 @@ Qwen0.5B -0.0021+/-0.034), and a layer-weighted pooled estimate across
 all three architectures gives Delta=-0.0003 with between-architecture
 variance of 3.9x10^{-6}. That is the properly pooled null.
 
-**Peak layers are not stable, and the earlier "naming collision"
-explanation was wrong.** `code/37`'s pooled-OOF argmax puts
-Qwen0.5B's FFN peak at L20 and its Attn peak at L8, the reverse of the
-mean-of-folds peaks reported elsewhere in this paper (FFN L8, Attn L17).
-An earlier draft described this as pooled-OOF and mean-of-folds
-estimation "genuinely disagreeing on which layer wins." Given that the
-aggregation convention is worth 0.001 AUROC and the fold seed is worth
-0.037 on the same data, that attribution cannot be right: the two
+**Peak layers are not stable.** `code/37`'s pooled-OOF argmax
+puts Qwen0.5B's FFN peak at L20 and its Attn peak at L8, the reverse of
+the mean-of-folds peaks reported elsewhere in this paper (FFN L8, Attn
+L17). This is not the two aggregation conventions disagreeing about which
+layer wins (Appendix A, item 7). The aggregation convention is worth
+0.001 AUROC and the fold seed is worth 0.037 on the same data; the two
 analyses also differ in fold seed, and argmax over 24 near-tied layers
 is exactly the statistic most sensitive to it.
 
@@ -788,16 +811,18 @@ We measured this directly by recomputing the full per-layer AUROC profile
 at 12 different fold seeds and recording the argmax
 (`code/50`). On Qwen0.5B, the FFN peak lands on **four**
 different layers across 12 seeds (L12 in 6, L8 in 3, L20 in 2, L2
-in 1) and the Attention peak on **six** (L5 in 6, L8, L7, L12,
-L17, L23). Both of the "colliding" assignments -- FFN L8 / Attn L17
+in 1) and the Attention peak on **six** (L5 in 6, L17 in 2, and
+L7, L8, L12 and L23 once each). Both of the "colliding" assignments -- FFN L8 / Attn L17
 from `code/02` and FFN L20 / Attn L8 from `code/37` -- are
 draws from that distribution. Pythia is similar (FFN peak on 3 distinct
-layers, modal L11 in 83% of seeds; Attention peak on 5, modal L4 in
-only 33%). GPT-2, with half as many layers, is the stable case for FFN
-(L8 in 12/12 seeds) but not for Attention (L3 in 6, L6 in 6).
-**There is no naming collision and no estimator disagreement to
-explain: "the peak layer" is not a well-identified quantity for either
-component on the 24-layer models at this sample size.** Any claim that
+layers, modal L11 in 10 of 12 seeds; Attention peak on 5, with no
+modal layer at all -- L4 and L19 tie at 4 of 12 seeds each, then L2 in
+2, L9 and L17 once each). GPT-2, with half as many layers, is the stable case for FFN
+(L8 in 12/12 seeds) but not for Attention, which also ties (L3 in 6,
+L6 in 6).
+**There is no estimator disagreement to explain: "the peak layer"
+is not a well-identified quantity for either component on the 24-layer
+models at this sample size.** Any claim that
 depends on a specific peak layer -- including the peak-depth-fraction
 comparison in §4.6 -- inherits that instability.
 
@@ -813,6 +838,20 @@ than naive argmax peaks -- GPT-2 FFN 0.643->0.581, GPT-2 Attn
 corrected margin is itself within noise -- but as a concrete
 demonstration that peak-AUROC comparisons can select the noisier rather
 than the truer component.
+
+One consequence should be stated rather than left for a reader to notice:
+the "naive argmax" column above disagrees with §4.6's peak table on
+*which component wins, on all three architectures*. Here FFN leads
+on GPT-2 (0.643 vs. 0.632) and Attention leads on Pythia (0.666
+vs. 0.632) and Qwen0.5B (0.570 vs. 0.563); §4.6, computing the
+same quantity at `code/02`'s fold seed and aggregation, has exactly
+the opposite winner in each case. Both sets of numbers are correct for
+their own protocol. Three sign flips out of three, produced by nothing
+but a fold seed and an aggregation convention, is the strongest single
+piece of evidence in this paper that the peak-versus-peak
+FFN-vs-Attention comparison is not measuring anything at this sample
+size, and we report §4.6's version only because it is the protocol the
+rest of the passive results use -- not because it is the right answer.
 
 ### 4.6 Cross-architecture passive results
 
@@ -863,7 +902,7 @@ component probe under both labels
 extended the check to GPT-2 itself
 (`code/29_gpt2_full_validated_relabel_rerun.py`, all 534
 samples). Absolute AUROCs rise substantially on every architecture (GPT-2
-0.605/0.617->0.698/0.717 FFN/Attn peak; Pythia
+0.605/0.616->0.698/0.717 FFN/Attn peak; Pythia
 0.6181/0.6115->0.7353/0.7494; Qwen0.5B-bare
 0.5657/0.5625->0.7127/0.6992; Qwen0.5B-chat
 0.5704/0.5988->0.6603/0.6412), and FFN's numerical majority is
@@ -895,7 +934,7 @@ not tighter estimates than the numbers they revise.
 
 {figures/ffn-attn-comparison.pdf}
 
-*Peak AUROC for FFN vs. Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in all four conditions, and the one architecture that initially showed a clearer FFN edge (Qwen0.5B, bare template) reverses to favor Attention once queried with its proper chat template. §4.5 shows that changing only the cross-validation fold seed moves these estimates by more than the margins shown.*
+*Peak AUROC for FFN vs. Attention across every tested condition, with error bars showing each peak's own cross-validation standard deviation. The margin between components is within one CV~SD of overlap in all four conditions, and Qwen0.5B -- whose narrow bare-template FFN edge (0.0032, the smallest of the three) is the one that reverses -- appears under both templates, favoring Attention once queried with its proper chat template. §4.5 shows that changing only the cross-validation fold seed moves these estimates by more than the margins shown.*
 
 ### 4.7 Two further causal instruments
 
@@ -912,15 +951,18 @@ a mismatched example's activation
 
 At the maximum powered sample (n_{valid}=67, pre-registering the
 joint 24-test correction as primary), FFN shows no specific restoration
-effect anywhere. Attention's strongest candidate (L9, own-shuffled
-=+0.151) does not survive the joint Holm-Bonferroni threshold
+effect anywhere. Attention's smallest-p candidate (L9, own-shuffled
+=+0.151; attn L7's effect is larger at +0.163 but its
+p=0.0146 is not) does not survive the joint Holm-Bonferroni threshold
 (p=0.012 vs. 0.05/24=0.00208) -- attenuated from an earlier,
 lower-powered n=45 pass where the same cell was larger (+0.214,
-p=0.0026) under a less conservative per-family scoping. Instead, MLP L9
--- an *anti-specific* result, where a mismatched example's
+p=0.0026) under a less conservative per-family scoping. Instead the FFN
+site at L9 (`mlp_9` in the tracing artifact, the same sublayer
+called FFN throughout this paper) gives an *anti-specific* result, where a mismatched example's
 activation restores discrimination *better* than the example's own
--- clears the strict joint threshold (p=0.00086, own-shuffled
-=-0.203). We do not claim the anti-specific MLP L9 result is a stable
+which clears the strict joint threshold (p=0.00086, own-shuffled
+=-0.203). That is not in tension with "no specific restoration effect
+anywhere": the surviving cell runs the wrong way. We do not claim the anti-specific MLP L9 result is a stable
 finding rather than one more stopping point in a noisy series. Neither
 Pythia-410M nor Qwen2.5-0.5B shows any layer or component surviving
 correction under either framing (Pythia's smallest uncorrected
@@ -962,7 +1004,8 @@ dataset (HaluEval, n=500, same SAE, same layer) as a positive control
 features surviving FDR (best p=4.8x10^{-11}), confirming the null
 above is not a feature-selection bug. Even there, the causal clamp shows
 no specificity at any strength (p=1.000, 0.508, 1.000 at
-eta=10,20,40).
+eta=10,20,40;
+`results/sae_feature_clamp_combined.json`).
 
 ### 4.8 Difficulty controls
 
@@ -1029,10 +1072,21 @@ at L9; gold-token logit-lens divergence at L8. A seventh method, DLA
 magnitude, does not join: L10 (+0.90) and L11 (+0.71) are larger than
 L9.
 
-Two of the six are weaker than "converges" implies. Steering's "peak
-improvement" at L9 is 0.0015 AUROC points, the argmax over a 52-cell
-grid against per-layer CV standard deviations of 0.03-0.08 -- not
-distinguishable from argmax-over-noise. The logit-lens analysis computes
+Three of the six are weaker than "converges" implies. The dense probe's
+L9 peak is a near-tie: 0.5827275 at L9 against 0.5826826 at L12, a
+margin of 4.5x10^{-5} AUROC, about a thousandth of that layer's own
+cross-validation standard deviation (0.0497), with L10 (0.5805) and
+L11 (0.5791) also within 0.004 -- so "dense probe peaks at L9" is an
+argmax over noise in the same sense as the steering result below.
+Steering's "peak
+improvement" at L9 is 0.0015 AUROC points, and it is the argmax over a
+52-cell grid (13 layers x 4 steering strengths) in which the
+improvement is exactly zero at 11 of the 13 layers; the only other
+non-zero cell is +0.0001 at L10. Against a between-layer spread of
+0.520-0.609 in the unsteered baseline AUROC itself, an argmax over a
+statistic that is identically zero almost everywhere does not localize
+anything. (The sweep artifact records no per-layer cross-validation
+standard deviations, so we do not report a noise band for it.) The logit-lens analysis computes
 two divergence-layer estimates from the same run: the plain
 correct-vs-hallucinated divergence peaks at layer 1; only the gold-token
 variant peaks at L8.
@@ -1457,7 +1511,7 @@ outperform a mechanism-agnostic confidence signal.
 **No inference-economy claim.** This paper does not propose an
 early-exit, routing, or compute-saving mechanism, and none of its AUROCs
 are strong enough to gate anything at usable precision. We tested this
-directly on the one passively-significant signal this project produced
+directly on the strongest passively-significant signal this project produced
 (the SAE feature from §4.7's positive control, p=4.8x10^{-11}):
 thresholding it as a single-feature classifier reaches AUROC =0.5614,
 but the feature's raw activation is at or near zero for nearly every
@@ -1511,6 +1565,7 @@ emphasis: the validity checks first, the mechanism experiments second.
 - **Causal patching, base runs** (§4.4) `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py` -> `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`
 
 - **Causal patching under the validated label** (§4.4) `kaggle_kernels/paper1-causal-patch-judge-label/` -> `results/causal_patch_judge_label_results.json`
+- **Causal patching beyond GPT-2 (Pythia, Qwen0.5B-chat)** (§4.4) `code/07_multi_arch_causal_patch.py` -> `results/multi_arch_causal_patch.json`
 
 - **Component-specificity test with a real Attention direction** (§4.4) `kaggle_kernels/paper1-causal-patch-real-attn-direction/` -> `results/causal_patch_real_attn_direction_results.json`
 
@@ -1536,9 +1591,11 @@ emphasis: the validity checks first, the mechanism experiments second.
 
 - **Layer localization (7 methods), Jaccard and validated label** (§4.9) `code/00_verify_vendored_mechint_numbers.py`, `code/29_gpt2_full_validated_relabel_rerun.py` -> `results/vendored_mech_int/`, `results/gpt2_full_validated_relabel_rerun.json`
 
-- **Label-validity audit and surface baselines** (§6) `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py`, `code/32_surface_baseline_vs_judge_label.py`, `code/41_cheap_baselines.py` -> `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json`, `results/surface_baseline_vs_judge_label.json`, `results/cheap_baselines.json`
+- **Surface-feature baseline under the Jaccard label (the 6 features, and the 0.531/0.576 figures)** (§4.8, §6) `code/05_run_surface_baseline.py`, `code/05_surface_baseline_classifier.py` -> `results/surface_baseline/`
+- **Label-validity audit and surface baselines** (§6) `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` (run as `kaggle_kernels/paper1-llm-judge-relabel/`), `code/32_surface_baseline_vs_judge_label.py`, `code/41_cheap_baselines.py` -> `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json`, `results/surface_baseline_vs_judge_label.json`, `results/cheap_baselines.json`
 
-- **GPT-2 full-534 judge relabel** (§6) `kaggle_kernels/paper1-gpt2-full-judge-relabel/` -> `results/gpt2_full_534_judge_labels.json`
+- **GPT-2 full-534 judge relabel** (§6) `kaggle_kernels/paper1-gpt2-full-judge-relabel/`, `code/28_judge_label_all_gpt2_534.py` -> `results/gpt2_full_534_judge_labels.json`
+- **Figure 1** (§4.6) `code/20_generate_ffn_attn_figure.py` -> `draft/latex/figures/ffn-attn-comparison.pdf` (plots already-reported numbers; no new computation)
 
 ## 7. Conclusion
 
@@ -1572,15 +1629,15 @@ in a different way. The peak-versus-peak FFN-vs-Attention margins
 (0.003-0.011 AUROC) are three to ten times smaller than the spread a
 single cross-validation fold seed produces on the same features, and on
 both 24-layer models the argmax "peak layer" is not a well-identified
-quantity at all -- it lands on four to six different layers across twelve
+quantity at all -- it lands on three to six different layers across twelve
 seeds. A same-layer paired comparison is stable, but its sign flips
 between layers within the same architecture, so which layer is compared
 determines the answer. And a leave-one-category-out re-test, with two
 permutation controls, a pair-type decomposition, and a
 group-variable-only ceiling calculation, establishes that a standard
-random K-fold AUROC for these probes on TruthfulQA overstates
+random K-fold AUROC for this probe on TruthfulQA overstates
 unseen-topic performance by 0.13-0.17 AUROC, with cross-topic
-performance at the layers tested at chance -- while leaving the mechanism
+performance at the two layers tested at chance -- while leaving the mechanism
 behind that gap unidentified (§4.10).
 
 What we offer instead is transferable: two validity checks (a competence
@@ -1627,7 +1684,8 @@ implementations by checking for `"HALLUCINAT"` and
 `"INCORRECT"` first, then reran the full 534-sample GPT-2
 relabel end to end: byte-identical to the original (same 27/507
 split, same kappa=0.0417). We additionally reran the §4.4 flagship
-causal test (467 test prompts x 17 conditions) with the
+causal test (467 test prompts x 17 scored conditions -- §4.4's
+sixteen patched conditions plus the unpatched baseline) with the
 corrected parser and compared against the then-current saved per-sample
 labels: identical at every one of the 467x17 scored cells. One
 caveat a reader should know: the pre-fix run's artifacts were overwritten
@@ -1754,20 +1812,20 @@ aliased with architecture.
 -  **Small numeric and labeling corrections made in this round.**
 (a) The GPT-2 534-item judge-vs-Jaccard kappa was stated as 0.03 in
 one place; the correct value is 0.0417 (0.03 is Pythia's kappa,
-mislabeled). (b) Pythia's Jaccard-label peak FFN AUROC was stated as
+mislabeled) (§3, §6). (b) Pythia's Jaccard-label peak FFN AUROC was stated as
 0.615 in one place and 0.6181 in another; the artifact-verified value
-is 0.6181. (c) Two different minimum-detectable-odds-ratio ranges
+is 0.6181 (§4.6). (c) Two different minimum-detectable-odds-ratio ranges
 (3.75-8.0 and 3.25-6.0, both at n=467) were presented as though
 they described the same test; they are the native-site
 FFN-vs-Attention comparison (directions fit on 58 items) and the
 common-site comparison (directions fit on 47 items) respectively, and
-are now labeled (§4.1, §4.4). (d) The TOST equivalence-bound range was
+are now labeled (§4.1, §4.4). (d) The TOST equivalence-bound range (§4.4) was
 stated as 2.85-10.9; the maximum achieved in the underlying grid
 search is 10.85 (`results/tier1_tost_competing_risks.json`).
 An earlier version of this correction added that "10.9 is not a grid
 point"; that justification was itself wrong -- `code/38` searches
 `np.arange(1.05, 15.0, 0.05)`, which does contain 10.90. The
-number is simply not the one the search returns. (e) The low-dose sweep range was
+number is simply not the one the search returns. (e) The low-dose sweep range (§4.4) was
 stated as 42-52%; the computed range is 41.67-51.67%, and the
 claim of "no monotone dose-response" was inaccurate -- the Attention arm
 is strictly monotone decreasing across the three doses, so the accurate
@@ -1778,7 +1836,14 @@ determine resolution.
 
 -  **Correction confessions relocated.** Earlier drafts narrated
 several of the above corrections inline in the results sections. All are
-now collected here, and the main text states final numbers directly.
+now collected here, and the main text states final numbers directly; where
+a reader might otherwise reconstruct the wrong quantity, §4.3, §4.4, §4.5
+and §5 carry a one-clause pointer to the relevant item above rather than a
+retelling. The single deliberate exception is §4.10, whose subject
+*is* how its own interpretation changed under two permutation
+controls, a pair-type decomposition, and a ceiling calculation; that
+history is reported in the body because the sequence of checks, not the
+final number alone, is the transferable result.
 
 ## 9. References
 
