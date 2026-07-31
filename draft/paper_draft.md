@@ -28,10 +28,17 @@ category-clustering leakage (questions cluster into 38 topics whose
 correct-answer rates range 0%-10.5%, so a probe can learn topic instead
 of hallucination). A leave-one-category-out re-test of the flagship
 component probe (GPT-2, L8/L9) collapses AUROC from 0.62-0.66 under
-standard CV to 0.48-0.49 -- chance or below -- at every cell tested. This
-was checked for one probe on one architecture; there is no principled
-reason to expect the other five converging methods or the other two
-architectures to be exempt, and none has yet been re-verified.**
+standard CV to 0.48-0.49 -- chance or below -- at every cell tested.
+Extending this check to the other two architectures gives a
+heterogeneous result, not a uniform one: Pythia-410M's component probe
+survives leave-one-category-out CV essentially unchanged at both tested
+layers (no detectable contamination), while Qwen2.5-0.5B's partially
+collapses, and specifically more so for FFN (0.566->0.485) than
+Attention (0.563->0.526). Category leakage is therefore a real,
+substantial, but architecture- and component-dependent contaminant of
+this paper's passive-probe evidence, not a uniform artifact explaining
+away all three architectures' results at once, and the other five
+converging methods have not yet been checked.**
 
 A direct causal test -- patching the FFN sublayer during generation,
 against a genuinely Attention-derived control direction, under an
@@ -311,30 +318,48 @@ protocol's above-chance AUROC for the component probe does not survive
 removing category-clustering leakage, at either tested layer, for either
 component.
 
-**Scope of this check, stated explicitly.** We ran this only for the
-component probe (FFN/Attn last-token) at GPT-2, L8/L9 -- the layers and
-method this paper's causal-patching test (§3.4) targets. We did not
-(yet) rerun the other five converging methods in §3.1 (dense probe,
+**Extending this check to Pythia-410M and Qwen2.5-0.5B-Instruct: a
+heterogeneous, not a uniform, result.** We reran the identical
+generation/labeling/extraction methodology (Jaccard word-overlap
+labeling, mean-pooled per-layer FFN/Attention activations, bare
+"Q: {question}\nA:" prompts) on the full 817-item TruthfulQA validation
+split for both remaining architectures, extracting only at each
+architecture's own already-reported peak FFN and peak Attn layer
+(Pythia: L11/L4; Qwen0.5B: L8/L17;
+`kaggle_kernels/paper1-category-leakage-cross-arch/`) and comparing
+standard 5-fold CV against leave-one-category-out CV exactly as above.
+Unlike GPT-2's severely imbalanced pool (27/534 correct, 5.1%, which left
+only 16 of 38 categories usable for LOGO-CV), both of these
+architectures' Jaccard-labeled pools are well-balanced (Pythia: 282/605,
+46.6% correct, 37/38 categories usable; Qwen0.5B: 253/513, 49.3% correct,
+34/38 usable) -- a materially more reliable LOGO-CV estimate than GPT-2's.
+The result does not replicate GPT-2's collapse uniformly: **Pythia's
+component probe survives leave-one-category-out CV essentially
+unchanged** (L11 FFN: standard 0.618 -> LOGO 0.617; L4 Attn:
+0.612 -> 0.602), showing no detectable category-leakage contamination at
+either tested layer. **Qwen0.5B partially collapses, and specifically
+more so for FFN than Attention**: L8 FFN drops from 0.566 to 0.485 -- to
+chance or slightly below, the same qualitative pattern GPT-2 showed --
+while L17 Attn drops more modestly, from 0.563 to 0.526. **The honest,
+now-complete picture across all three architectures is heterogeneous, not
+a uniform artifact**: category-leakage contamination appears to explain
+GPT-2's component-probe signal almost entirely, explains a substantial
+part of Qwen0.5B's FFN signal specifically but only a modest part of its
+Attention signal, and is not detectable in Pythia at all. This means the
+broader claim below that "FFN wins a numerical majority of layers on all
+three architectures" cannot be uniformly dismissed as category-leakage
+artifact, but neither can it be trusted at face value for GPT-2 or (for
+FFN specifically) Qwen0.5B -- each architecture's passive-probe result
+now needs to be read on its own terms with respect to this confound, not
+assumed to transfer from one to the others in either direction. We did
+not (yet) rerun the other five converging methods in §3.1 (dense probe,
 sparse probe, token-position probe, steering, logit lens) under
-leave-one-category-out CV, nor replicate this check on Pythia or
-Qwen2.5-0.5B; extending it there is blocked at the time of writing by an
-expired local Kaggle authentication token, not by any expectation that
-the result would differ -- category-clustering leakage is a property of
-the evaluation protocol and the dataset, not of one specific probe
-architecture, so there is no principled reason to expect the other five
-methods or the other two architectures to be exempt. **Given this
-result, every AUROC in §3.1-3.2 computed under standard random K-fold CV
-on TruthfulQA should be read as an upper bound contaminated by unknown,
-unquantified category leakage, not as an established
-hallucination-detection signal**, until each is itself re-verified under
-leave-one-category-out CV. This finding also reframes what the null
-result in §3.4 (causal patching, direction-validity gate) means: it is
-not merely that a specific difference-of-means direction failed to
-validate at n=11 -- the broader premise that GPT-2's FFN/Attention
-hidden states carry a genuine, category-independent hallucination signal
-for this task was itself never established under a leakage-free
-evaluation protocol. Full per-layer/component results:
-`results/category_leakage_diagnostic.json`.
+leave-one-category-out CV; given the heterogeneity just found across
+architectures for the same method, we no longer assume a uniform answer
+for those methods either, and flag this as the natural next check. Full
+per-architecture, per-layer results:
+`results/category_leakage_diagnostic.json` (GPT-2),
+`results/category_leakage_cross_arch_results.json` (Pythia, Qwen0.5B).
 
 ### 3.3 Cross-architecture data (GPT-2, Pythia-410M, Qwen2.5-0.5B-Instruct)
 
@@ -342,8 +367,9 @@ evaluation protocol. Full per-layer/component results:
 $N=605$ Pythia / $N=513$ Qwen0.5B.] FFN wins a numerical majority of
 layers on all three architectures (66.7\%, 66.7\%, 58.3\%); **these
 numbers are also computed under standard random K-fold CV and are
-subject to the same category-leakage caveat above**, not yet
-independently checked for these two architectures.
+subject to the same category-leakage caveat above (confirmed
+heterogeneous: unaffected for Pythia, partially collapsed for Qwen0.5B,
+especially FFN)**.
 per-architecture two-sided p-values are 0.39/0.15/0.54, one-sided
 0.19/0.076/0.27 -- all non-significant. Pooled across all 60 layers,
 38/60 FFN wins gives a nominally significant one-sided $p=0.026$, but
@@ -1190,15 +1216,23 @@ points (§3.2), so a probe correlated with topic alone can look like a
 hallucination detector under ordinary random K-fold CV. We ran a
 leave-one-category-out re-test for the component probe on GPT-2 (§3.2):
 standard CV AUROC of 0.62-0.66 collapses to 0.48-0.49 -- chance or below
--- at every layer/component tested. Any study reporting a probe AUROC on
-TruthfulQA (or any other benchmark whose items cluster into topics
-correlated with the label) should run this check before treating a
-standard-CV AUROC as evidence of the signal it is claimed to measure; we
-did not run it for this paper's other five converging methods or its
-other two architectures before this draft, which is itself the point --
-this check is cheap (a single re-partitioning of already-cached
-activations, no new model calls) and there was no principled reason it
-had been skipped until an outside review asked for it.
+-- at every layer/component tested. Extending this to Pythia-410M and
+Qwen2.5-0.5B (§3.2) gives a heterogeneous result: Pythia's component
+probe is essentially unaffected (no detectable category-leakage
+contamination at either tested layer), while Qwen0.5B partially
+collapses, more so for FFN (0.566->0.485) than Attention
+(0.563->0.526). Any study reporting a probe AUROC on TruthfulQA (or any
+other benchmark whose items cluster into topics correlated with the
+label) should run this check before treating a standard-CV AUROC as
+evidence of the signal it is claimed to measure -- the result is neither
+always contamination nor never contamination, so it cannot be assumed
+either way without checking. We did not run this check for this paper's
+other five converging methods (dense probe, sparse probe, token-position
+probe, steering, logit lens) before this draft; this check is cheap (a
+single re-partitioning of already-cached activations, no new model calls
+for GPT-2, and a single additional generation pass per architecture
+otherwise) and there was no principled reason it had been skipped until
+an outside review asked for it.
 
 **Data and code availability.** All code, cached result JSONs, and the
 paper source are included in the anonymized supplementary material for
@@ -1223,7 +1257,8 @@ with this paper.
 |---|---|---|---|
 | Layer localization (7 methods) | §3.1 | `code/00_verify_vendored_mechint_numbers.py` | `results/*.json` (per-method) |
 | FFN vs. Attention decomposition | §3.2 | `code/02_cross_arch_component_probe.py` | `results/cross_arch_component_probe_*.json` |
-| Category-leakage re-test (LOGO-CV vs. standard CV) | §3.2 | `code/47_category_leakage_diagnostic.py` | `results/category_leakage_diagnostic.json` |
+| Category-leakage re-test (LOGO-CV vs. standard CV), GPT-2 | §3.2 | `code/47_category_leakage_diagnostic.py` | `results/category_leakage_diagnostic.json` |
+| Category-leakage re-test, Pythia-410M and Qwen2.5-0.5B | §3.2 | `kaggle_kernels/paper1-category-leakage-cross-arch/run_category_leakage_cross_arch.py` | `results/category_leakage_cross_arch_results.json` |
 | Direction-validity 200-resplit diagnostic | §3.4 | `code/46_direction_validity_resplit_diagnostic.py` | `results/direction_validity_resplit_diagnostic.json` |
 | Paired ΔAUROC, nested-CV selection-bias check | §3.3 | `code/37_paired_component_delta_auroc.py` | `results/paired_component_delta_auroc.json` |
 | Qwen chat-template reversal | §3.3 | `code/02_cross_arch_component_probe.py qwen05chat` | `results/cross_arch_component_probe_qwen05chat.json` |
@@ -1521,8 +1556,18 @@ in §3.2). The result: standard CV AUROC of 0.616-0.663 collapses to
 0.479-0.491 -- chance or below -- at every layer and component tested.
 This is now reported prominently in §3.2 and the abstract rather than
 only here, given its bearing on every passive-probe number this paper
-reports; see §3.2 for the full result and its disclosed scope (checked
-only for this probe, this architecture, these two layers).
+reports. A follow-up Kaggle run
+(`kaggle_kernels/paper1-category-leakage-cross-arch/`,
+`results/category_leakage_cross_arch_results.json`) extended this same
+check to Pythia-410M and Qwen2.5-0.5B at each architecture's own peak
+FFN/Attn layers, over the full 817-item TruthfulQA split: the result is
+heterogeneous rather than a uniform replication of GPT-2's collapse --
+Pythia's component probe is essentially unaffected (L11 FFN
+0.618->0.617; L4 Attn 0.612->0.602), while Qwen0.5B partially collapses,
+more so for FFN (0.566->0.485) than Attention (0.563->0.526). See §3.2
+for the full result and its remaining disclosed scope (the other five
+converging methods have not yet been checked under leave-one-category-out
+CV for any architecture).
 
 ## References
 
