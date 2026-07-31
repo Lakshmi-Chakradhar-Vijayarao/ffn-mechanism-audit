@@ -172,8 +172,8 @@ returns.
  help," which is a different and more actionable conclusion.
 
 -  **A degeneracy pre-filter for flip-rate metrics** (§4.2). A
- single model-agnostic check (a 4-8 word phrase repeated 3+
- times) flags over half of this pool's "hallucinations." We report
+ single model-agnostic check (a 4-, 5-, 6- or 8-word phrase
+ repeated 3+ times) flags over half of this pool's "hallucinations." We report
  its rate on three pools, its balance across label classes, and its
  effect on both the causal test and the passive probe.
 
@@ -457,8 +457,10 @@ split across five CV folds, neither component's estimate here is powered
 to distinguish a real change from noise. What the two labels agree on is
 that this test does not rescue an FFN-specific reading, and the
 Jaccard-label version -- the one with enough positives to estimate at all
--- rules out the degeneracy-propensity alternative for the passive probe
-as a whole.
+-- leaves degeneracy-propensity insufficient as an explanation of the
+passive signal. We do not put it more strongly than that: the exclusion
+holds under one of the two labels, and under the other this test cannot
+resolve anything.
 
 ### 4.3 A direction-validity gate, and its exact power
 
@@ -1309,8 +1311,8 @@ references point to where.
 
 -  **Are the baseline "failures" the failure mode you think they
  are?** Run a degeneracy pre-filter before trusting a flip-rate.
- Ours is a single deterministic check -- a 4-8 word phrase
- repeated 3+ times -- and flags 51.9% and 53.1% of the
+ Ours is a single deterministic check -- a 4-, 5-, 6- or
+ 8-word phrase repeated 3+ times -- and flags 51.9% and 53.1% of the
  nominally hallucinated completions in our two causal-test pools, and
  53.6% of all baseline completions in the full labeled pool,
  near-balanced across label classes (§4.2). Report the rate on both arms and on both label
@@ -1324,7 +1326,9 @@ references point to where.
  arrangements; report the resulting MDE, the attainable alpha, and
  the false-accept rate of the gate rule actually used
  (Table~the table below). At this paper's own n=11 the gate cannot
- detect any true AUROC below 0.875, and a pure-noise direction
+ call any *observed* AUROC below 0.875 significant (true
+  effects below it can clear the gate, just rarely -- power 0.31 at a
+  true AUROC of 0.75), and a pure-noise direction
  passes plausible gates 6.7%-46.1% of the time. A patching
  result whose direction has not cleared such a gate is uninformative
  about the mechanism in either direction (§4.3).
@@ -1701,7 +1705,7 @@ on bare TruthfulQA questions rather than the
 `"Q: {question} nA:"` prompts the causal test
 patches, and (b) normalized alpha against each sublayer's own raw
 output norm -- the wrong denominator, since the patching hook replaces
-that output with (out+alpha) and the block's
+that output with (out + alpha * direction) and the block's
 own forward code then adds the combined value into the residual stream.
 The uncorrected version reported a 2-3x dosage asymmetry between
 arms; correcting only the prompt format shrinks it to 1.3-1.5x;
