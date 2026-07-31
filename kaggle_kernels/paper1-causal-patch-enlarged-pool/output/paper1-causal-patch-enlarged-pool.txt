@@ -1,0 +1,129 @@
+Device: cuda
+Loaded 534 GPT-2 labeled examples (original 534-item pool)
+Merged 283 previously-dropped items -> 817 total
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading judge model Qwen/Qwen2.5-3B-Instruct...
+`torch_dtype` is deprecated! Use `dtype` instead!
+Fetching 2 files: 100%|██████████| 2/2 [00:24<00:00, 12.28s/it]
+Loading weights: 100%|██████████| 434/434 [00:03<00:00, 132.37it/s, Materializing param=model.norm.weight]
+Judging all 817 GPT-2 completions (534 original + 283 newly-included)...
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+  judged 100/817
+  judged 200/817
+  judged 300/817
+  judged 400/817
+  judged 500/817
+  judged 600/817
+  judged 700/817
+  judged 800/817
+Judge labeling done: n_valid=817 correct=27 hallucinated=790
+Train: 58 (18 correct, 40 hallucinated)
+Test (judge-hallucinated, all remaining): 750
+Loading GPT-2...
+Loading weights: 100%|██████████| 148/148 [00:00<00:00, 1703.58it/s, Materializing param=transformer.wte.weight]
+GPT2LMHeadModel LOAD REPORT from: gpt2
+Key                  | Status     |  | 
+---------------------+------------+--+-
+h.{0...11}.attn.bias | UNEXPECTED |  | 
+Notes:
+- UNEXPECTED	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Direction-fit set: 47, validity-holdout set: 11
+Computing FFN direction at L8...
+  L8: FFN dir vs Attn dir cosine similarity = -0.0627
+  Computing direction-validity AUROC (held-out) at L8...
+    FFN direction held-out AUROC: {'auroc': 0.37499999999999994, 'bootstrap_ci_95': [0.0, 0.7777777777777778], 'n_test': 11}
+    Attn direction held-out AUROC: {'auroc': 0.3333333333333333, 'bootstrap_ci_95': [0.0, 0.75], 'n_test': 11}
+  Running 2000-permutation cosine null at L8...
+    Permutation-null cosine: mean=-0.0758 sd=0.0601, observed z=0.2179905899194238
+Computing FFN direction at L9...
+  L9: FFN dir vs Attn dir cosine similarity = -0.0835
+  Computing direction-validity AUROC (held-out) at L9...
+    FFN direction held-out AUROC: {'auroc': 0.16666666666666666, 'bootstrap_ci_95': [0.0, 0.6], 'n_test': 11}
+    Attn direction held-out AUROC: {'auroc': 0.25, 'bootstrap_ci_95': [0.0, 0.8660714285714286], 'n_test': 11}
+  Running 2000-permutation cosine null at L9...
+    Permutation-null cosine: mean=-0.0282 sd=0.0710, observed z=-0.7800097324334557
+Running causal-patching loop (6 conditions incl. common-site) on 750 test prompts...
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+  [20/750] elapsed=759s ETA=462min
+  [40/750] elapsed=1152s ETA=341min
+  [60/750] elapsed=1549s ETA=297min
+  [80/750] elapsed=1941s ETA=271min
+  [100/750] elapsed=2336s ETA=253min
+  [120/750] elapsed=2728s ETA=239min
+  [140/750] elapsed=3121s ETA=227min
+  [160/750] elapsed=3510s ETA=216min
+  [180/750] elapsed=3901s ETA=206min
+  [200/750] elapsed=4293s ETA=197min
+  [220/750] elapsed=4682s ETA=188min
+  [240/750] elapsed=5071s ETA=180min
+  [260/750] elapsed=5461s ETA=172min
+  [280/750] elapsed=5855s ETA=164min
+  [300/750] elapsed=6245s ETA=156min
+  [320/750] elapsed=6638s ETA=149min
+  [340/750] elapsed=7022s ETA=141min
+  [360/750] elapsed=7406s ETA=134min
+  [380/750] elapsed=7789s ETA=126min
+  [400/750] elapsed=8171s ETA=119min
+  [420/750] elapsed=8549s ETA=112min
+  [440/750] elapsed=8926s ETA=105min
+  [460/750] elapsed=9304s ETA=98min
+  [480/750] elapsed=9683s ETA=91min
+  [500/750] elapsed=10063s ETA=84min
+  [520/750] elapsed=10439s ETA=77min
+  [540/750] elapsed=10817s ETA=70min
+  [560/750] elapsed=11196s ETA=63min
+  [580/750] elapsed=11579s ETA=57min
+  [600/750] elapsed=11958s ETA=50min
+  [620/750] elapsed=12335s ETA=43min
+  [640/750] elapsed=12713s ETA=36min
+  [660/750] elapsed=13089s ETA=30min
+  [680/750] elapsed=13465s ETA=23min
+  [700/750] elapsed=13844s ETA=16min
+  [720/750] elapsed=14220s ETA=10min
+  [740/750] elapsed=14594s ETA=3min
+=== UNDER JUDGE LABEL ===
+  L8_a20: {'ffn_found': 0.021333333333333333, 'ffn_rand': 0.013333333333333334, 'attn_found': 0.02266666666666667, 'attn_rand': 0.021333333333333333, 'ffn_common': 0.021333333333333333, 'attn_common': 0.032}
+    McNemar FFN found-vs-rand: p=0.3075
+    McNemar Attn found-vs-rand: p=1.0
+    McNemar FFN-vs-Attn (native site): p=1.0
+    McNemar FFN-vs-Attn (COMMON SITE, primary component-specificity test): p=0.1849
+  L8_a40: {'ffn_found': 0.025333333333333333, 'ffn_rand': 0.016, 'attn_found': 0.028, 'attn_rand': 0.028, 'ffn_common': 0.025333333333333333, 'attn_common': 0.018666666666666668}
+    McNemar FFN found-vs-rand: p=0.21
+    McNemar Attn found-vs-rand: p=1.0
+    McNemar FFN-vs-Attn (native site): p=0.8714
+    McNemar FFN-vs-Attn (COMMON SITE, primary component-specificity test): p=0.4583
+  L9_a20: {'ffn_found': 0.006666666666666667, 'ffn_rand': 0.012, 'attn_found': 0.013333333333333334, 'attn_rand': 0.014666666666666666, 'ffn_common': 0.006666666666666667, 'attn_common': 0.010666666666666666}
+    McNemar FFN found-vs-rand: p=0.3877
+    McNemar Attn found-vs-rand: p=1.0
+    McNemar FFN-vs-Attn (native site): p=0.1797
+    McNemar FFN-vs-Attn (COMMON SITE, primary component-specificity test): p=0.5078
+  L9_a40: {'ffn_found': 0.02, 'ffn_rand': 0.02, 'attn_found': 0.017333333333333333, 'attn_rand': 0.02, 'ffn_common': 0.02, 'attn_common': 0.017333333333333333}
+    McNemar FFN found-vs-rand: p=1.0
+    McNemar Attn found-vs-rand: p=0.8506
+    McNemar FFN-vs-Attn (native site): p=0.8318
+    McNemar FFN-vs-Attn (COMMON SITE, primary component-specificity test): p=0.8388
+=== Random-direction ensemble (20 draws), L8 alpha=40.0, first 60 test prompts ===
+  draw 0: ffn_rand_flip=0.033 attn_rand_flip=0.017
+  draw 1: ffn_rand_flip=0.017 attn_rand_flip=0.017
+  draw 2: ffn_rand_flip=0.050 attn_rand_flip=0.017
+  draw 3: ffn_rand_flip=0.017 attn_rand_flip=0.033
+  draw 4: ffn_rand_flip=0.000 attn_rand_flip=0.033
+  draw 5: ffn_rand_flip=0.017 attn_rand_flip=0.000
+  draw 6: ffn_rand_flip=0.000 attn_rand_flip=0.000
+  draw 7: ffn_rand_flip=0.017 attn_rand_flip=0.033
+  draw 8: ffn_rand_flip=0.000 attn_rand_flip=0.000
+  draw 9: ffn_rand_flip=0.000 attn_rand_flip=0.000
+  draw 10: ffn_rand_flip=0.000 attn_rand_flip=0.033
+  draw 11: ffn_rand_flip=0.000 attn_rand_flip=0.000
+  draw 12: ffn_rand_flip=0.000 attn_rand_flip=0.017
+  draw 13: ffn_rand_flip=0.000 attn_rand_flip=0.017
+  draw 14: ffn_rand_flip=0.000 attn_rand_flip=0.017
+  draw 15: ffn_rand_flip=0.017 attn_rand_flip=0.050
+  draw 16: ffn_rand_flip=0.000 attn_rand_flip=0.033
+  draw 17: ffn_rand_flip=0.000 attn_rand_flip=0.017
+  draw 18: ffn_rand_flip=0.000 attn_rand_flip=0.000
+  draw 19: ffn_rand_flip=0.000 attn_rand_flip=0.000
+Found FFN flip rate 0.033 is at percentile 0.95 of the 20-draw random-direction ensemble
+Found Attn flip rate 0.050 is at percentile 1.00 of the 20-draw random-direction ensemble
+Saved: /kaggle/working/causal_patch_tier1_validated_results.json
+Total runtime: 278.0 min

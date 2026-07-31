@@ -1,0 +1,15 @@
+{
+  "id": "anonymous-submission/paper1-causal-patch-enlarged-pool",
+  "title": "paper1-causal-patch-enlarged-pool",
+  "code_file": "run_causal_patch_enlarged_pool.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

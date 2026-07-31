@@ -31,9 +31,14 @@ random-direction ensemble, and two alternative direction estimators)
 converge on the same conclusion from a different angle: neither
 direction was ever shown to carry validated causal signal in the first
 place, so this null is a limitation of the instrument, not evidence the
-two components are equally causal. A stronger causal method (ROME-style
-tracing) finds no effect surviving correction under the validated label.
-A sparse-feature intervention finds no passively-associated feature at
+two components are equally causal. We tried to grow the held-out set by
+judging 283 previously-unused prompts; zero were judged correct,
+confirming GPT-2's near-zero success rate on this task is a genuine
+competence ceiling, not a sampling artifact -- the causal test still
+replicates cleanly at nearly double the power. A stronger causal method
+(ROME-style tracing) finds no effect surviving correction under the
+validated label. A sparse-feature intervention finds no
+passively-associated feature at
 all.
 
 The ReDeEP mechanism does not cleanly extend to closed-book
@@ -703,6 +708,39 @@ label for speed) finds flip rates flat across all three doses
 ($42$-$52\%$), no monotone dose-response. All six are consistent with,
 and do not add beyond, the two findings above.
 
+**Attempting to grow the held-out set: the bottleneck is GPT-2's
+competence, not sample size.** The direction-validity gate's $n=11$
+holdout is bottlenecked by GPT-2's judge-validated correct rate on
+TruthfulQA (27/534, 5.1\%) -- itself a consequence of an old Jaccard-label
+filter that discarded 283 of the full 817-item TruthfulQA validation
+split before this judge existed. We judged all 283 previously-discarded
+items and merged them into the pool
+(`kaggle_kernels/paper1-causal-patch-enlarged-pool/`): \textbf{zero of
+them were judged correct} (27/817 correct overall, exactly unchanged from
+27/534) -- GPT-2's near-zero success rate on TruthfulQA is a genuine
+competence ceiling, not an artifact of which 534 items happened to be
+scorable by the old heuristic. The direction-validity holdout therefore
+remains $n=11$; re-drawn from a differently-ordered pool, its AUROC point
+estimates move (L8 FFN/Attn$=0.375$/$0.333$, L9 FFN/Attn$=0.167$/$0.25$,
+all CIs still consistent with chance) -- a second independent
+illustration of how much a single held-out AUROC estimate swings at this
+$n$, reinforcing rather than resolving the power-analysis finding above.
+The causal test itself reruns cleanly at nearly double the power
+($n=750$ hallucinated prompts, up from 467): the null holds throughout
+(FFN-vs-Attention common-site $p=0.18$-$0.84$ across all four
+configurations), with minimum-detectable odds ratios of $3.2$-$9.8$ --
+modestly tighter at three configurations, unchanged at the fourth,
+not a qualitative change in what this test can rule out. The
+random-direction-ensemble check, rerun on this enlarged pool (a
+different specific 60-prompt subset, since the underlying prompt
+ordering shifted), now places the found directions at the 95th (FFN)
+and 100th (Attention) percentile rather than the original run's 50th and
+40th -- driven by 2-3 flip events out of 60, the kind of count this
+check cannot stably resolve either way. We report both results rather
+than the more favorable one: this specific check is itself too
+underpowered at $n=60$ to trust in either direction, which is consistent
+with, not a reversal of, this section's overall conclusion.
+
 **What this means for the flagship result.** These checks do not
 simply add further support to the existing FFN-vs-Attention null; taken
 together, they show that neither direction in this test was ever
@@ -1040,6 +1078,7 @@ with this paper.
 | Low-dose alpha sweep (common site, Jaccard label) | §3.4 | `code/42_low_dose_alpha_sweep.py` | `results/low_dose_alpha_sweep.json` |
 | Direction-validity gate power/MDE analysis | §3.4 | `code/43_direction_validity_power_analysis.py` | `results/direction_validity_power_analysis.json` |
 | Alternative direction estimators (logistic regression, LDA) | §3.4 | `code/44_alternative_direction_estimators.py` | `results/alternative_direction_estimators.json` |
+| Enlarged-pool replication (283 previously-unused prompts judged, $n=750$ causal test) | §3.4 | `kaggle_kernels/paper1-causal-patch-enlarged-pool/` | `kaggle_kernels/paper1-causal-patch-enlarged-pool/output/causal_patch_enlarged_pool_results.json` |
 
 **Label validity.** All results rest on a Jaccard word-overlap label,
 surface-form divergence rather than verified factual incorrectness. We
