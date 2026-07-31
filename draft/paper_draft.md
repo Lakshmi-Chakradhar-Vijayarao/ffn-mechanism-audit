@@ -10,7 +10,7 @@ ReDeEP (Sun et al., ICLR 2025) established a "knowledge FFN" mechanism:
 feed-forward sublayers can override retrieved context during
 hallucination in retrieval-augmented generation. We test whether the
 same asymmetry appears in pure closed-book generation, across three
-architectures spanning a ~4.3x parameter range (GPT-2, Pythia-410M,
+architectures spanning a ~4.0x parameter range (GPT-2, Pythia-410M,
 Qwen2.5-0.5B-Instruct).
 
 FFN beats Attention as a passive hallucination-detection signal on a
@@ -33,8 +33,10 @@ Extending this check to the other two architectures gives a
 heterogeneous result, not a uniform one: Pythia-410M's component probe
 survives leave-one-category-out CV essentially unchanged at both tested
 layers (no detectable contamination), while Qwen2.5-0.5B's partially
-collapses, and specifically more so for FFN (0.566->0.485) than
-Attention (0.563->0.526). Category leakage is therefore a real,
+collapses at both components (0.566->0.485 FFN, 0.563->0.526 Attention --
+the numerically larger drop for FFN is not itself tested for
+significance and should not be read as an established
+component-specific asymmetry). Category leakage is therefore a real,
 substantial, but architecture- and component-dependent contaminant of
 this paper's passive-probe evidence, not a uniform artifact explaining
 away all three architectures' results at once, and the other five
@@ -294,10 +296,15 @@ categories (Misconceptions, Law, Health, Fiction, ...), and standard
 random K-fold CV -- the protocol every probe number in §3.1-3.2 uses --
 can place same-category, near-duplicate questions in both a fold's train
 and test split. Category is not independent of the hallucination label
-either: on this same 534-item GPT-2 pool, correct-answer rate by category
-ranges from 0% (Fiction, Paranormal, Stereotypes) to 10.5% (History,
-Conspiracies), so a probe that learns to recognize *topic* could achieve
-an above-chance AUROC with zero genuine hallucination-related content.
+either: on this same 534-item GPT-2 pool, among the 10 most frequent
+categories (each n>=15), correct-answer rate ranges from 0% (Fiction,
+Paranormal, Stereotypes) to 10.5% (History, Conspiracies); across all 38
+categories including smaller ones the range is wider still (0% to 28.6%
+at Confusion: People, n=7 -- full per-category breakdown, including
+per-category n, in `results/category_leakage_diagnostic.json`'s
+`category_correct_rates` field), so a probe that learns to recognize
+*topic* could achieve an above-chance AUROC with zero genuine
+hallucination-related content.
 
 We ran this check for the component probe, GPT-2, L8 and L9. Using the
 identical judge-labeled pool and last-token FFN/Attn extraction as the
@@ -337,10 +344,14 @@ The result does not replicate GPT-2's collapse uniformly: **Pythia's
 component probe survives leave-one-category-out CV essentially
 unchanged** (L11 FFN: standard 0.618 -> LOGO 0.617; L4 Attn:
 0.612 -> 0.602), showing no detectable category-leakage contamination at
-either tested layer. **Qwen0.5B partially collapses, and specifically
-more so for FFN than Attention**: L8 FFN drops from 0.566 to 0.485 -- to
+either tested layer. **Qwen0.5B partially collapses at both
+components**: L8 FFN drops from 0.566 to 0.485 -- to
 chance or slightly below, the same qualitative pattern GPT-2 showed --
-while L17 Attn drops more modestly, from 0.563 to 0.526. **The honest,
+while L17 Attn drops more modestly, from 0.563 to 0.526. The FFN drop is
+numerically larger, but at 34 LOGO folds (SD 0.20/0.22) this difference
+is only ~0.9 standard errors, not itself statistically tested; we
+report both point estimates and do not claim a significant
+component-specific asymmetry. **The honest,
 now-complete picture across all three architectures is heterogeneous, not
 a uniform artifact**: category-leakage contamination appears to explain
 GPT-2's component-probe signal almost entirely, explains a substantial
@@ -365,12 +376,12 @@ per-architecture, per-layer results:
 
 [Full version: `draft/cross_architecture_section.md`; real Kaggle data,
 $N=605$ Pythia / $N=513$ Qwen0.5B.] FFN wins a numerical majority of
-layers on all three architectures (66.7\%, 66.7\%, 58.3\%); **these
-numbers are also computed under standard random K-fold CV and are
-subject to the same category-leakage caveat above (confirmed
-heterogeneous: unaffected for Pythia, partially collapsed for Qwen0.5B,
-especially FFN)**.
-per-architecture two-sided p-values are 0.39/0.15/0.54, one-sided
+layers on all three architectures (66.7\%, 66.7\%, 58.3\%) -- though
+**§3.2's category-leakage re-test (now run for all three architectures)
+shows this majority-of-layers signal is itself confounded**: largely
+explained by category leakage for GPT-2, partially so for Qwen0.5B
+(especially its FFN component), and not detectably confounded for
+Pythia; per-architecture two-sided p-values are 0.39/0.15/0.54, one-sided
 0.19/0.076/0.27 -- all non-significant. Pooled across all 60 layers,
 38/60 FFN wins gives a nominally significant one-sided $p=0.026$, but
 this is not a valid inferential instrument: 60 layers within only 3
@@ -407,9 +418,20 @@ per-fold AUROCs, so the absolute point estimates below differ slightly
 from the mean-of-folds convention used elsewhere in this paper -- the
 CI is what is new here, not the point estimate). At each architecture's
 own naive FFN-peak layer: GPT-2 (L8) $\Delta=+0.067$, CI $[+0.012,
-+0.122]$ (excludes zero); Pythia (L11) $\Delta=+0.047$, CI $[-0.002,
-+0.100]$; Qwen0.5B (L20) $\Delta=+0.053$, CI $[-0.007,+0.113]$. At each
-architecture's own naive Attn-peak layer, the sign reverses as expected
++0.122]$ (excludes zero -- though L8 is exactly the cell §3.2's
+leave-one-category-out re-test shows collapsing from AUROC 0.62 to 0.48,
+so this CI-excludes-zero result should not be read as established signal
+independent of that confound); Pythia (L11) $\Delta=+0.047$, CI $[-0.002,
++0.100]$; Qwen0.5B (L20) $\Delta=+0.053$, CI $[-0.007,+0.113]$. **Note a
+naming collision, disclosed here rather than left implicit:** this
+pooled-OOF aggregation's own argmax gives Qwen0.5B's FFN peak as L20 and
+Attn peak as L8 -- the reverse of the mean-of-folds peaks reported
+elsewhere in this paper (FFN L8, Attn L17, §3.3): L8 is "the FFN peak"
+under one aggregation convention and "the Attn peak" under the other for
+the same architecture, a consequence of pooled-OOF and mean-of-folds
+AUROC estimation genuinely disagreeing on which layer wins, not a typo.
+At each architecture's own naive Attn-peak layer (by this section's own
+pooled-OOF convention), the sign reverses as expected
 (Attn winning at its own peak): GPT-2 (L3) $\Delta=-0.085$, CI
 $[-0.137,-0.036]$; Pythia (L4) $\Delta=-0.113$, CI $[-0.162,-0.064]$;
 Qwen0.5B (L8) $\Delta=-0.032$, CI $[-0.084,+0.023]$. Averaged across
@@ -670,8 +692,10 @@ found-vs-random tests this run computes (both components, both layers,
 both alphas), three are nominally significant: Attention-found is beaten
 by its own random control at L8 ($p=0.021$, $\alpha{=}20$; $p=0.0043$,
 $\alpha{=}40$), and FFN-found beats its own random control at
-L9/$\alpha{=}20$ ($p=0.0264$). Only the first survives Holm-Bonferroni
-correction across all eight tests. An Attention direction performing
+L9/$\alpha{=}20$ ($p=0.0264$). Only the L8/$\alpha{=}40$ Attention
+comparison ($p=0.0043$) survives Holm-Bonferroni correction across all
+eight tests (threshold $0.05/8=0.00625$); the L8/$\alpha{=}20$ Attention
+comparison ($p=0.021$) does not. An Attention direction performing
 \emph{worse} than a random one is not evidence of Attention specificity
 -- it is at least as consistent with generic large-perturbation
 disruption (above) as with any targeted effect. The FFN result does not
@@ -818,9 +842,9 @@ judge-labeled pool and train-pool construction (58 items: 18 correct + 40
 hallucinated, an 80/20 direction-fit/validity-holdout split per class)
 but redrawing which specific items land in each role at 200 different
 random seeds instead of the kernel's single seed, the held-out AUROC
-varies substantially (mean $0.54$-$0.58$, SD $\approx0.20$, full range
-$0.0$-$1.0$ at every layer/component) and is centered at or slightly
-*above* chance, not below it. The original seed's anti-predictive AUROCs
+varies substantially (mean $0.54$-$0.58$, SD $\approx0.20$; range
+$[0.083,1.0]$ at L8 FFN/Attn, $[0.0,1.0]$ at L9 FFN/Attn) and is centered
+at or slightly *above* chance, not below it. The original seed's anti-predictive AUROCs
 sit in the extreme low tail of this distribution: only $1.5\%$ of
 resplits (L8 FFN, L8 Attn), $0.5\%$ (L9 FFN), and $4\%$ (L9 Attn) of the
 200 resplits produce an AUROC at or below what the kernel's single split
@@ -855,7 +879,7 @@ is not merely statistically indistinguishable from random -- it sits
 squarely where a direction with no special relationship to the label
 would be expected to land.
 
-*Six further checks, summarized.* A permutation-based cosine null
+*Five further checks, summarized.* A permutation-based cosine null
 (2000 draws) finds the FFN/Attention directions' cosine similarity
 ($-0.0058$/$-0.0051$; corrected from a $10\times$ transcription error in
 an earlier draft) statistically indistinguishable from two
@@ -873,7 +897,7 @@ competing-risks (flip/no-flip/degenerate) $2\times3$ chi-square finds
 one nominal $p=0.010$ that does not survive correction either. A
 low-dose sweep ($\alpha\in\{2.5,5,10\}$ at the common site, Jaccard
 label for speed) finds flip rates flat across all three doses
-($42$-$52\%$), no monotone dose-response. All six are consistent with,
+($42$-$52\%$), no monotone dose-response. All five are consistent with,
 and do not add beyond, the two findings above.
 
 **Attempting to grow the held-out set: the bottleneck is GPT-2's
@@ -900,9 +924,15 @@ original seed's (0.0-0.125), which was an extreme low-tail draw.
 The causal test itself reruns cleanly at nearly double the power
 ($n=750$ hallucinated prompts, up from 467): the null holds throughout
 (FFN-vs-Attention common-site $p=0.18$-$0.84$ across all four
-configurations), with minimum-detectable odds ratios of $3.2$-$9.8$ --
-modestly tighter at three configurations, unchanged at the fourth,
-not a qualitative change in what this test can rule out. The
+configurations), with minimum-detectable odds ratios of $2.5$-$8.0$
+(previously $3.25$-$6.0$ at $n=467$) -- tighter at three configurations
+(L8/$\alpha{=}20$: $3.25\to2.5$; L8/$\alpha{=}40$: $3.25\to2.625$;
+L9/$\alpha{=}40$: $4.0\to3.0$), *looser* at the fourth (L9/$\alpha{=}20$:
+$6.0\to8.0$, because the number of discordant pairs this specific
+comparison produces actually fell from 14 to 9 at the larger $n$, not
+simply grown with it) -- still not a qualitative change in what this
+test can rule out, but a reminder that MDE depends on discordant-pair
+count, not sample size directly. The
 random-direction-ensemble check, rerun on this enlarged pool (a
 different specific 60-prompt subset, since the underlying prompt
 ordering shifted), now places the found directions at the 95th (FFN)
@@ -1184,9 +1214,11 @@ causal conclusion from the result:
 4. **Is a null distinguishable from a genuinely random direction, not
    just from "no effect"?** A found direction whose causal effect sits
    inside the empirical distribution of random-direction effects (as
-   this paper's does, at the 40th-50th percentile of a 20-draw
-   ensemble) has not been shown to be doing anything a random direction
-   would not also do.
+   this paper's does at the flagship configuration, 40th-50th percentile
+   of a 20-draw ensemble -- though the enlarged-pool rerun places it at
+   the 95th-100th percentile instead, and we report both rather than
+   only the more favorable one) has not been shown to be doing anything
+   a random direction would not also do.
 5. **Is statistical power reported at the resolution the claim needs?**
    A null with a wide confidence interval (this paper's flagship test:
    minimum detectable odds ratio 3.75-8.0) rules out large effects, not
@@ -1220,8 +1252,8 @@ standard CV AUROC of 0.62-0.66 collapses to 0.48-0.49 -- chance or below
 Qwen2.5-0.5B (§3.2) gives a heterogeneous result: Pythia's component
 probe is essentially unaffected (no detectable category-leakage
 contamination at either tested layer), while Qwen0.5B partially
-collapses, more so for FFN (0.566->0.485) than Attention
-(0.563->0.526). Any study reporting a probe AUROC on TruthfulQA (or any
+collapses at both components (0.566->0.485 FFN, 0.563->0.526 Attn, an
+untested numerical difference). Any study reporting a probe AUROC on TruthfulQA (or any
 other benchmark whose items cluster into topics correlated with the
 label) should run this check before treating a standard-CV AUROC as
 evidence of the signal it is claimed to measure -- the result is neither
@@ -1542,7 +1574,9 @@ directions.
 **A category-leakage check, identified as the single highest-priority
 missing experiment by an independent review, run for the first time this
 round.** TruthfulQA's 38 topical categories have correct-answer rates
-ranging from 0% to 10.5% on this GPT-2 pool, so a probe correlated with
+ranging from 0% to 10.5% among the 10 most frequent categories on this
+GPT-2 pool (wider still, 0%-28.6%, across all 38 including smaller
+ones), so a probe correlated with
 topic alone could produce an above-chance AUROC under standard random
 K-fold CV with zero genuine hallucination signal -- `code/02`'s
 component-probe CV protocol never checked for this.
@@ -1563,8 +1597,9 @@ check to Pythia-410M and Qwen2.5-0.5B at each architecture's own peak
 FFN/Attn layers, over the full 817-item TruthfulQA split: the result is
 heterogeneous rather than a uniform replication of GPT-2's collapse --
 Pythia's component probe is essentially unaffected (L11 FFN
-0.618->0.617; L4 Attn 0.612->0.602), while Qwen0.5B partially collapses,
-more so for FFN (0.566->0.485) than Attention (0.563->0.526). See §3.2
+0.618->0.617; L4 Attn 0.612->0.602), while Qwen0.5B partially collapses
+at both components (0.566->0.485 FFN, 0.563->0.526 Attn, an untested
+numerical difference between them). See §3.2
 for the full result and its remaining disclosed scope (the other five
 converging methods have not yet been checked under leave-one-category-out
 CV for any architecture).

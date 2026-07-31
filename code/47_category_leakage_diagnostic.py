@@ -148,8 +148,13 @@ def main():
                     print(f"  L{layer_idx}/{sublayer}: {i+1}/{len(prompts_k)}", flush=True)
             acts[(layer_idx, sublayer)] = np.stack(vecs)
 
+    category_correct_rates = {
+        cat: {"n": int((categories_k == cat).sum()), "correct_rate": float(labels_k[categories_k == cat].mean())}
+        for cat in sorted(set(categories_k.tolist()))
+    }
     results = {"n_items": len(prompts_k), "n_categories": n_categories, "n_unknown_dropped": n_unknown,
-               "category_counts": Counter(categories_k.tolist()).most_common(), "layers": {}}
+               "category_counts": Counter(categories_k.tolist()).most_common(),
+               "category_correct_rates": category_correct_rates, "layers": {}}
     for layer_idx in LAYERS:
         for component, sublayer in (("ffn", "mlp"), ("attn", "attn")):
             X = acts[(layer_idx, sublayer)]

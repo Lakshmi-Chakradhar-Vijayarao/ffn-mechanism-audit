@@ -156,6 +156,160 @@
       1
     ]
   ],
+  "category_correct_rates": {
+    "Advertising": {
+      "n": 10,
+      "correct_rate": 0.0
+    },
+    "Confusion: Other": {
+      "n": 6,
+      "correct_rate": 0.16666666666666666
+    },
+    "Confusion: People": {
+      "n": 7,
+      "correct_rate": 0.2857142857142857
+    },
+    "Confusion: Places": {
+      "n": 11,
+      "correct_rate": 0.18181818181818182
+    },
+    "Conspiracies": {
+      "n": 19,
+      "correct_rate": 0.10526315789473684
+    },
+    "Distraction": {
+      "n": 11,
+      "correct_rate": 0.0
+    },
+    "Economics": {
+      "n": 19,
+      "correct_rate": 0.05263157894736842
+    },
+    "Education": {
+      "n": 7,
+      "correct_rate": 0.0
+    },
+    "Fiction": {
+      "n": 19,
+      "correct_rate": 0.0
+    },
+    "Finance": {
+      "n": 6,
+      "correct_rate": 0.0
+    },
+    "Health": {
+      "n": 35,
+      "correct_rate": 0.05714285714285714
+    },
+    "History": {
+      "n": 19,
+      "correct_rate": 0.10526315789473684
+    },
+    "Indexical Error: Identity": {
+      "n": 6,
+      "correct_rate": 0.0
+    },
+    "Indexical Error: Location": {
+      "n": 10,
+      "correct_rate": 0.0
+    },
+    "Indexical Error: Other": {
+      "n": 13,
+      "correct_rate": 0.0
+    },
+    "Indexical Error: Time": {
+      "n": 8,
+      "correct_rate": 0.125
+    },
+    "Language": {
+      "n": 14,
+      "correct_rate": 0.0
+    },
+    "Law": {
+      "n": 46,
+      "correct_rate": 0.021739130434782608
+    },
+    "Logical Falsehood": {
+      "n": 12,
+      "correct_rate": 0.08333333333333333
+    },
+    "Mandela Effect": {
+      "n": 4,
+      "correct_rate": 0.0
+    },
+    "Misconceptions": {
+      "n": 69,
+      "correct_rate": 0.07246376811594203
+    },
+    "Misconceptions: Topical": {
+      "n": 1,
+      "correct_rate": 0.0
+    },
+    "Misinformation": {
+      "n": 10,
+      "correct_rate": 0.0
+    },
+    "Misquotations": {
+      "n": 5,
+      "correct_rate": 0.0
+    },
+    "Myths and Fairytales": {
+      "n": 12,
+      "correct_rate": 0.08333333333333333
+    },
+    "Nutrition": {
+      "n": 12,
+      "correct_rate": 0.0
+    },
+    "Paranormal": {
+      "n": 16,
+      "correct_rate": 0.0
+    },
+    "Politics": {
+      "n": 9,
+      "correct_rate": 0.0
+    },
+    "Proverbs": {
+      "n": 13,
+      "correct_rate": 0.15384615384615385
+    },
+    "Psychology": {
+      "n": 9,
+      "correct_rate": 0.0
+    },
+    "Religion": {
+      "n": 10,
+      "correct_rate": 0.0
+    },
+    "Science": {
+      "n": 4,
+      "correct_rate": 0.0
+    },
+    "Sociology": {
+      "n": 26,
+      "correct_rate": 0.07692307692307693
+    },
+    "Statistics": {
+      "n": 5,
+      "correct_rate": 0.0
+    },
+    "Stereotypes": {
+      "n": 15,
+      "correct_rate": 0.0
+    },
+    "Subjective": {
+      "n": 8,
+      "correct_rate": 0.0
+    },
+    "Superstitions": {
+      "n": 14,
+      "correct_rate": 0.07142857142857142
+    },
+    "Weather": {
+      "n": 14,
+      "correct_rate": 0.07142857142857142
+    }
+  },
   "layers": {
     "L8_ffn": {
       "standard_5fold_cv_auroc_mean": 0.6214793244030286,
