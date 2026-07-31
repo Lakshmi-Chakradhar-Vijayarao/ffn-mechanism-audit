@@ -1,0 +1,197 @@
+{
+  "n_items": 534,
+  "n_categories": 38,
+  "n_unknown_dropped": 0,
+  "category_counts": [
+    [
+      "Misconceptions",
+      69
+    ],
+    [
+      "Law",
+      46
+    ],
+    [
+      "Health",
+      35
+    ],
+    [
+      "Sociology",
+      26
+    ],
+    [
+      "Conspiracies",
+      19
+    ],
+    [
+      "Fiction",
+      19
+    ],
+    [
+      "Economics",
+      19
+    ],
+    [
+      "History",
+      19
+    ],
+    [
+      "Paranormal",
+      16
+    ],
+    [
+      "Stereotypes",
+      15
+    ],
+    [
+      "Superstitions",
+      14
+    ],
+    [
+      "Language",
+      14
+    ],
+    [
+      "Weather",
+      14
+    ],
+    [
+      "Proverbs",
+      13
+    ],
+    [
+      "Indexical Error: Other",
+      13
+    ],
+    [
+      "Myths and Fairytales",
+      12
+    ],
+    [
+      "Logical Falsehood",
+      12
+    ],
+    [
+      "Nutrition",
+      12
+    ],
+    [
+      "Distraction",
+      11
+    ],
+    [
+      "Confusion: Places",
+      11
+    ],
+    [
+      "Indexical Error: Location",
+      10
+    ],
+    [
+      "Advertising",
+      10
+    ],
+    [
+      "Religion",
+      10
+    ],
+    [
+      "Misinformation",
+      10
+    ],
+    [
+      "Psychology",
+      9
+    ],
+    [
+      "Politics",
+      9
+    ],
+    [
+      "Indexical Error: Time",
+      8
+    ],
+    [
+      "Subjective",
+      8
+    ],
+    [
+      "Education",
+      7
+    ],
+    [
+      "Confusion: People",
+      7
+    ],
+    [
+      "Indexical Error: Identity",
+      6
+    ],
+    [
+      "Confusion: Other",
+      6
+    ],
+    [
+      "Finance",
+      6
+    ],
+    [
+      "Misquotations",
+      5
+    ],
+    [
+      "Statistics",
+      5
+    ],
+    [
+      "Science",
+      4
+    ],
+    [
+      "Mandela Effect",
+      4
+    ],
+    [
+      "Misconceptions: Topical",
+      1
+    ]
+  ],
+  "layers": {
+    "L8_ffn": {
+      "standard_5fold_cv_auroc_mean": 0.6214793244030286,
+      "standard_5fold_cv_auroc_sd": 0.15143003277193232,
+      "standard_cv_n_splits": 5,
+      "leave_one_category_out_auroc_mean": 0.47884235607121634,
+      "leave_one_category_out_auroc_sd": 0.27327985897257484,
+      "logo_n_folds_used": 16,
+      "logo_n_folds_skipped_single_class": 22
+    },
+    "L8_attn": {
+      "standard_5fold_cv_auroc_mean": 0.6318112987769365,
+      "standard_5fold_cv_auroc_sd": 0.14400940849530955,
+      "standard_cv_n_splits": 5,
+      "leave_one_category_out_auroc_mean": 0.49072131657150037,
+      "leave_one_category_out_auroc_sd": 0.2802746741981528,
+      "logo_n_folds_used": 16,
+      "logo_n_folds_skipped_single_class": 22
+    },
+    "L9_ffn": {
+      "standard_5fold_cv_auroc_mean": 0.6157056882158803,
+      "standard_5fold_cv_auroc_sd": 0.10116858023095257,
+      "standard_cv_n_splits": 5,
+      "leave_one_category_out_auroc_mean": 0.48157540605840243,
+      "leave_one_category_out_auroc_sd": 0.2893703315870819,
+      "logo_n_folds_used": 16,
+      "logo_n_folds_skipped_single_class": 22
+    },
+    "L9_attn": {
+      "standard_5fold_cv_auroc_mean": 0.6632226752086974,
+      "standard_5fold_cv_auroc_sd": 0.09098276763703506,
+      "standard_cv_n_splits": 5,
+      "leave_one_category_out_auroc_mean": 0.4891483146653184,
+      "leave_one_category_out_auroc_sd": 0.3543615603514075,
+      "logo_n_folds_used": 16,
+      "logo_n_folds_skipped_single_class": 22
+    }
+  }
+}

@@ -20,7 +20,18 @@ within cross-validation noise. One architecture's result reverses
 entirely once a template artifact (bare prompt vs. chat template) is
 fixed -- evidence against a scale story. Two difficulty-matched controls
 and an adversarial probe rule out question-difficulty as a generic
-confound, though inconsistently across architectures.
+confound, though inconsistently across architectures. **A further, more
+severe problem, found by a subsequent independent review: every
+passive-probe AUROC in this paper is computed under standard random
+K-fold cross-validation on TruthfulQA, which never checks for
+category-clustering leakage (questions cluster into 38 topics whose
+correct-answer rates range 0%-10.5%, so a probe can learn topic instead
+of hallucination). A leave-one-category-out re-test of the flagship
+component probe (GPT-2, L8/L9) collapses AUROC from 0.62-0.66 under
+standard CV to 0.48-0.49 -- chance or below -- at every cell tested. This
+was checked for one probe on one architecture; there is no principled
+reason to expect the other five converging methods or the other two
+architectures to be exempt, and none has yet been re-verified.**
 
 A direct causal test -- patching the FFN sublayer during generation,
 against a genuinely Attention-derived control direction, under an
@@ -42,12 +53,16 @@ passively-associated feature at
 all.
 
 The ReDeEP mechanism does not cleanly extend to closed-book
-confabulation at this scale. This paper's most transferable contribution
-is methodological: a six-question validity checklist for causal-patching
-studies, distilled from the process above, plus a construct-validity
-check that catches over half of baseline "hallucinated" completions as
-degenerate repetition loops rather than confident false claims -- a
-discipline reusable well beyond this specific mechanism.
+confabulation at this scale -- and the passive-probing evidence that
+originally motivated testing it may not have been established on a
+leakage-free protocol in the first place. This paper's most transferable
+contribution is methodological: a six-question validity checklist for
+causal-patching studies, a leave-one-category-out re-test protocol for
+passive hidden-state probes on category-structured benchmarks like
+TruthfulQA, and a construct-validity check that catches over half of
+baseline "hallucinated" completions as degenerate repetition loops rather
+than confident false claims -- disciplines reusable well beyond this
+specific mechanism.
 
 ## 1. Introduction
 
@@ -265,11 +280,70 @@ attribution is higher for hallucinated samples (5.08) than correct
 samples (4.85) -- an in-sample, non-cross-validated, suggestive but
 unconfirmed "over-retrieval" signature.
 
+**A category-leakage check the standard CV protocol never ran.** A
+fresh, independent adversarial review raised the single highest-priority
+missing check in this paper: TruthfulQA questions cluster into 38 topical
+categories (Misconceptions, Law, Health, Fiction, ...), and standard
+random K-fold CV -- the protocol every probe number in §3.1-3.2 uses --
+can place same-category, near-duplicate questions in both a fold's train
+and test split. Category is not independent of the hallucination label
+either: on this same 534-item GPT-2 pool, correct-answer rate by category
+ranges from 0% (Fiction, Paranormal, Stereotypes) to 10.5% (History,
+Conspiracies), so a probe that learns to recognize *topic* could achieve
+an above-chance AUROC with zero genuine hallucination-related content.
+
+We ran this check for the component probe, GPT-2, L8 and L9. Using the
+identical judge-labeled pool and last-token FFN/Attn extraction as the
+causal-patching kernels (`code/47_category_leakage_diagnostic.py`), we
+compare the standard 5-fold CV AUROC against a leave-one-category-out CV
+(train on 37 categories, test on the 1 held out, repeated for every
+category with both classes represented in its held-out slice -- 16 of 38
+categories qualify; the remaining 22 have zero correct-labeled items and
+are skipped, a direct consequence of the same 27/534 class imbalance
+disclosed above). The result is unambiguous and severe: standard CV gives
+AUROC 0.622 (L8 FFN), 0.632 (L8 Attn), 0.616 (L9 FFN), 0.663 (L9 Attn) --
+closely matching the vendored numbers §3.1 reports above (L8 FFN 0.6053)
+-- while leave-one-category-out CV collapses every one of these to
+chance or below: 0.479, 0.491, 0.482, 0.489 respectively (SD 0.27-0.35
+across the 16 held-out categories). **This is exactly the failure mode
+that would close the passive-probing line permanently**: the standard CV
+protocol's above-chance AUROC for the component probe does not survive
+removing category-clustering leakage, at either tested layer, for either
+component.
+
+**Scope of this check, stated explicitly.** We ran this only for the
+component probe (FFN/Attn last-token) at GPT-2, L8/L9 -- the layers and
+method this paper's causal-patching test (§3.4) targets. We did not
+(yet) rerun the other five converging methods in §3.1 (dense probe,
+sparse probe, token-position probe, steering, logit lens) under
+leave-one-category-out CV, nor replicate this check on Pythia or
+Qwen2.5-0.5B; extending it there is blocked at the time of writing by an
+expired local Kaggle authentication token, not by any expectation that
+the result would differ -- category-clustering leakage is a property of
+the evaluation protocol and the dataset, not of one specific probe
+architecture, so there is no principled reason to expect the other five
+methods or the other two architectures to be exempt. **Given this
+result, every AUROC in §3.1-3.2 computed under standard random K-fold CV
+on TruthfulQA should be read as an upper bound contaminated by unknown,
+unquantified category leakage, not as an established
+hallucination-detection signal**, until each is itself re-verified under
+leave-one-category-out CV. This finding also reframes what the null
+result in §3.4 (causal patching, direction-validity gate) means: it is
+not merely that a specific difference-of-means direction failed to
+validate at n=11 -- the broader premise that GPT-2's FFN/Attention
+hidden states carry a genuine, category-independent hallucination signal
+for this task was itself never established under a leakage-free
+evaluation protocol. Full per-layer/component results:
+`results/category_leakage_diagnostic.json`.
+
 ### 3.3 Cross-architecture data (GPT-2, Pythia-410M, Qwen2.5-0.5B-Instruct)
 
 [Full version: `draft/cross_architecture_section.md`; real Kaggle data,
 $N=605$ Pythia / $N=513$ Qwen0.5B.] FFN wins a numerical majority of
-layers on all three architectures (66.7\%, 66.7\%, 58.3\%);
+layers on all three architectures (66.7\%, 66.7\%, 58.3\%); **these
+numbers are also computed under standard random K-fold CV and are
+subject to the same category-leakage caveat above**, not yet
+independently checked for these two architectures.
 per-architecture two-sided p-values are 0.39/0.15/0.54, one-sided
 0.19/0.076/0.27 -- all non-significant. Pooled across all 60 layers,
 38/60 FFN wins gives a nominally significant one-sided $p=0.026$, but
@@ -659,23 +733,90 @@ reported above; they surface a more fundamental limitation of this
 specific instrument that the paper must disclose honestly rather than
 narrate past.
 
-*Direction validity -- the central finding of this round.* Before any
+*Direction validity -- the central finding of this round.* **Disclosure,
+made explicit here for the first time:** every direction and every
+validity-AUROC measurement in this paper is computed from the model's
+last-token activation on the *prompt alone* (`"Q: {question}\nA:"`),
+never on any token of GPT-2's actual generated completion. The
+judge/Jaccard correct-vs-hallucinated label used to supervise the
+direction is a property of that separately-generated completion, but the
+completion's own tokens are never passed through the model for this
+measurement -- the direction is asked to separate, from the model's
+internal state *before it has generated anything*, prompts that will go
+on to receive a correct answer from prompts that will not. This is a
+coherent question (does the model's pre-generation state predict its own
+upcoming failure?), but it is a substantially harder and different
+question than probing completion tokens for features of an
+already-hallucinated answer, and a reader should not assume otherwise
+from "last-token activation" language alone. Before any
 direction is injected, does it actually separate correct from
 hallucinated activations on genuinely held-out data? We split the
 58-prompt training pool into a direction-fit set (47) and a held-out
-validity set (11), estimated each direction on the former, and measured
-its scalar projection's AUROC on the latter. At neither tested layer
-does either direction clear chance (L8 FFN/Attn AUROC$=0.083$/$0.083$,
-L9 FFN/Attn$=0.0$/$0.125$; all 95\% CIs consistent with chance). Two
+validity set (11: 3 correct, 8 hallucinated), estimated each direction on
+the former, and measured its scalar projection's AUROC on the latter. At
+neither tested layer does either direction clear chance in the helpful
+direction (L8 FFN/Attn AUROC$=0.083$/$0.083$, bootstrap 95\% CI
+$[0.0,0.333]$ both; L9 FFN AUROC$=0.0$, CI $[0.0,0.0]$; L9 Attn
+AUROC$=0.125$, CI $[0.0,0.5]$). **Correction:** an earlier draft
+described all four CIs as "consistent with chance"; three of the four in
+fact exclude $0.5$ (chance) entirely, and an exact Mann-Whitney test at
+this $n_{\text{pos}}=3$, $n_{\text{neg}}=8$ split finds them nominally
+significant in the *anti-predictive* direction (L8 FFN/Attn $p=0.0242$
+each, L9 FFN $p=0.0121$; only L9 Attn, $p=0.0848$, is not significant).
+Under a Bonferroni correction across these four cells ($\alpha=0.0125$),
+only L9 FFN survives.
+
+A further correction to the power analysis itself matters here: an
+earlier draft's Monte Carlo power criterion was one-sided (CI-lower-bound
+$>0.5$ only), structurally blind to power in the anti-predictive
+direction the observed data actually falls in. Recomputed with a
+two-sided criterion (CI excludes $0.5$ on either side), this test at
+$n=11$ is asymmetric but reasonably well-powered exactly where the
+observed AUROCs land: $80\%$ power is reached at a true AUROC of $0.05$
+in the anti-predictive direction (versus $0.95$ in the helpful
+direction), and power at the true AUROCs closest to the observed point
+estimates is substantial (e.g. $73\%$ at a true AUROC of $0.10$, $89\%$
+at $0.05$). This means the nominally significant anti-predictive
+p-values above are *not* simply underpowered noise -- this test can and
+does detect deviations of this size reliably. What it cannot resolve, at
+a single realization with $n=11$, is whether this specific sample's
+anti-predictive ranking reflects a real property of these directions on
+this validity split, or a chance draw from a null distribution that this
+small, discrete sample space (only $\binom{11}{3}=165$ possible rank
+assignments) makes coarse enough that "nominally significant" and "one
+unlucky draw" are not yet distinguishable without a second, independent
+validity split.
+
+**A 200-resplit diagnostic resolves this.** Using the identical 534-item
+judge-labeled pool and train-pool construction (58 items: 18 correct + 40
+hallucinated, an 80/20 direction-fit/validity-holdout split per class)
+but redrawing which specific items land in each role at 200 different
+random seeds instead of the kernel's single seed, the held-out AUROC
+varies substantially (mean $0.54$-$0.58$, SD $\approx0.20$, full range
+$0.0$-$1.0$ at every layer/component) and is centered at or slightly
+*above* chance, not below it. The original seed's anti-predictive AUROCs
+sit in the extreme low tail of this distribution: only $1.5\%$ of
+resplits (L8 FFN, L8 Attn), $0.5\%$ (L9 FFN), and $4\%$ (L9 Attn) of the
+200 resplits produce an AUROC at or below what the kernel's single split
+happened to draw. **This settles the question the exact Mann-Whitney
+test above could not**: the original split's nominally significant
+anti-predictive result is an atypical, unlucky single draw, not a stable
+property of these directions on this pool -- the broader resampling
+distribution is consistent with chance (if anything, mildly above it),
+matching the causal-patching test's own independent finding (random-
+direction ensemble, TOST, permutation cosine null, all below) that the
+found directions carry no detectable signal in either direction. Full
+per-resplit results: `results/direction_validity_resplit_diagnostic.json`
+(`code/46_direction_validity_resplit_diagnostic.py`). Two
 further checks confirm this is not an artifact of the estimator or the
 sample size: logistic-regression weights and Fisher LDA, fit on the
 identical split, do no better (all 12 layer/component/estimator
-combinations at or below AUROC $0.167$); and a formal power analysis
-(2000-simulation Monte Carlo at this exact $n{=}11$ split) shows this
-test only reaches 80\% power once the true held-out AUROC is
-$\approx0.95$ -- the observed estimates are far below anything this test
-could reliably confirm or rule out, so the null is uninformative by
-construction, not just "small $n$."
+combinations at or below AUROC $0.167$); and the same power analysis
+shows this test only reaches 80\% power in the helpful direction once
+the true held-out AUROC is $\approx0.95$ -- confirming that direction
+validity, specifically, remains impossible to confirm at any single
+$n=11$ split, which is exactly why the resampling view above, not any
+one split, is the trustworthy picture.
 
 *Random-direction ensemble -- the strongest single check.* At the
 flagship configuration (L8, $\alpha=40$, 60 test prompts), the found FFN
@@ -690,7 +831,8 @@ would be expected to land.
 
 *Six further checks, summarized.* A permutation-based cosine null
 (2000 draws) finds the FFN/Attention directions' cosine similarity
-($-0.058$/$-0.051$) statistically indistinguishable from two
+($-0.0058$/$-0.0051$; corrected from a $10\times$ transcription error in
+an earlier draft) statistically indistinguishable from two
 label-uninformed directions (both within 1 SD of the empirical null). A
 common-injection-site test (patching both directions at the shared
 post-block residual stream, disentangling "which direction" from "where
@@ -724,7 +866,11 @@ remains $n=11$; re-drawn from a differently-ordered pool, its AUROC point
 estimates move (L8 FFN/Attn$=0.375$/$0.333$, L9 FFN/Attn$=0.167$/$0.25$,
 all CIs still consistent with chance) -- a second independent
 illustration of how much a single held-out AUROC estimate swings at this
-$n$, reinforcing rather than resolving the power-analysis finding above.
+$n$. The 200-resplit diagnostic above resolves what this single second
+draw could only illustrate: across many resplits the held-out AUROC
+centers near chance (mean $0.54$-$0.58$), and this second draw's point
+estimates (0.167-0.375) sit well inside that typical range, unlike the
+original seed's (0.0-0.125), which was an extreme low-tail draw.
 The causal test itself reruns cleanly at nearly double the power
 ($n=750$ hallucinated prompts, up from 467): the null holds throughout
 (FFN-vs-Attention common-site $p=0.18$-$0.84$ across all four
@@ -1032,6 +1178,28 @@ Applying this checklist to this paper's own flagship result is why its
 central claim is reported as a limitation of the instrument rather than
 as confirmatory evidence for or against FFN-specific causal control.
 
+**A second, distinct check for passive probing on category-structured
+benchmarks.** The checklist above targets causal-patching studies
+specifically. This paper's passive-probing results (§3.1-3.3) are
+subject to a different, equally basic validity question that a fresh
+review found this paper had never asked of itself: *does the probe's
+above-chance CV AUROC survive removing the benchmark's own topical
+category structure from the cross-validation split?* TruthfulQA clusters
+into 38 categories whose correct-answer rates vary by over 10 percentage
+points (§3.2), so a probe correlated with topic alone can look like a
+hallucination detector under ordinary random K-fold CV. We ran a
+leave-one-category-out re-test for the component probe on GPT-2 (§3.2):
+standard CV AUROC of 0.62-0.66 collapses to 0.48-0.49 -- chance or below
+-- at every layer/component tested. Any study reporting a probe AUROC on
+TruthfulQA (or any other benchmark whose items cluster into topics
+correlated with the label) should run this check before treating a
+standard-CV AUROC as evidence of the signal it is claimed to measure; we
+did not run it for this paper's other five converging methods or its
+other two architectures before this draft, which is itself the point --
+this check is cheap (a single re-partitioning of already-cached
+activations, no new model calls) and there was no principled reason it
+had been skipped until an outside review asked for it.
+
 **Data and code availability.** All code, cached result JSONs, and the
 paper source are included in the anonymized supplementary material for
 double-blind review, and will be released as a public GitHub repository
@@ -1055,6 +1223,8 @@ with this paper.
 |---|---|---|---|
 | Layer localization (7 methods) | §3.1 | `code/00_verify_vendored_mechint_numbers.py` | `results/*.json` (per-method) |
 | FFN vs. Attention decomposition | §3.2 | `code/02_cross_arch_component_probe.py` | `results/cross_arch_component_probe_*.json` |
+| Category-leakage re-test (LOGO-CV vs. standard CV) | §3.2 | `code/47_category_leakage_diagnostic.py` | `results/category_leakage_diagnostic.json` |
+| Direction-validity 200-resplit diagnostic | §3.4 | `code/46_direction_validity_resplit_diagnostic.py` | `results/direction_validity_resplit_diagnostic.json` |
 | Paired ΔAUROC, nested-CV selection-bias check | §3.3 | `code/37_paired_component_delta_auroc.py` | `results/paired_component_delta_auroc.json` |
 | Qwen chat-template reversal | §3.3 | `code/02_cross_arch_component_probe.py qwen05chat` | `results/cross_arch_component_probe_qwen05chat.json` |
 | Difficulty-matched control | §3.7 | `code/06_difficulty_matched_control.py`, `code/11_multi_arch_difficulty_matched_control.py` | `results/difficulty_matched_control.json`, `results/multi_arch_difficulty_matched_control.json` |
@@ -1303,6 +1473,56 @@ as an unsupported claim. `code/32_surface_baseline_vs_judge_label.py`
 was written to actually compute it (the result, not chance-level but not
 meaningfully different from the same baseline's performance against the
 original Jaccard label, is reported directly in §4).
+
+**Direction-validity CI misdescribed as "consistent with chance," and a
+10x cosine transcription error.** A subsequent, independent review found
+two separate transcription/interpretation errors in §3.4: (1) the four
+direction-validity bootstrap CIs at n=11 were described as "all
+consistent with chance," when in fact three of the four exclude 0.5
+entirely, and an exact Mann-Whitney test at this n_pos=3, n_neg=8 split
+finds them nominally significant in the anti-predictive direction (L8
+FFN/Attn p=0.0242, L9 FFN p=0.0121). (2) The permutation-based
+cosine-similarity check reported "-0.058/-0.051"; the underlying result
+file gives -0.0058/-0.0051, a 10x transcription error. Both are
+corrected in §3.4. Fixing (1) in turn exposed that the power analysis
+(`code/43`) used to argue this test is uninformative was itself one-sided
+(only checking whether the CI's lower bound exceeds 0.5), structurally
+unable to detect power in the anti-predictive direction the data
+actually fall in. Recomputed two-sided, this test turns out to be
+reasonably well-powered (73-99%) at exactly the AUROCs observed, meaning
+the anti-predictive p-values are not simply underpowered noise. This
+motivated a genuinely new check
+(`code/46_direction_validity_resplit_diagnostic.py`): redrawing the
+direction-fit/validity-holdout split at 200 different random seeds
+(instead of the kernel's single seed) on the identical 534-item labeled
+pool, with activations extracted once and cached. Across resplits, the
+held-out AUROC centers near or slightly above chance (mean 0.54-0.58,
+full range 0.0-1.0), and the original single seed's anti-predictive
+result sits in the extreme low tail of this distribution (0.5%-4%
+percentile at the four cells) -- resolving the open question the
+two-sided power analysis alone could not: the original result was an
+atypical, unlucky single draw, not a stable property of these
+directions.
+
+**A category-leakage check, identified as the single highest-priority
+missing experiment by an independent review, run for the first time this
+round.** TruthfulQA's 38 topical categories have correct-answer rates
+ranging from 0% to 10.5% on this GPT-2 pool, so a probe correlated with
+topic alone could produce an above-chance AUROC under standard random
+K-fold CV with zero genuine hallucination signal -- `code/02`'s
+component-probe CV protocol never checked for this.
+`code/47_category_leakage_diagnostic.py` reruns the identical last-token
+FFN/Attn extraction at L8/L9 on the same 534-item pool, this time with
+each item's TruthfulQA category attached, and compares standard 5-fold CV
+against leave-one-category-out CV (16 of 38 categories have both classes
+represented in their held-out slice; the remaining 22 are skipped,
+single-class, itself a consequence of the same class imbalance disclosed
+in §3.2). The result: standard CV AUROC of 0.616-0.663 collapses to
+0.479-0.491 -- chance or below -- at every layer and component tested.
+This is now reported prominently in §3.2 and the abstract rather than
+only here, given its bearing on every passive-probe number this paper
+reports; see §3.2 for the full result and its disclosed scope (checked
+only for this probe, this architecture, these two layers).
 
 ## References
 
