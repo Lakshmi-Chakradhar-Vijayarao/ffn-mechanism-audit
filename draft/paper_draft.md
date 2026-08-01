@@ -1264,14 +1264,14 @@ different estimands, so its p-value does not answer the question either.
 **Two permutation controls settle whether the estimator is to blame.**
 We rerun the identical LOGO procedure
 (`code/47::probe_leave_one_category_out`, reproduced unmodified) on
-group assignments that are random by construction, 100
+group assignments that are random by construction, 1,000
 draws each (`code/48_permuted_pseudocategory_control.py`):
 *size-matched*, permuting the category-assignment vector so group sizes
 are preserved exactly; and *size- and class-matched*, permuting positives
 among positive slots and negatives among negative slots so every
 pseudo-category has exactly the same n *and* the same number of
 correct-labeled items as the real category it replaces, which makes the
-usable-fold count identical to the real one (16, versus 17.4 on average
+usable-fold count identical to the real one (16, versus 17.34 on average
 under size-matching alone) and removes the alternative explanation that the
 16 usable real categories are simply an unusual subset. **Under both
 controls, LOGO on pseudo-categories recovers approximately the standard-CV
