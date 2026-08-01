@@ -50,6 +50,7 @@ Activations: same last-token FFN/Attn extraction at L8/L9 as code/47
 (cached to results/gpt2_lasttoken_L8L9.npz on first run so repeat runs
 need no model calls).
 """
+import argparse
 import importlib.util
 import json
 import re
@@ -73,8 +74,24 @@ DIAG_PATH = ROOT / "results" / "category_leakage_diagnostic.json"
 OUT_PATH = ROOT / "results" / "permuted_pseudocategory_control.json"
 
 LAYERS = (8, 9)
-N_PERM = 100
+N_PERM = 1000  # was 100; at 100 the attainable two-sided p floor (0.0198) is
+               # larger than the smallest Holm threshold across the four cells
+               # (0.05/4 = 0.0125), so no cell could ever survive correction.
 SEED = 2026
+
+
+def holm_bonferroni(pvals):
+    """Holm-Bonferroni adjusted p-values, order-preserving (the same
+    correction used in sections 4.4 and 4.7)."""
+    order = sorted(range(len(pvals)), key=lambda i: pvals[i])
+    m = len(pvals)
+    adj = [0.0] * m
+    running = 0.0
+    for rank, i in enumerate(order):
+        val = (m - rank) * pvals[i]
+        running = max(running, val)
+        adj[i] = min(1.0, running)
+    return adj
 
 
 def load_module(path, name):
@@ -243,6 +260,12 @@ def get_activations(prompts):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--n-perm", type=int, default=N_PERM)
+    ap.add_argument("--n-jobs", type=int, default=6)
+    args = ap.parse_args()
+    n_perm = args.n_perm
+
     kernel = load_module(KERNEL_PATH, "tier1_kernel")
     labeled = kernel.load_labeled_data()
     prompts = labeled["prompts"]
@@ -269,8 +292,8 @@ def main():
     acts = get_activations(prompts)
     diag = json.load(open(DIAG_PATH))["layers"]
     rng = np.random.default_rng(SEED)
-    perms_size = [cats[rng.permutation(len(cats))] for _ in range(N_PERM)]
-    perms_strat = [stratified_permuted_groups(y, cats, rng) for _ in range(N_PERM)]
+    perms_size = [cats[rng.permutation(len(cats))] for _ in range(n_perm)]
+    perms_strat = [stratified_permuted_groups(y, cats, rng) for _ in range(n_perm)]
 
     def summarize(perm_means, perm_folds, real_mean, tag):
         perm_means = np.array(perm_means)
@@ -307,8 +330,8 @@ def main():
             }
             for tag, plist in (("permuted_size_matched", perms_size),
                                ("permuted_size_and_class_matched", perms_strat)):
-                print(f"  {key}/{tag}: running {N_PERM} permutations...", flush=True)
-                res = Parallel(n_jobs=6, verbose=1)(
+                print(f"  {key}/{tag}: running {n_perm} permutations...", flush=True)
+                res = Parallel(n_jobs=args.n_jobs, verbose=1)(
                     delayed(probe_leave_one_category_out)(X, y, g) for g in plist)
                 pm = [r[0] for r in res if r[0] is not None]
                 pf = [r[2] for r in res if r[0] is not None]
@@ -330,11 +353,29 @@ def main():
                   f"+/-{entry['permuted_size_and_class_matched_logo_auroc_sd']:.4f} "
                   f"(p={entry['permuted_size_and_class_matched_empirical_two_sided_p']:.3f})", flush=True)
 
+    # Holm-Bonferroni across the four cells, separately within each control
+    # family -- the same correction sections 4.4 and 4.7 apply to their own
+    # four-test families. Without it, four nominal p-values around the
+    # permutation floor read as four independent confirmations.
+    keys = list(cells)
+    holm = {}
+    for tag in ("permuted_size_matched", "permuted_size_and_class_matched"):
+        raw = [cells[k][f"{tag}_empirical_two_sided_p"] for k in keys]
+        adj = holm_bonferroni(raw)
+        holm[tag] = {k: {"raw_p": raw[i], "holm_p": adj[i], "survives_holm_05": bool(adj[i] < 0.05)}
+                     for i, k in enumerate(keys)}
+        for i, k in enumerate(keys):
+            cells[k][f"{tag}_holm_p"] = adj[i]
+        print(f"Holm-Bonferroni ({tag}, m=4): " +
+              ", ".join(f"{k} {raw[i]:.4f}->{adj[i]:.4f}" for i, k in enumerate(keys)), flush=True)
+
     out = {
         "n_items": int(len(y)),
         "n_categories": int(len(set(cats.tolist()))),
         "n_correct": int(y.sum()),
-        "n_permutations": N_PERM,
+        "n_permutations": n_perm,
+        "attainable_two_sided_p_floor": float(2.0 / (n_perm + 1)),
+        "holm_bonferroni_across_four_cells": holm,
         "seed": SEED,
         "category_size_distribution": Counter(cats.tolist()).most_common(),
         "topic_only_auroc_ceiling": {

@@ -159,6 +159,368 @@
       }
     }
   ],
+  "negative_sweep_note": "n_pos fixed at 3 (the binding constraint: only 27 judge-correct items exist in the whole pool, and 24 of them are spent on direction-fitting). n_neg is NOT a data limit: the pool has 507 judge-hallucinated items, of which the tier-1 kernel uses only 40 (TRAIN_N_PER_CLASS=40), leaving 475 eligible for the holdout after the 32 spent on direction-fitting.",
+  "negative_sweep_rows": [
+    {
+      "n_pos": 3,
+      "n_neg": 8,
+      "n_total": 11,
+      "n_arrangements": 165,
+      "auroc_crit_one_sided_05": 0.875,
+      "attainable_alpha_at_crit": 0.04242424242424242,
+      "auroc_crit_lower_tail_05": 0.125,
+      "false_accept_naive_gt_half": 0.4606060606060607,
+      "false_accept_rule_auroc_ge_0p75": 0.1393939393939394,
+      "false_accept_rule_auroc_ge_0p80": 0.06666666666666667,
+      "power": {
+        "0.60": 0.1052,
+        "0.70": 0.2195,
+        "0.75": 0.3103,
+        "0.80": 0.42345,
+        "0.85": 0.5701,
+        "0.90": 0.7199,
+        "0.95": 0.8938
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 20,
+      "n_total": 23,
+      "n_arrangements": 1771,
+      "auroc_crit_one_sided_05": 0.8166666666666667,
+      "attainable_alpha_at_crit": 0.046866177300959905,
+      "auroc_crit_lower_tail_05": 0.18333333333333332,
+      "false_accept_naive_gt_half": 0.4827780914737436,
+      "false_accept_rule_auroc_ge_0p75": 0.09824957651044607,
+      "false_accept_rule_auroc_ge_0p80": 0.05759457933370976,
+      "power": {
+        "0.60": 0.12525,
+        "0.70": 0.2814,
+        "0.75": 0.39695,
+        "0.80": 0.53455,
+        "0.85": 0.68175,
+        "0.90": 0.83995,
+        "0.95": 0.95425
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 40,
+      "n_total": 43,
+      "n_arrangements": 12341,
+      "auroc_crit_one_sided_05": 0.8,
+      "attainable_alpha_at_crit": 0.04659265861761608,
+      "auroc_crit_lower_tail_05": 0.2,
+      "false_accept_naive_gt_half": 0.49104610647435376,
+      "false_accept_rule_auroc_ge_0p75": 0.08435296977554492,
+      "false_accept_rule_auroc_ge_0p80": 0.04659265861761608,
+      "power": {
+        "0.60": 0.13425,
+        "0.70": 0.30185,
+        "0.75": 0.41835,
+        "0.80": 0.5675,
+        "0.85": 0.7212,
+        "0.90": 0.86405,
+        "0.95": 0.96915
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 60,
+      "n_total": 63,
+      "n_arrangements": 39711,
+      "auroc_crit_one_sided_05": 0.7888888888888889,
+      "attainable_alpha_at_crit": 0.04988542217521594,
+      "auroc_crit_lower_tail_05": 0.2111111111111111,
+      "false_accept_naive_gt_half": 0.493943743547128,
+      "false_accept_rule_auroc_ge_0p75": 0.0796756566190728,
+      "false_accept_rule_auroc_ge_0p80": 0.04301075268817204,
+      "power": {
+        "0.60": 0.1379,
+        "0.70": 0.32195,
+        "0.75": 0.44225,
+        "0.80": 0.5942,
+        "0.85": 0.73995,
+        "0.90": 0.88365,
+        "0.95": 0.9722
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 100,
+      "n_total": 103,
+      "n_arrangements": 176851,
+      "auroc_crit_one_sided_05": 0.7866666666666666,
+      "attainable_alpha_at_crit": 0.04826661992298601,
+      "auroc_crit_lower_tail_05": 0.21333333333333335,
+      "false_accept_naive_gt_half": 0.49632176238754644,
+      "false_accept_rule_auroc_ge_0p75": 0.07593397832073327,
+      "false_accept_rule_auroc_ge_0p80": 0.040180717100836295,
+      "power": {
+        "0.60": 0.13845,
+        "0.70": 0.3202,
+        "0.75": 0.44745,
+        "0.80": 0.59685,
+        "0.85": 0.74955,
+        "0.90": 0.885,
+        "0.95": 0.97565
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 200,
+      "n_total": 203,
+      "n_arrangements": 1373701,
+      "auroc_crit_one_sided_05": 0.7816666666666666,
+      "attainable_alpha_at_crit": 0.049190471580060006,
+      "auroc_crit_lower_tail_05": 0.21833333333333332,
+      "false_accept_naive_gt_half": 0.4981433368687947,
+      "false_accept_rule_auroc_ge_0p75": 0.07312435530002526,
+      "false_accept_rule_auroc_ge_0p80": 0.0380803391713335,
+      "power": {
+        "0.60": 0.14295,
+        "0.70": 0.3312,
+        "0.75": 0.45415,
+        "0.80": 0.60955,
+        "0.85": 0.76655,
+        "0.90": 0.8912,
+        "0.95": 0.9791
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 475,
+      "n_total": 478,
+      "n_arrangements": 18088476,
+      "auroc_crit_one_sided_05": 0.7789473684210526,
+      "attainable_alpha_at_crit": 0.04961440643202889,
+      "auroc_crit_lower_tail_05": 0.22105263157894736,
+      "false_accept_naive_gt_half": 0.5000000000000002,
+      "false_accept_rule_auroc_ge_0p75": 0.07134763592024007,
+      "false_accept_rule_auroc_ge_0p80": 0.03687342150881037,
+      "power": {
+        "0.60": 0.1439,
+        "0.70": 0.3358,
+        "0.75": 0.467,
+        "0.80": 0.61465,
+        "0.85": 0.76625,
+        "0.90": 0.8965,
+        "0.95": 0.97915
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 507,
+      "n_total": 510,
+      "n_arrangements": 21978620,
+      "auroc_crit_one_sided_05": 0.7784352399737016,
+      "attainable_alpha_at_crit": 0.04989239542792039,
+      "auroc_crit_lower_tail_05": 0.2215647600262985,
+      "false_accept_naive_gt_half": 0.4999999999999999,
+      "false_accept_rule_auroc_ge_0p75": 0.07128236440686445,
+      "false_accept_rule_auroc_ge_0p80": 0.036746438129418496,
+      "power": {
+        "0.60": 0.1492,
+        "0.70": 0.3322,
+        "0.75": 0.46565,
+        "0.80": 0.61215,
+        "0.85": 0.76775,
+        "0.90": 0.89395,
+        "0.95": 0.9788
+      }
+    }
+  ],
+  "two_dim_grid_rows": [
+    {
+      "n_pos": 3,
+      "n_neg": 8,
+      "n_total": 11,
+      "n_arrangements": 165,
+      "auroc_crit_one_sided_05": 0.875,
+      "attainable_alpha_at_crit": 0.04242424242424242,
+      "auroc_crit_lower_tail_05": 0.125,
+      "false_accept_naive_gt_half": 0.4606060606060607,
+      "false_accept_rule_auroc_ge_0p75": 0.1393939393939394,
+      "false_accept_rule_auroc_ge_0p80": 0.06666666666666667,
+      "power": {
+        "0.60": 0.1043,
+        "0.70": 0.22435,
+        "0.75": 0.3149,
+        "0.80": 0.42995,
+        "0.85": 0.56855,
+        "0.90": 0.72435,
+        "0.95": 0.8934
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 60,
+      "n_total": 63,
+      "n_arrangements": 39711,
+      "auroc_crit_one_sided_05": 0.7888888888888889,
+      "attainable_alpha_at_crit": 0.04988542217521594,
+      "auroc_crit_lower_tail_05": 0.2111111111111111,
+      "false_accept_naive_gt_half": 0.493943743547128,
+      "false_accept_rule_auroc_ge_0p75": 0.0796756566190728,
+      "false_accept_rule_auroc_ge_0p80": 0.04301075268817204,
+      "power": {
+        "0.60": 0.1385,
+        "0.70": 0.32215,
+        "0.75": 0.44575,
+        "0.80": 0.5956,
+        "0.85": 0.75105,
+        "0.90": 0.8812,
+        "0.95": 0.97475
+      }
+    },
+    {
+      "n_pos": 3,
+      "n_neg": 475,
+      "n_total": 478,
+      "n_arrangements": 18088476,
+      "auroc_crit_one_sided_05": 0.7789473684210526,
+      "attainable_alpha_at_crit": 0.04961440643202889,
+      "auroc_crit_lower_tail_05": 0.22105263157894736,
+      "false_accept_naive_gt_half": 0.5000000000000002,
+      "false_accept_rule_auroc_ge_0p75": 0.07134763592024007,
+      "false_accept_rule_auroc_ge_0p80": 0.03687342150881037,
+      "power": {
+        "0.60": 0.1423,
+        "0.70": 0.3268,
+        "0.75": 0.46265,
+        "0.80": 0.61075,
+        "0.85": 0.76665,
+        "0.90": 0.89595,
+        "0.95": 0.9775
+      }
+    },
+    {
+      "n_pos": 5,
+      "n_neg": 8,
+      "n_total": 13,
+      "n_arrangements": 1287,
+      "auroc_crit_one_sided_05": 0.8,
+      "attainable_alpha_at_crit": 0.046620046620046623,
+      "auroc_crit_lower_tail_05": 0.2,
+      "false_accept_naive_gt_half": 0.4716394716394716,
+      "false_accept_rule_auroc_ge_0p75": 0.08547008547008547,
+      "false_accept_rule_auroc_ge_0p80": 0.046620046620046623,
+      "power": {
+        "0.60": 0.1329,
+        "0.70": 0.30315,
+        "0.75": 0.4387,
+        "0.80": 0.5772,
+        "0.85": 0.737,
+        "0.90": 0.8791,
+        "0.95": 0.975
+      }
+    },
+    {
+      "n_pos": 5,
+      "n_neg": 60,
+      "n_total": 65,
+      "n_arrangements": 8259888,
+      "auroc_crit_one_sided_05": 0.7266666666666667,
+      "attainable_alpha_at_crit": 0.04877814323874609,
+      "auroc_crit_lower_tail_05": 0.2733333333333333,
+      "false_accept_naive_gt_half": 0.4952419451692324,
+      "false_accept_rule_auroc_ge_0p75": 0.03276739345618246,
+      "false_accept_rule_auroc_ge_0p80": 0.012100769405105734,
+      "power": {
+        "0.60": 0.1735,
+        "0.70": 0.44265,
+        "0.75": 0.6106,
+        "0.80": 0.775,
+        "0.85": 0.9072,
+        "0.90": 0.97795,
+        "0.95": 0.9983
+      }
+    },
+    {
+      "n_pos": 5,
+      "n_neg": 475,
+      "n_total": 480,
+      "n_arrangements": 207945120096,
+      "auroc_crit_one_sided_05": 0.7149473684210527,
+      "attainable_alpha_at_crit": 0.04972725426413556,
+      "auroc_crit_lower_tail_05": 0.2850526315789474,
+      "false_accept_naive_gt_half": 0.5000000000000002,
+      "false_accept_rule_auroc_ge_0p75": 0.026135206305832135,
+      "false_accept_rule_auroc_ge_0p80": 0.008776827170348719,
+      "power": {
+        "0.60": 0.19075,
+        "0.70": 0.47485,
+        "0.75": 0.64265,
+        "0.80": 0.81545,
+        "0.85": 0.9289,
+        "0.90": 0.9859,
+        "0.95": 0.99925
+      }
+    },
+    {
+      "n_pos": 10,
+      "n_neg": 8,
+      "n_total": 18,
+      "n_arrangements": 43758,
+      "auroc_crit_one_sided_05": 0.75,
+      "attainable_alpha_at_crit": 0.04156954156954157,
+      "auroc_crit_lower_tail_05": 0.25,
+      "false_accept_naive_gt_half": 0.482700306229718,
+      "false_accept_rule_auroc_ge_0p75": 0.04156954156954157,
+      "false_accept_rule_auroc_ge_0p80": 0.01713972302207596,
+      "power": {
+        "0.60": 0.1568,
+        "0.70": 0.3901,
+        "0.75": 0.55105,
+        "0.80": 0.7198,
+        "0.85": 0.8659,
+        "0.90": 0.963,
+        "0.95": 0.9974
+      }
+    },
+    {
+      "n_pos": 10,
+      "n_neg": 60,
+      "n_total": 70,
+      "n_arrangements": 396704524216,
+      "auroc_crit_one_sided_05": 0.665,
+      "attainable_alpha_at_crit": 0.04939750658686751,
+      "auroc_crit_lower_tail_05": 0.335,
+      "false_accept_naive_gt_half": 0.496704036306155,
+      "false_accept_rule_auroc_ge_0p75": 0.0052673552642980475,
+      "false_accept_rule_auroc_ge_0p80": 0.0008790504537077704,
+      "power": {
+        "0.60": 0.25085,
+        "0.70": 0.6669,
+        "0.75": 0.85015,
+        "0.80": 0.95575,
+        "0.85": 0.9924,
+        "0.90": 0.9993,
+        "0.95": 1.0
+      }
+    },
+    {
+      "n_pos": 10,
+      "n_neg": 475,
+      "n_total": 485,
+      "n_arrangements": 180756237135777959656,
+      "auroc_crit_one_sided_05": 0.6524210526315789,
+      "attainable_alpha_at_crit": 0.04977593095267388,
+      "auroc_crit_lower_tail_05": 0.34757894736842104,
+      "false_accept_naive_gt_half": 0.49955208865641104,
+      "false_accept_rule_auroc_ge_0p75": 0.002750911809539916,
+      "false_accept_rule_auroc_ge_0p80": 0.00033193876565966614,
+      "power": {
+        "0.60": 0.2882,
+        "0.70": 0.7219,
+        "0.75": 0.89005,
+        "0.80": 0.9721,
+        "0.85": 0.9968,
+        "0.90": 1.0,
+        "0.95": 1.0
+      }
+    }
+  ],
   "paper_gate_cell_n11": {
     "n_pos": 3,
     "n_neg": 8,

@@ -74,7 +74,7 @@ class AdversarialProbe(nn.Module):
         return hall_logit, diff_pred
 
 
-def train_and_eval_fold(X_tr, y_tr, delta_tr, X_te, y_te, delta_te, seed):
+def train_and_eval_fold(X_tr, y_tr, delta_tr, X_te, y_te, delta_te, seed, lambd=LAMBDA_ADV):
     torch.manual_seed(seed)
     model = AdversarialProbe(X_tr.shape[1])
     opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
@@ -88,7 +88,7 @@ def train_and_eval_fold(X_tr, y_tr, delta_tr, X_te, y_te, delta_te, seed):
     for _ in range(EPOCHS):
         model.train()
         opt.zero_grad()
-        hall_logit, diff_pred = model(Xt)
+        hall_logit, diff_pred = model(Xt, lambd=lambd)
         loss = bce(hall_logit, yt) + mse(diff_pred, dt)
         loss.backward()
         opt.step()
@@ -96,7 +96,7 @@ def train_and_eval_fold(X_tr, y_tr, delta_tr, X_te, y_te, delta_te, seed):
     model.eval()
     with torch.no_grad():
         Xte_t = torch.tensor(X_te, dtype=torch.float32)
-        hall_logit_te, diff_pred_te = model(Xte_t)
+        hall_logit_te, diff_pred_te = model(Xte_t, lambd=lambd)
         probs = torch.sigmoid(hall_logit_te).numpy()
         diff_pred_np = diff_pred_te.numpy()
     try:
@@ -110,7 +110,7 @@ def train_and_eval_fold(X_tr, y_tr, delta_tr, X_te, y_te, delta_te, seed):
     return auc, diff_r2
 
 
-def cv_adversarial(X, y, delta, n_splits=N_FOLDS, seed=RANDOM_STATE):
+def cv_adversarial(X, y, delta, n_splits=N_FOLDS, seed=RANDOM_STATE, lambd=LAMBDA_ADV):
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
     aucs, diff_r2s = [], []
     for fold_i, (tr, te) in enumerate(skf.split(X, y)):
@@ -120,7 +120,8 @@ def cv_adversarial(X, y, delta, n_splits=N_FOLDS, seed=RANDOM_STATE):
         sc_d = StandardScaler()
         delta_tr = sc_d.fit_transform(delta[tr].reshape(-1, 1)).ravel()
         delta_te = sc_d.transform(delta[te].reshape(-1, 1)).ravel()
-        auc, diff_r2 = train_and_eval_fold(X_tr, y[tr], delta_tr, X_te, y[te], delta_te, seed=seed + fold_i)
+        auc, diff_r2 = train_and_eval_fold(X_tr, y[tr], delta_tr, X_te, y[te], delta_te,
+                                          seed=seed + fold_i, lambd=lambd)
         aucs.append(auc)
         diff_r2s.append(diff_r2)
     return float(np.mean(aucs)), float(np.std(aucs)), float(np.mean(diff_r2s))
@@ -146,6 +147,20 @@ def main():
         print(f"{name}: hallucination AUROC={auc:.4f}+-{auc_std:.4f}  "
               f"(entropy-head R^2 under adversarial pressure={diff_r2:.4f})")
 
+        # Two non-adversarial baselines for the entropy head. A negative
+        # held-out R^2 under adversarial pressure is only evidence that the
+        # pressure worked if the SAME head reaches a better R^2 when it is
+        # not being fought. Without these, "the adversary suppressed entropy"
+        # is indistinguishable from "this head never predicted entropy."
+        #   lambd = 0  -> head trained on a representation shaped only by the
+        #                 hallucination objective (no gradient to the encoder)
+        #   lambd = -1 -> cooperative: the encoder is optimized to HELP predict
+        #                 entropy, giving the head's attainable ceiling here
+        _, _, r2_lambda0 = cv_adversarial(X, y, delta, lambd=0.0)
+        _, _, r2_cooperative = cv_adversarial(X, y, delta, lambd=-1.0)
+        print(f"{name}: entropy-head R^2 baselines -- no adversarial pressure "
+              f"(lambda=0)={r2_lambda0:.4f}, cooperative (lambda=-1)={r2_cooperative:.4f}")
+
         # Permutation test: shuffle y, rerun identical adversarial CV pipeline
         perm_aucs = []
         rng = np.random.default_rng(RANDOM_STATE)
@@ -161,6 +176,8 @@ def main():
         results[name] = {
             "adversarial_auroc": auc, "adversarial_auroc_std": auc_std,
             "entropy_head_r2_under_adversarial_pressure": diff_r2,
+            "entropy_head_r2_no_adversarial_pressure_lambda0": r2_lambda0,
+            "entropy_head_r2_cooperative_lambda_neg1": r2_cooperative,
             "n_permutations": N_PERM, "perm_mean": float(perm_aucs.mean()),
             "perm_std": float(perm_aucs.std()), "p_value": p_value,
         }

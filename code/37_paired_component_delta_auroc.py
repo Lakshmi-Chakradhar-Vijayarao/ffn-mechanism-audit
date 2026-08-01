@@ -39,6 +39,7 @@ from scipy.stats import bootstrap
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -77,11 +78,14 @@ def probe_layer_oof(X_layer, y, seed=0, n_splits=5):
     """5-fold CV logistic regression, out-of-fold predicted probabilities,
     identical protocol to code/02's probe_component_at_layer."""
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
-    scaler = StandardScaler()
-    Xs = scaler.fit_transform(X_layer)
-    probs = cross_val_predict(
-        LogisticRegression(max_iter=2000), Xs, y, cv=skf, method="predict_proba"
-    )[:, 1]
+    # The scaler MUST live inside the pipeline so it is refit per fold. An
+    # earlier version called scaler.fit_transform on the full X_layer before
+    # cross_val_predict, which leaks each test fold's mean/variance into its
+    # own training fold. code/02, code/47, code/49 and code/50 all use the
+    # pipeline form; this script was the one exception.
+    probe = Pipeline([("scaler", StandardScaler()),
+                      ("clf", LogisticRegression(max_iter=2000))])
+    probs = cross_val_predict(probe, X_layer, y, cv=skf, method="predict_proba")[:, 1]
     return probs
 
 
@@ -116,21 +120,20 @@ def nested_cv_peak(X, y, n_outer=5, n_inner=5, seed=0):
         y_tr = y[tr_idx]
         inner_layer_aucs = np.zeros(n_layers)
         for layer in range(n_layers):
-            scaler = StandardScaler()
-            Xs = scaler.fit_transform(X[tr_idx, layer, :])
             inner = StratifiedKFold(n_splits=n_inner, shuffle=True, random_state=seed)
+            probe = Pipeline([("scaler", StandardScaler()),
+                              ("clf", LogisticRegression(max_iter=2000))])
             try:
-                probs = cross_val_predict(LogisticRegression(max_iter=2000), Xs, y_tr, cv=inner, method="predict_proba")[:, 1]
+                probs = cross_val_predict(probe, X[tr_idx, layer, :], y_tr, cv=inner, method="predict_proba")[:, 1]
                 inner_layer_aucs[layer] = roc_auc_score(y_tr, probs)
             except ValueError:
                 inner_layer_aucs[layer] = 0.5
         selected_layer = int(np.argmax(inner_layer_aucs))
 
-        scaler = StandardScaler()
-        Xtr = scaler.fit_transform(X[tr_idx, selected_layer, :])
-        Xte = scaler.transform(X[te_idx, selected_layer, :])
-        clf = LogisticRegression(max_iter=2000).fit(Xtr, y_tr)
-        auc = roc_auc_score(y[te_idx], clf.predict_proba(Xte)[:, 1])
+        probe = Pipeline([("scaler", StandardScaler()),
+                          ("clf", LogisticRegression(max_iter=2000))])
+        probe.fit(X[tr_idx, selected_layer, :], y_tr)
+        auc = roc_auc_score(y[te_idx], probe.predict_proba(X[te_idx, selected_layer, :])[:, 1])
         outer_aucs.append(auc)
     return float(np.mean(outer_aucs)), float(np.std(outer_aucs))
 

@@ -10,14 +10,19 @@ that establish why: a competence ceiling (GPT-2 answers 27/817 = 3.3% of
 TruthfulQA validation items correctly under an LLM judge), degeneracy
 contamination of the flip-rate outcome metric (~52-54% of nominally
 hallucinated completions are repetition loops), and a held-out
-direction-validity gate that cannot pass at the available sample size (with an
-exact minimum-detectable-effect table). It also reports, in full, a
-leave-one-category-out diagnostic whose interpretation changed twice under
-scrutiny: two permutation controls show the collapse is specific to real topic
-structure (not an estimator artifact), while a topic-only ceiling calculation
-rules out the originally claimed per-category-base-rate mechanism. The
-surviving claim is narrower than either earlier reading — the probe generalizes
-within TruthfulQA topic and not across topics.
+direction-validity gate that cannot pass at the available number of positives
+(with an exact minimum-detectable-effect table, reported as a function of both
+class counts). It also reports, in full, a leave-one-category-out diagnostic
+whose interpretation changed three times under scrutiny: two permutation
+controls show the collapse is specific to real topic structure (not an
+estimator artifact); a topic-only ceiling calculation rules out the originally
+claimed per-category-base-rate mechanism; and an estimand-matched
+recomputation shows the probe's within-topic discrimination is at chance
+whether or not same-topic items are in training, so the "training-set topic
+overlap" residual an earlier version reported was an artifact of comparing a
+pair-weighted pooled AUROC against a category-averaged one. The surviving
+claim is narrower than any earlier reading — this probe's discrimination lives
+in between-topic pairs, not within-topic ones.
 
 ## Start here — the four validity checks
 
@@ -27,6 +32,7 @@ within TruthfulQA topic and not across topics.
 | Degeneracy pre-filter + non-degenerate re-probe | `code/04_degeneration_check.py`, `code/14_...`, `code/49_nondegenerate_subset_probe.py` | `results/ffn_causal_patch_scaled_degeneration_filtered.json`, `results/nondegenerate_subset_probe.json` |
 | Direction-validity gate: exact MDE/power table | `code/51_direction_validity_mde_table.py` | `results/direction_validity_mde_table.json` |
 | Permutation controls + topic-only ceiling for the LOGO diagnostic | `code/48_permuted_pseudocategory_control.py` | `results/permuted_pseudocategory_control.json` |
+| Estimand-matched within-topic AUROC (training-overlap residual) | `code/52_estimand_matched_within_topic_auroc.py` | `results/estimand_matched_within_topic_auroc.json` |
 
 Two supporting diagnostics:
 
@@ -34,6 +40,8 @@ Two supporting diagnostics:
 |---|---|---|
 | CV fold-seed sensitivity (and the 0.6053-vs-0.643 gap decomposition) | `code/50_cv_seed_sensitivity_sweep.py` | `results/cv_seed_sensitivity_sweep.json` |
 | Direction-validity 200-resplit diagnostic | `code/46_direction_validity_resplit_diagnostic.py` | `results/direction_validity_resplit_diagnostic.json` |
+| Label-permutation null for that resplit diagnostic | `code/53_resplit_permutation_null.py` | `results/resplit_permutation_null.json` |
+| Direction-validity gate at the available negative count (3:475, not 3:8) | `code/54_enlarged_negative_holdout_gate.py` | `results/enlarged_negative_holdout_gate.json` |
 
 ## What's included
 - `draft/` — the paper source: `paper_draft.md` (markdown mirror of the LaTeX

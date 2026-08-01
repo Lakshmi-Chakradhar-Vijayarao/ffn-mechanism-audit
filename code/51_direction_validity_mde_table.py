@@ -97,44 +97,70 @@ def mc_auroc(n_pos, n_neg, true_auroc, n_mc=N_MC):
     return u / (n_pos * n_neg)
 
 
+def characterize(n_pos, n_neg):
+    """Exact operating characteristics of the gate at a given (n_pos, n_neg)."""
+    n_tot = n_pos + n_neg
+    pmf = exact_u_null(n_pos, n_neg)
+    grid = auroc_grid(n_pos, n_neg)
+    # one-sided upper-tail p at each attainable AUROC
+    tail = np.cumsum(pmf[::-1])[::-1]      # P(U >= u)
+    ok = np.where(tail <= 0.05)[0]
+    crit_idx = int(ok[0]) if len(ok) else None
+    crit = float(grid[crit_idx]) if crit_idx is not None else None
+    alpha_att = float(tail[crit_idx]) if crit_idx is not None else None
+    # lower tail (anti-predictive direction)
+    ltail = np.cumsum(pmf)
+    lok = np.where(ltail <= 0.05)[0]
+    crit_lo = float(grid[int(lok[-1])]) if len(lok) else None
+    row = {
+        "n_pos": n_pos, "n_neg": n_neg, "n_total": n_tot,
+        "n_arrangements": comb(n_tot, n_pos),
+        "auroc_crit_one_sided_05": crit,
+        "attainable_alpha_at_crit": alpha_att,
+        "auroc_crit_lower_tail_05": crit_lo,
+        "false_accept_naive_gt_half": float(tail[np.searchsorted(grid, 0.5, side="right")]),
+        "false_accept_rule_auroc_ge_0p75": float(tail[np.searchsorted(grid, 0.75 - 1e-12)]),
+        "false_accept_rule_auroc_ge_0p80": float(tail[np.searchsorted(grid, 0.80 - 1e-12)]),
+        "power": {},
+    }
+    if crit is not None:
+        for A in TRUE_AUROCS:
+            sim = mc_auroc(n_pos, n_neg, A)
+            row["power"][f"{A:.2f}"] = float((sim >= crit - 1e-12).mean())
+    print(f"n={n_tot} ({n_pos}+{n_neg}): arrangements={row['n_arrangements']:.3g}, "
+          f"MDE(AUROC crit, one-sided .05)={crit:.4f}, exact alpha={alpha_att:.4f}, "
+          f"P(noise passes 'AUROC>0.5')={row['false_accept_naive_gt_half']:.3f}, "
+          f"P(noise passes 'AUROC>=0.75')={row['false_accept_rule_auroc_ge_0p75']:.4f}, "
+          f"P(noise passes 'AUROC>=0.80')={row['false_accept_rule_auroc_ge_0p80']:.4f}, "
+          f"power@0.75={row['power'].get('0.75'):.3f}, power@0.90={row['power'].get('0.90'):.3f}",
+          flush=True)
+    return row
+
+
 def main():
-    rows = []
-    for n_pos in (3, 5, 8, 10, 15, 20, 30):
-        n_neg = int(round(n_pos * 8 / 3))
-        n_tot = n_pos + n_neg
-        pmf = exact_u_null(n_pos, n_neg)
-        grid = auroc_grid(n_pos, n_neg)
-        # one-sided upper-tail p at each attainable AUROC
-        tail = np.cumsum(pmf[::-1])[::-1]      # P(U >= u)
-        ok = np.where(tail <= 0.05)[0]
-        crit_idx = int(ok[0]) if len(ok) else None
-        crit = float(grid[crit_idx]) if crit_idx is not None else None
-        alpha_att = float(tail[crit_idx]) if crit_idx is not None else None
-        # lower tail (anti-predictive direction)
-        ltail = np.cumsum(pmf)
-        lok = np.where(ltail <= 0.05)[0]
-        crit_lo = float(grid[int(lok[-1])]) if len(lok) else None
-        row = {
-            "n_pos": n_pos, "n_neg": n_neg, "n_total": n_tot,
-            "n_arrangements": comb(n_tot, n_pos),
-            "auroc_crit_one_sided_05": crit,
-            "attainable_alpha_at_crit": alpha_att,
-            "auroc_crit_lower_tail_05": crit_lo,
-            "false_accept_naive_gt_half": float(tail[np.searchsorted(grid, 0.5, side="right")]),
-            "false_accept_rule_auroc_ge_0p75": float(tail[np.searchsorted(grid, 0.75 - 1e-12)]),
-            "false_accept_rule_auroc_ge_0p80": float(tail[np.searchsorted(grid, 0.80 - 1e-12)]),
-            "power": {},
-        }
-        if crit is not None:
-            for A in TRUE_AUROCS:
-                sim = mc_auroc(n_pos, n_neg, A)
-                row["power"][f"{A:.2f}"] = float((sim >= crit - 1e-12).mean())
-        rows.append(row)
-        print(f"n={n_tot} ({n_pos}+{n_neg}): arrangements={row['n_arrangements']}, "
-              f"MDE(AUROC crit, one-sided .05)={crit}, exact alpha={alpha_att:.4f}, "
-              f"P(noise passes 'AUROC>0.5')={row['false_accept_naive_gt_half']:.3f}, "
-              f"P(noise passes 'AUROC>=0.75')={row['false_accept_rule_auroc_ge_0p75']:.3f}, "
-              f"power@0.90={row['power'].get('0.90'):.3f}", flush=True)
+    # --- Table A: both classes grow together, at this paper's 3:8 ratio.
+    print("=== Table A: n_neg = round(n_pos * 8/3) (both classes grow) ===", flush=True)
+    rows = [characterize(n_pos, int(round(n_pos * 8 / 3))) for n_pos in (3, 5, 8, 10, 15, 20, 30)]
+
+    # --- Table B: POSITIVES HELD AT 3, negatives varied.
+    # The 3:8 holdout this paper actually ran was not a data limit. The
+    # tier-1 kernel caps the training pool at TRAIN_N_PER_CLASS=40 per class
+    # and takes the last 20% of each class as the validity holdout, giving 8
+    # negatives -- but the judge-labeled pool contains 507 hallucinated
+    # items, of which only 40 are used at all. The remaining 467 are the
+    # causal test pool and were never eligible to be direction-fit data, so
+    # 475 negatives (507 minus the 32 spent on direction-fitting) are
+    # available for the holdout at zero additional data-collection cost.
+    # Positives are the genuinely binding constraint: there are only 27
+    # judge-correct items in the entire pool.
+    print("\n=== Table B: n_pos held at 3, n_neg varied (negatives are not scarce) ===",
+          flush=True)
+    neg_rows = [characterize(3, n_neg) for n_neg in (8, 20, 40, 60, 100, 200, 475, 507)]
+
+    # --- Table C: a small 2-D grid, so the gate can be read as a function of
+    # BOTH class counts rather than of a single "held-out size".
+    print("\n=== Table C: 2-D grid over (n_pos, n_neg) ===", flush=True)
+    grid_rows = [characterize(np_, nn) for np_ in (3, 5, 10) for nn in (8, 60, 475)]
 
     # This paper's own gate cell, spelled out
     pmf = exact_u_null(3, 8)
@@ -168,7 +194,16 @@ def main():
     with open(OUT_PATH, "w") as f:
         json.dump({"class_ratio": "n_neg = round(n_pos * 8/3), matching this paper's 3:8 gate",
                    "n_monte_carlo": N_MC, "true_aurocs": TRUE_AUROCS,
-                   "rows": rows, "paper_gate_cell_n11": paper_cell}, f, indent=2)
+                   "rows": rows,
+                   "negative_sweep_note":
+                       "n_pos fixed at 3 (the binding constraint: only 27 judge-correct items "
+                       "exist in the whole pool, and 24 of them are spent on direction-fitting). "
+                       "n_neg is NOT a data limit: the pool has 507 judge-hallucinated items, of "
+                       "which the tier-1 kernel uses only 40 (TRAIN_N_PER_CLASS=40), leaving 475 "
+                       "eligible for the holdout after the 32 spent on direction-fitting.",
+                   "negative_sweep_rows": neg_rows,
+                   "two_dim_grid_rows": grid_rows,
+                   "paper_gate_cell_n11": paper_cell}, f, indent=2)
     print(f"\nSaved: {OUT_PATH}")
 
 

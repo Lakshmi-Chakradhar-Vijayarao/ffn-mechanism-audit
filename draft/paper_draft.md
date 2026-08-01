@@ -14,17 +14,28 @@ retrieval-augmented settings (ReDeEP), we find that the intended target
 hypothesis cannot be tested on this testbed. TruthfulQA is answered
 correctly by GPT-2 in only 27/817 (3.3%) of items under an
 independent LLM judge -- and 0 of 283 items added specifically to
-enlarge that pool were judged correct -- so any patching-based
+enlarge that pool were judged correct, though those 283 were
+pre-selected by an earlier filter for near-zero word overlap with every
+reference answer, which we disclose in §4.1 -- so any patching-based
 flip-to-correct metric is floored near zero regardless of the underlying
 mechanism, and a difference-of-means direction fit at the resulting
 sample size fails a held-out validity check we formalize. We give that
-check an exact power calculation: at the n=11 holdout this testbed
-supports, the null distribution of the held-out AUROC arises from only
-11{3}=165 equiprobable label arrangements and has 25
+check an exact power calculation, as a function of both class counts. At
+the 3:8 holdout the causal kernel actually used, the null
+distribution of the held-out AUROC arises from only
+C(11, 3)=165 equiprobable label arrangements and has 25
 attainable values; no *observed* AUROC below 0.875 can ever be
 significant at one-sided alpha=0.05; and a pure-noise direction
 passes a "held-out AUROC >= 0.75" gate 13.9% of the time and a
-">= 0.80" gate 6.7% of the time.
+">= 0.80" gate 6.7% of the time. That 8 was a per-class cap in
+the kernel, not a property of the data -- the pool holds 507
+judge-hallucinated items, 475 of them never used to fit the direction --
+and re-running the same gate against all of them improves every one of
+those figures at zero data cost (MDE 0.875->0.779, false-accept
+13.9%->7.1% and 6.7%->3.7%, power at a true 0.90
+0.72->0.90) while removing an apparent anti-predictive result that was
+an artifact of the small negative holdout. *Positives* are the
+binding constraint: 27 judge-correct items exist in total.
 
 We also show that a widely-used outcome metric in this literature --
 whether an intervention "corrects" a generation -- can be contaminated:
@@ -49,8 +60,9 @@ report both.
 
 We package these as general-purpose validity checks -- a
 direction-validity gate with a formal minimum-detectable-effect
-calculation, and a degeneracy pre-filter -- inside an eight-item
-causal-patching validity checklist. We add a fold-seed sensitivity
+calculation, and a degeneracy pre-filter -- inside a ten-item validity
+checklist: eight items for causal-patching studies and two for passive
+probing. We add a fold-seed sensitivity
 result for the passive side: on these features, changing only the
 cross-validation fold seed moves a component's AUROC estimate over a range
 of 0.055-0.100 (SD 0.013-0.022 over 50 seeds), which is an order of
@@ -67,12 +79,23 @@ matching pseudo-categories to real ones on both size and per-category
 class composition -- show the LOGO collapse (0.62-0.66 under standard
 CV to 0.48-0.49) is specific to real topic structure and *not* an
 artifact of per-category averaging: random groupings recover
-0.58-0.62, and the real value falls outside that null at three of the
-four cells tested (the fourth, p=0.059). Decomposing the standard-CV out-of-fold scores by pair type
-shows only part of the collapse comes from LOGO restricting comparisons to
-within-topic pairs (within-topic AUROC 0.54-0.68; only 4.9% of
-standard-CV pairs are within-topic), the rest from removing same-topic
-items from training. And a ceiling calculation shows the originally
+0.58-0.62, and the real value falls outside that null at all four
+cells tested, surviving Holm-Bonferroni correction across them
+(1,000 permutations; adjusted p=0.008-0.040).
+Decomposing the standard-CV out-of-fold scores by pair type shows the
+collapse comes from LOGO restricting comparisons to within-topic pairs,
+which are only 4.9% of standard-CV pairs. Holding the averaging
+convention fixed -- comparing LOGO's mean of per-category AUROCs against a
+mean of per-category AUROCs computed from standard-CV out-of-fold scores
+-- the residual attributable to removing same-topic items from training is
+indistinguishable from zero (-0.011, +0.023, -0.041, +0.061;
+negative in two of four cells, paired p=0.15-0.85). *This
+probe's within-topic discrimination is at chance whether or not
+same-topic items are in its training data* (0.44-0.55
+category-averaged); an earlier version of this decomposition reported a
+substantial (0.06-0.20) "training overlap" effect, which was
+entirely the artifact of subtracting a category-averaged number from a
+pair-weighted pooled one. And a ceiling calculation shows the originally
 claimed mechanism -- the probe reading off per-topic correct-answer rates
 -- cannot be demonstrated: topic identity alone gives AUROC 0.79
 in-sample but 0.51 or below once estimated out of fold. The supported
@@ -134,7 +157,9 @@ this testbed:
 
 -  GPT-2 answers 27/817 (3.3%) of TruthfulQA validation items
  correctly under an independent LLM judge. Enlarging the judged pool
- by 283 previously-unused items added exactly zero correct answers.
+ by the 283 previously-unused items -- all of which an earlier
+ word-overlap filter had dropped for scoring >=0.12 Jaccard
+ against every reference answer -- added exactly zero correct answers.
  A flip-to-correct rate on such a testbed is floored near zero, so
  the causal experiment is not underpowered in the ordinary sense --
  the outcome variable barely exists (§4.1).
@@ -146,13 +171,16 @@ this testbed:
  classes, so it contaminates both arms of a flip-rate comparison.
 
 -  The difference-of-means direction that the causal test patches in
- cannot be validated. At the n=11 held-out split this testbed
- supports, the validity check's exact null is a discrete
+ cannot be validated. At the 3:8 held-out split the causal kernel
+ used, the validity check's exact null is a discrete
  distribution over 25 attainable values, arising from
- 11{3}=165 equiprobable label arrangements; no
+ C(11, 3)=165 equiprobable label arrangements; no
  *observed* AUROC below 0.875 is ever significant at one-sided
  alpha=0.05; and a pure-noise direction passes a plausible gate
- 6.7%-46.1% of the time depending on threshold (§4.3).
+ 6.7%-46.1% of the time depending on threshold. That holdout
+ size was a per-class cap rather than a data limit; using the 475
+ available unused negatives improves the gate throughout, and the
+ binding constraint is the 27 judge-correct items (§4.3).
 
 Given all three, the causal null we do observe (no FFN-vs-Attention
 difference surviving correction at any tested configuration, under two
@@ -180,7 +208,7 @@ returns.
 -  **A direction-validity gate with an exact
  minimum-detectable-effect table** (§4.3, §5). We replace "n is
  small" with the exact null distribution of a held-out AUROC over
- all n_++n_{-}{n_+} label arrangements, and tabulate,
+ all C(n_++n_-, n_+) label arrangements, and tabulate,
  as a function of held-out size, the smallest detectable AUROC, the
  attainable alpha, the false-accept rate of natural gate rules,
  and power.
@@ -233,15 +261,15 @@ particular closed-book instrument cannot decide the question.
 
 **RAG-scoped FFN over-retrieval.** ReDeEP (Sun et al., ICLR 2025)
 established FFN override of retrieved context during RAG hallucination.
-Follow-up work (ParamMute, NeurIPS 2025; SEReDeEP, arXiv 2505.07528;
-FACTUM, arXiv 2601.05866; RAGLens, arXiv 2512.08892) refines this
+Follow-up work (Huang et al. 2025; Wang 2025; Dassen et al. 2026;
+Xiong et al. 2025) refines this
 mechanism or extends it with sparse-autoencoder tooling, but all remain
 confirmed RAG-only. Our setting is closed-book and prompt-only (§3), so
 it is at best an analogue of theirs, not a replication attempt, and a
 null here says nothing about the RAG result.
 
-**Detection without correction.** An independent finding (arXiv
-2604.13068) reports that output-confidence baselines beat activation
+**Detection without correction.** An independent finding (Roy et
+al. 2026) reports that output-confidence baselines beat activation
 probes above ~410M parameters, and that residual-stream steering flips
 0/7 tested models' generated answers toward correct across 42
 configurations on GPT-2-scale models. Our causal section reaches a
@@ -261,26 +289,41 @@ sparse probe result (§4.9) is consistent with Kantamneni et al. ("Are
 Sparse Autoencoders Useful? A Case Study in Sparse Probing," arXiv
 2502.16681), which finds dense L1 probes often match or beat trained SAE
 probes; it is not evidence for a claim made by the superficially similar
-"A Single Direction of Truth" (arXiv 2507.23221), which does not make
+O'Neill et al. (2025), which does not make
 this comparison. The difference-of-means steering method used throughout
 descends from Inference-Time Intervention (Li et al. 2023, arXiv
 2306.03341).
 
 **Validity checklists and audits.** The closest relatives of this
-paper's contribution are not mechanism papers but protocol audits: work
-showing that reported detection AUROCs in this literature are frequently
-artifacts of a downstream selection step or of benchmark construction
-rather than of the signal claimed. Our checklist is scoped narrowly and
-complementarily: it targets intervention experiments (patching an
-estimated direction and reading a flip-rate), which those audits do not
-cover.
+paper's contribution are not mechanism papers but protocol audits.
+Hewitt and Liang (2019) set the template for probing: a probe's accuracy
+is uninterpretable on its own, and what licenses a claim is its
+*selectivity* against a control task the same probe is fit on. Two
+recent audits make the analogous point for hallucination detection
+specifically. Janiak et al. (2025) show that reported detection AUROCs
+depend heavily on the correctness label used to define hallucination:
+swapping a lexical-overlap metric (ROUGE) for an LLM judge drops several
+established methods by up to 45.9%. That is the same substitution §6
+of this paper makes, on the same kind of label (word-overlap Jaccard
+versus an LLM judge, kappa=0.04); we note for completeness that on our
+data the swap moves the probe's AUROC *up* rather than down (§4.6),
+which we read as the two labels being noisy about different things rather
+than as a disagreement about the audit's point. Hussain and Kantarcioglu
+(2026) show that four of six widely-used hallucination-detection corpora
+embed the reference answer in the model's input, so a text-similarity
+baseline with no access to model internals scores near-perfectly, and
+that only three of the many previously reported high-AUROC cells survive
+their verification checks. Our checklist is scoped narrowly and
+complementarily to both: it targets intervention experiments (patching an
+estimated direction and reading a flip-rate) rather than the passive
+detection benchmarks those audits cover.
 
 ## 3. Setup and Scope
 
 **Models, data, labels.** We use GPT-2 (124M), Pythia-410M, and
 Qwen2.5-0.5B-Instruct on the TruthfulQA generation validation split.
 Completions are greedy-decoded (40 new tokens) from a bare
-`"Q: {question} nA:"` prompt (and, for Qwen0.5B, a
+`"Q: questionbackslash nA:"` prompt (and, for Qwen0.5B, a
 chat-templated variant, §4.6). Two labels are used throughout and always
 named explicitly: a *Jaccard* word-overlap heuristic against
 TruthfulQA's reference answers, and a *validated* label from an
@@ -337,9 +380,22 @@ the subset of TruthfulQA's 817-item validation split that an older
 Jaccard-label filter could score; 283 items had been discarded before
 the judge existed. We judged all 283
 (`kaggle_kernels/paper1-causal-patch-enlarged-pool/`):
-**zero were judged correct**. The full-split rate is therefore
-27/817 = 3.3%, exactly unchanged from the 27 correct in the original
-subset.
+**zero were judged correct**. *Those 283 were not a random
+sample, and we state the selection rule rather than let the 0/283 read
+as more surprising than it is*: an item was dropped exactly when its
+completion's maximum Jaccard word-overlap was at or below 0.12 against
+*every* correct reference answer *and* at or below 0.12
+against every incorrect one
+(`code/23_regenerate_completions_for_judge.py`,
+`LABEL_THRESHOLD`=0.12). They are therefore pre-selected for
+near-zero lexical overlap with all references, which makes zero
+judge-correct answers among them a weaker result than an unconditioned
+0/283 would be. It is still the relevant number for the ceiling
+question -- these were the only unjudged items left, so judging them is
+what closes the split -- but it is evidence that the remaining items were
+unlikely to help, not an independent replication of the 3.3% rate. The
+full-split rate is 27/817 = 3.3%, exactly unchanged from the 27
+correct in the original subset.
 
 This is a testbed-validity problem, not a sample-size problem, and the
 distinction matters for what a reader should conclude. Enlarging the
@@ -465,96 +521,193 @@ resolve anything.
 ### 4.3 A direction-validity gate, and its exact power
 
 Before any direction is injected, does it separate the two classes on
-genuinely held-out data? We split the 58-prompt training pool (18
-judge-correct, 40 judge-hallucinated) into a direction-fit set (47)
-and a held-out validity set (11: 3 correct, 8 hallucinated),
-estimated each difference-of-means direction on the former, and measured
-its scalar projection's AUROC on the latter.
+genuinely held-out data? The causal kernel splits a 58-prompt training
+pool (18 judge-correct, 40 judge-hallucinated) into a direction-fit
+set (47) and a held-out validity set (11: 3 correct, 8
+hallucinated), estimates each difference-of-means direction on the
+former, and measures its scalar projection's AUROC on the latter.
 
-At neither tested layer does either direction clear chance in the helpful
-direction: L8 FFN/Attn AUROC =0.083/0.083 (bootstrap 95% CI
+**First, a correction to how we previously described that n=11.**
+An earlier version of this paper called it "the held-out size this
+testbed supports." It is not: it is the consequence of a constant. The
+kernel caps its training pool at `TRAIN_N_PER_CLASS` =40 per
+class and takes the last 20% of each class as the validity holdout,
+which gives 40/5=8 negatives. The judge-labeled pool contains 507
+hallucinated items; the kernel uses 40 of them and leaves the other
+467 in the causal test pool. Since only 32 negatives are spent on
+fitting the direction, 475 negatives were eligible to be gate negatives
+all along, at no additional data or compute cost. *Positives* are
+the binding constraint -- there are 27 judge-correct items in the whole
+534-item pool, and this split spends 15 of them on direction-fitting
+-- and we now report the gate as a function of both class counts rather
+than of a single "held-out size" (Tables~the table below and
+the table below).
+
+**The gate result, at both holdout sizes.** At the kernel's 3:8
+holdout, neither direction clears chance in the helpful direction at
+either layer: L8 FFN/Attn AUROC =0.083/0.083 (bootstrap 95% CI
 [0.0,0.333] both), L9 FFN =0.0 (CI [0.0,0.0]), L9 Attn =0.125 (CI
-[0.0,0.5]). Three of the four CIs exclude 0.5 entirely, and an exact
-Mann-Whitney test at this n_+=3, n_{-}=8 split finds them nominally
-significant in the *anti-predictive* direction. All p-values here
-are exact and two-sided: L8 FFN/Attn p=0.0485 each, L9 FFN p=0.0121;
-L9 Attn p=0.0848 is not significant. On a consistently two-sided
-convention the two L8 cells sit just under 0.05 rather than comfortably
-below it (Appendix A, item 5).
-Under Bonferroni across the four cells (alpha=0.0125), only L9 FFN
-survives. These four p-values are recomputed and saved by
-`code/51_direction_validity_mde_table.py` alongside the exact
-null they come from.
+[0.0,0.5]), and an exact Mann-Whitney test at n_+=3, n_-=8
+finds three of the four nominally significant in the
+*anti-predictive* direction (exact two-sided p=0.0485, 0.0485,
+0.0121; L9 Attn p=0.0848 is not; under Bonferroni across the four
+cells only L9 FFN survives, and on a consistently two-sided convention
+the two L8 cells sit just under 0.05 rather than comfortably below it,
+Appendix A item 5). **Re-scoring the identical direction -- fit on
+exactly the same 47 items -- against all 475 eligible negatives
+instead of 8 removes that anti-predictive appearance entirely**
+(`code/54_enlarged_negative_holdout_gate.py`, which first
+reproduces the kernel's 3:8 values exactly): the held-out AUROCs
+become 0.393 (L8 FFN), 0.304 (L8 Attn), 0.277 (L9 FFN) and 0.183
+(L9 Attn), with exact two-sided p=0.544, 0.255, 0.194 and 0.056
+-- *none* significant. The directions are uninformative, not
+anti-informative; the earlier appearance of a systematic anti-predictive
+effect was an artifact of an 8-negative holdout that the data never
+required.
 
-**This particular anti-predictive result is a single unlucky draw.**
-Redrawing which items land in the fit and holdout roles at 200 random
-seeds on the identical 534-item judge-labeled pool
+**The single split is also an unlucky draw, and we now test that
+claim rather than assert it.** Redrawing which items land in the fit and
+holdout roles at 200 random seeds on the identical 534-item
+judge-labeled pool
 (`code/46_direction_validity_resplit_diagnostic.py`), the
 held-out AUROC has mean 0.54-0.58 and SD 0.20-0.22, with range
-[0.083,1.0] at L8 and [0.0,1.0] at L9 -- centered at or slightly
-above chance. The kernel's single seed sits in the extreme low tail: only
-1.5% (L8 FFN), 1.5% (L8 Attn), 0.5% (L9 FFN) and 4% (L9 Attn)
-of resplits produce an AUROC at or below it. A second, independent draw
-from a differently-ordered pool (the enlarged-pool run) gives
-0.375/0.333 (L8 FFN/Attn) and 0.167/0.25 (L9 FFN/Attn) -- inside
-the typical range. Two alternative estimators (logistic-regression
-weights, Fisher LDA) fit on the identical split do no better: all 12
-layer/component/estimator combinations land at or below AUROC 0.167
-(`code/44_alternative_direction_estimators.py`).
+[0.083,1.0] at L8 and [0.0,1.0] at L9. The kernel's single seed sits
+in the extreme low tail: only 1.5% (L8 FFN), 1.5% (L8 Attn), 0.5%
+(L9 FFN) and 4% (L9 Attn) of resplits produce an AUROC at or below it.
+A second, independent draw from a differently-ordered pool (the
+enlarged-pool run) gives 0.375/0.333 (L8 FFN/Attn) and 0.167/0.25
+(L9 FFN/Attn) -- inside the typical range. Two alternative estimators
+(logistic-regression weights, Fisher LDA) fit on the identical split do no
+better: all 12 layer/component/estimator combinations land at or below
+AUROC 0.167 (`code/44_alternative_direction_estimators.py`).
 
-**The gate cannot pass at this n, and we can say exactly how
-badly.** Under the null that a direction carries no information, the
-held-out AUROC is a rescaled Mann-Whitney U statistic whose
-distribution is exact and enumerable over all
-n_++n_{-}{n_+} label arrangements. We compute it exactly
-(`code/51_direction_validity_mde_table.py`); Table~the table below
-reports it as a function of held-out size at this paper's own 3{:}8
-class ratio. At n=11 the null arises from only 165 equiprobable label
-arrangements and the AUROC takes just 25 attainable values (spacing
-1/24), so the smallest *observable* AUROC that could ever be called
-significant at one-sided alpha=0.05 is 0.875 (attained exact size
-0.0424). This is a statement about the observable statistic, not about
-the true effect: true effects well below 0.875 can clear the threshold,
-just rarely (power 0.31 at a true AUROC of 0.75, 0.72 at 0.90).
-In the other direction, a pure-noise direction passes a naive "held-out
-AUROC >0.5" gate 46.1% of the time, a ">= 0.75" gate 13.9%
-of the time, and a ">= 0.80" gate 6.7% of the time. Reaching a
-gate that both admits moderate true effects (MDE ~ 0.68) and
-rejects noise at the 1% level needs roughly n=37 (10 positives).
-That is nominally supplyable from this testbed's 27 correct items, but
-only by spending 10 of them on the holdout and leaving 17 to fit the
-direction -- so the binding constraint is not the holdout alone but the
-trade-off between gate power and direction quality, which 27 positives
-cannot satisfy simultaneously.
+**The resplit means are *not* significantly above chance, and
+the naive reading would have reversed this paper's conclusion.** An
+earlier version described the resplit means as "centered at or slightly
+above chance" and moved on without a test. That is exactly the place a
+reader is most likely to substitute their own, and the obvious
+substitution is wrong: treating the 200 resplits as independent draws
+gives a standard error of 0.014-0.015 and hence z=2.65-5.62
+against 0.5, i.e. "the direction *does* carry signal" at all
+four cells. The resplits are not independent -- every one of them draws
+its 3 positives from the same 27 judge-correct items -- so that
+standard error is far too small. The correct null is a label
+permutation: permute the 534 judge labels (preserving the 27/507
+class counts, and therefore the entire split structure), rerun the whole
+200-resplit procedure under each permutation, and compare the observed
+resplit mean against the resulting distribution of permuted resplit means,
+which inherits the same dependence
+(`code/53_resplit_permutation_null.py`, 2,000
+permutations). The null is centered at chance (0.501-0.502) and its
+SD is 0.051-0.052, about 3.4-3.6x the naive
+independent-samples SE. Against it, no cell reaches significance
+(Table~the table below). **The conclusion the paper wanted --
+that these resplit means are not evidence of a valid direction -- is
+therefore supported, but it needed this test to be supported, and the
+3.5x SE inflation is the reusable part**: any diagnostic that
+resamples splits of a fixed small pool and reports a mean over resamples
+has this problem.
 
-*Exact operating characteristics of a held-out direction-validity gate, as a function of held-out sample size, at this paper's own 3{:}8 positive:negative ratio. "MDE" is the smallest *observable* held-out AUROC that can be significant at one-sided alpha=0.05 under the exact null (a property of the statistic, not a bound on the true effect -- the power columns give the chance a given true effect clears it); "exact alpha" is that test's true size (discreteness makes it smaller than 0.05); "false-accept" columns give the exact probability that a pure-noise direction passes the stated gate rule; power is Monte Carlo (20{,}000 draws) under a binormal alternative. The first row is this paper's own gate.*
+- Cell | obs. mean | naive z | null mean | null SD | perm. z | one-sided p
+
+- L8 FFN  | 0.5787 | 5.62 | 0.5017 | 0.0509 | 1.51 | 0.085
+
+- L8 Attn | 0.5660 | 4.45 | 0.5013 | 0.0520 | 1.25 | 0.109
+
+- L9 FFN  | 0.5525 | 3.57 | 0.5015 | 0.0515 | 0.99 | 0.164
+
+- L9 Attn | 0.5408 | 2.65 | 0.5006 | 0.0519 | 0.78 | 0.215
+
+*Label-permutation null for the 200-resplit direction-validity diagnostic. "naive z" treats the 200 resplits as independent draws (SE = SD/sqrt200) and is reported only to show what an untested reading would conclude; it is wrong because every resplit reuses the same 27 positives. The permutation null permutes the 534 judge labels and reruns the entire 200-resplit procedure, 2,000 times.*
+
+**The gate's exact operating characteristics.** Under the null that
+a direction carries no information, the held-out AUROC is a rescaled
+Mann-Whitney U statistic whose distribution is exact and enumerable
+over all C(n_++n_-, n_+) label arrangements. We compute it
+exactly (`code/51_direction_validity_mde_table.py`) along two
+axes: Table~the table below grows both classes together at this paper's
+3:8 ratio, and Table~the table below holds positives at 3 and
+varies the negatives, which is the axis this testbed could actually have
+moved along. At the kernel's 3:8 holdout the null arises from only
+165 equiprobable arrangements and the AUROC takes just 25 attainable
+values (spacing 1/24), so the smallest *observable* AUROC that
+could ever be called significant at one-sided alpha=0.05 is 0.875
+(exact size 0.0424); a pure-noise direction passes a ">= 0.75"
+gate 13.9% of the time and a ">= 0.80" gate 6.7% of the time;
+and power is 0.31 against a true AUROC of 0.75 and 0.72 against
+0.90. **Every one of those numbers improves at zero data cost
+once the available negatives are used**: at 3:475 the smallest
+significant observable AUROC falls to 0.779, the exact size rises to
+0.0496 (the discreteness penalty essentially disappears), the
+false-accept rate of a ">=0.75" gate falls to 7.1% and of a
+">=0.80" gate to 3.7%, and power rises to 0.47 at a true
+0.75 and 0.90 at a true 0.90. The one number that does not improve
+is the naive "AUROC >0.5" rule, which goes from 46.1% to 50.0%
+-- it was never a gate, and at 3:8 it only looked better because
+discreteness put mass exactly at 0.5.
+
+Most of that gain is realized by the first few dozen negatives
+(Table~the table below: n_-=60 already reaches MDE 0.789 and a
+4.3% false-accept rate at the >=0.80 rule), and the curve is flat
+thereafter, so the practical recommendation is not "use every negative"
+but "do not let a per-class cap silently set your holdout." What
+negatives cannot buy is the rest: with positives held at 3, the MDE
+never falls below ~0.78 no matter how many negatives are added.
+Reaching a gate that both admits moderate true effects and rejects noise
+at the 1% level needs positives -- at 10 positives against the same
+475 negatives the MDE is 0.652, the >=0.75 false-accept rate is
+0.3%, and power at a true 0.75 is 0.89 -- and this testbed has
+27 correct items total, so spending 10 on the holdout leaves 17 to
+fit the direction. **The binding constraint is the positives, and
+the trade-off between gate power and direction quality that 27 of them
+cannot satisfy simultaneously.**
 
 - n | n_+ | arrangements | MDE | exact alpha | FA >0.5 | FA >=0.75 | pow. @0.75 | pow. @0.90
 
-- 11 | 3 | 1.65x10^{2} | 0.875 | 0.0424 | 0.461 | 0.139 | 0.31 | 0.72
+- 11  | 3  | 1.65x10^2  | 0.875 | 0.0424 | 0.461 | 0.139 | 0.31 | 0.72
 
-- 18 | 5 | 8.57x10^{3} | 0.769 | 0.0473 | 0.500 | 0.059 | 0.51 | 0.93
+- 18  | 5  | 8.57x10^3  | 0.769 | 0.0473 | 0.500 | 0.059 | 0.51 | 0.93
 
-- 29 | 8 | 4.29x10^{6} | 0.708 | 0.0464 | 0.490 | 0.021 | 0.69 | 0.99
+- 29  | 8  | 4.29x10^6  | 0.708 | 0.0464 | 0.490 | 0.021 | 0.69 | 0.99
 
-- 37 | 10 | 3.48x10^{8} | 0.681 | 0.0488 | 0.493 | 0.010 | 0.79 | 1.00
+- 37  | 10 | 3.48x10^8  | 0.681 | 0.0488 | 0.493 | 0.010 | 0.79 | 1.00
 
-- 55 | 15 | 1.19x10^{13} | 0.647 | 0.0493 | 0.496 | 0.002 | 0.92 | 1.00
+- 55  | 15 | 1.19x10^13 | 0.647 | 0.0493 | 0.496 | 0.002 | 0.92 | 1.00
 
-- 73 | 20 | 4.30x10^{17} | 0.626 | 0.0495 | 0.498 | 0.000 | 0.97 | 1.00
+- 73  | 20 | 4.30x10^17 | 0.626 | 0.0495 | 0.498 | 0.000 | 0.97 | 1.00
 
-- 110 | 30 | 8.37x10^{26} | 0.603 | 0.0498 | 0.499 | 0.000 | 1.00 | 1.00
+- 110 | 30 | 8.37x10^26 | 0.603 | 0.0498 | 0.499 | 0.000 | 1.00 | 1.00
+
+*Exact operating characteristics of a held-out direction-validity gate when *both* classes grow, at this paper's own 3:8 positive:negative ratio. "MDE" is the smallest *observable* held-out AUROC that can be significant at one-sided alpha=0.05 under the exact null (a property of the statistic, not a bound on the true effect -- the power columns give the chance a given true effect clears it); "exact alpha" is that test's true size (discreteness makes it smaller than 0.05); "false-accept" columns give the exact probability that a pure-noise direction passes the stated gate rule; power is Monte Carlo (20,000 draws) under a binormal alternative. The first row is this paper's own gate. Table~the table below varies the negatives alone, which is the axis this testbed could have moved for free.*
+
+- n_- | n | arrangements | MDE | exact alpha | FA >=0.75 | FA >=0.80 | pow. @0.75 | pow. @0.90
+
+- 8   | 11  | 1.65x10^2 | 0.875 | 0.0424 | 0.139 | 0.067 | 0.31 | 0.72
+
+- 20  | 23  | 1.77x10^3 | 0.817 | 0.0469 | 0.098 | 0.058 | 0.40 | 0.84
+
+- 60  | 63  | 3.97x10^4 | 0.789 | 0.0499 | 0.080 | 0.043 | 0.44 | 0.88
+
+- 200 | 203 | 1.37x10^6 | 0.782 | 0.0492 | 0.073 | 0.038 | 0.45 | 0.89
+
+- 475 | 478 | 1.81x10^7 | 0.779 | 0.0496 | 0.071 | 0.037 | 0.47 | 0.90
+
+*The same exact calculation with *positives held at 3* and only the negative count varied. The first row is the gate this paper actually ran; the last is what the same 3 positives would have bought against every negative not spent on fitting the direction (475 of the pool's 507 judge-hallucinated items). No new data is involved in any row. Columns as in Table~the table below, plus the false-accept rate of a ">=0.80" rule.*
 
 The conclusion we draw is narrow and, we think, unavoidable: the
 directions this paper patches were never shown to carry label-relevant
-signal, and at this testbed's held-out size they could not have been.
+signal, and at the number of *positives* this testbed supplies they
+could not have been. We separate that from the weaker, and false, claim
+we previously made -- that the held-out size itself was forced by the
+data. It was not, and a reader auditing a gate should check which of its
+inputs is a data limit and which is a default.
 
 ### 4.4 The causal-patching null, and why it is not interpretable
 
 **Design.** A difference-of-means "truthfulness direction,"
 computed on FFN sublayer output over a train split only, is injected
 additively into the FFN sublayer during generation, tested at L8/L9,
-alpha{20,40}, against a random-direction control and against a
+alphain20,40, against a random-direction control and against a
 genuinely Attention-derived direction injected at the Attention site. The
 two directions are nearly orthogonal (cosine similarity -0.054 at L8,
 -0.056 at L9), so the component-specificity control is a real control
@@ -650,7 +803,7 @@ version of this diagnostic reported (Appendix A). It does not
 independently demonstrate the absence of a dosage asymmetry, because with
 this denominator no asymmetry could have been observed.
 
-**A low-dose sweep.** At the common site with alpha{2.5,5,10}
+**A low-dose sweep.** At the common site with alphain2.5,5,10
 (Jaccard label, for speed), flip rates are flat: FFN 50.00%,
 45.00%, 51.67%; Attention 50.00%, 48.33%, 41.67% -- a
 41.67-51.67% range overall. There is **no monotone increase**
@@ -707,26 +860,41 @@ On GPT-2 under the Jaccard label, FFN wins 8/12 layers (two-sided
 binomial p=0.39; one-sided p=0.19; neither significant). Peak FFN
 layer is L8 (AUROC 0.6053); peak Attn layer is L3 (AUROC 0.6165) --
 so the single best-discriminating component on GPT-2 is Attention, not
-FFN. At L8, FFN direct logit attribution is higher for hallucinated
-samples (5.08) than correct samples (4.85): an in-sample,
-non-cross-validated, suggestive but unconfirmed "over-retrieval"
-signature.
+FFN.
 
 **How large is a fold seed worth?** Two numbers this repository
 reports for the *same* features (GPT-2 FFN L8) differ: 0.6053 in
 this section and 0.643 in the paired-delta analysis of
-`code/37_paired_component_delta_auroc.py`. The cause is the
-cross-validation fold seed, not the aggregation convention (mean-of-folds
-versus pooled out-of-fold predictions) that might be suspected first
-(Appendix A, item 7):
+`code/37_paired_component_delta_auroc.py`. *Three* things
+differ between those two scripts, not the two we previously named, and
+the dominant one is the cross-validation fold seed rather than the
+aggregation convention (mean-of-folds versus pooled out-of-fold
+predictions) that might be suspected first (Appendix A, item 7):
 `code/02_cross_arch_component_probe.py` uses
 `StratifiedKFold(random_state=42)`, `code/37` uses
-`random_state=0`. Decomposing exactly
+`random_state=0`; and `code/37` additionally fit its
+`StandardScaler` on the full dataset before
+`cross_val_predict` rather than inside a per-fold
+`Pipeline`, which is a genuine (if tiny) leak that we have now
+fixed. Decomposing exactly
 (`code/50_cv_seed_sensitivity_sweep.py`): mean-of-folds at seed
 42 is 0.6053; mean-of-folds at seed 0 is 0.6418 (seed component
-+0.0365); pooled-OOF at seed 0 is 0.6427 (aggregation component
-+0.0010). **The seed accounts for 0.0365 of the 0.0374 total
-gap; the aggregation convention accounts for 0.0010.**
++0.0365); leak-free pooled-OOF at seed 0 is 0.6427 (aggregation
+component +0.0010); and the scaler-placement term, obtained by
+differencing `code/37`'s pre-fix output against its post-fix
+output at the same seed and aggregation, is -0.000056.
+**The seed accounts for 0.0365 of the 0.0374 total
+gap, the aggregation convention for 0.0010, and the scaler leak for
+-0.00006.** We report the third term not because it matters
+numerically -- it does not, at any decimal this paper prints -- but
+because the earlier version presented a two-term decomposition as
+exhaustive when it was not, and a decomposition that omits a term is
+exactly the kind of claim this paper is about. Rerunning `code/37`
+leak-free changes no conclusion: every Delta, BCa interval and peak
+layer in this subsection is identical at the precision reported, with two
+third-decimal moves (GPT-2's naive Attention peak 0.632->0.633,
+Qwen0.5B's naive FFN peak 0.563->0.562), and no interval changes
+whether it covers zero.
 
 **A 50-seed sweep, and what it does and does not undermine.** We
 swept `StratifiedKFold`'s `random_state` over 50 values,
@@ -798,7 +966,7 @@ summary least vulnerable to selection bias -- Delta is small on every
 architecture (GPT-2 +0.0017+/-0.036; Pythia +0.0005+/-0.042;
 Qwen0.5B -0.0021+/-0.034), and a layer-weighted pooled estimate across
 all three architectures gives Delta=-0.0003 with between-architecture
-variance of 3.9x10^{-6}. That is the properly pooled null.
+variance of 3.9x10^-6. That is the properly pooled null.
 
 **Peak layers are not stable.** `code/37`'s pooled-OOF argmax
 puts Qwen0.5B's FFN peak at L20 and its Attn peak at L8, the reverse of
@@ -832,10 +1000,10 @@ We also checked "peak AUROC" itself for winner's-curse selection bias
 using nested cross-validation (select the peak layer on inner folds only,
 evaluate on a held-out outer fold). Nested-CV peaks are uniformly lower
 than naive argmax peaks -- GPT-2 FFN 0.643->0.581, GPT-2 Attn
-0.632->0.600; Pythia FFN 0.632->0.584, Pythia Attn
-0.666->0.582; Qwen0.5B FFN 0.563->0.521, Qwen0.5B Attn
+0.633->0.600; Pythia FFN 0.632->0.584, Pythia Attn
+0.666->0.582; Qwen0.5B FFN 0.562->0.521, Qwen0.5B Attn
 0.570->0.515. On GPT-2 the correction flips which component leads
-(naive: FFN 0.643 vs. Attn 0.632; nested: Attn 0.600 vs. FFN
+(naive: FFN 0.643 vs. Attn 0.633; nested: Attn 0.600 vs. FFN
 0.581). We do not read this as Attention "really" winning -- the
 corrected margin is itself within noise -- but as a concrete
 demonstration that peak-AUROC comparisons can select the noisier rather
@@ -844,12 +1012,13 @@ than the truer component.
 One consequence should be stated rather than left for a reader to notice:
 the "naive argmax" column above disagrees with §4.6's peak table on
 *which component wins, on all three architectures*. Here FFN leads
-on GPT-2 (0.643 vs. 0.632) and Attention leads on Pythia (0.666
-vs. 0.632) and Qwen0.5B (0.570 vs. 0.563); §4.6, computing the
+on GPT-2 (0.643 vs. 0.633) and Attention leads on Pythia (0.666
+vs. 0.632) and Qwen0.5B (0.570 vs. 0.562); §4.6, computing the
 same quantity at `code/02`'s fold seed and aggregation, has exactly
 the opposite winner in each case. Both sets of numbers are correct for
 their own protocol. Three sign flips out of three, produced by nothing
-but a fold seed and an aggregation convention, is the strongest single
+but a fold seed, an aggregation convention and a scaler placement worth
+0.00006, is the strongest single
 piece of evidence in this paper that the peak-versus-peak
 FFN-vs-Attention comparison is not measuring anything at this sample
 size, and we report §4.6's version only because it is the protocol the
@@ -886,7 +1055,8 @@ measurement noise on all three architectures tested.**
 parameters, the largest model tested) was queried with a bare
 `Q: ... A:` template rather than its chat template -- genuinely
 out-of-distribution usage for an instruction-tuned model. Rerunning with
-the proper chat template (`code/02_cross_arch_component_probe.py qwen05chat`; only prompt construction changed) reverses the
+the proper chat template (`code/02_cross_arch_component_probe.py
+qwen05chat`) reverses the
 peak-component result: Attention becomes the peak (L4 =0.5988+/-0.0438)
 over FFN (L4 =0.5704+/-0.0186), and the layer-count result reverses too
 (FFN wins 11/24, 45.8%, versus 58.3% before). The corrected
@@ -895,6 +1065,28 @@ margin (0.0284) is still smaller than Attention's own CV SD
 way "FFN wins 3/3" did. The finding is the direction of the flip, not a
 newly-resolved winner. Peak-FFN depth fraction also shifts, from 33.3%
 (L8/24, bare) to 16.7% (L4/24, chat).
+
+**More than the prompt changed between these two conditions, and we
+should not have said otherwise.** An earlier version described the chat
+rerun as one in which "only prompt construction changed." The two
+conditions are also different samples: N=513 (bare) versus N=433
+(chat), and only 298 questions are common to both (215 bare-only,
+135 chat-only), because the Jaccard filter that admits an item to each
+pool depends on the completion, which the template changes. Sample
+composition accounts for roughly half of the apparent base-rate shift:
+the Jaccard-correct rate is 49.3% (bare, n=513) versus 57.5%
+(chat, n=433), an 8.2 point gap, but on the 298 shared questions it
+is 53.7% versus 58.1%, a 4.4 point gap. We did not recompute the
+component probe on the matched 298, because the chat condition's
+per-sample activations were not cached and rerunning them was out of
+scope for this revision; what we can bound is that a difference of this
+size in composition is of the same order as the 0.0284 peak margin the
+reversal turns on. **The template-reversal result should therefore
+be read as suggestive and confounded with sample composition, not as a
+clean single-variable manipulation**, and we retract the "only prompt
+construction changed" description. §4.6's later finding that the same
+reversal does not survive relabeling under the judge label is the
+stronger reason not to lean on it.
 
 **Re-probing under the validated label.** We relabeled every
 completion on all three architectures with the LLM judge and reran the
@@ -992,7 +1184,7 @@ averages over every latent factor that differs between conditions; if a
 correction signal exists but is carried by a small number of sparse
 features, additive steering along the dense direction would dilute it. We
 substitute `jbloom/GPT2-Small-SAEs-Reformatted`'s layer-8 SAE
-(d_{sae}=24{,}576, trained on 300M tokens of OpenWebText) -- a
+(d_{sae}=24,576, trained on 300M tokens of OpenWebText) -- a
 disclosed mismatch on two axes at once: wrong hookpoint (residual stream,
 not FFN-sublayer output) and wrong training distribution. **0 of
 24,576 features survive Benjamini-Hochberg FDR at q=0.05 on this
@@ -1002,8 +1194,8 @@ step was never reached. This is a null one stage earlier than §4.4's
 test, but bounded by instrument mismatch: either axis alone could explain
 zero surviving features. Running the identical procedure on a companion
 dataset (HaluEval, n=500, same SAE, same layer) as a positive control
-(`code/15_sae_feature_gating_utility.py`) finds 331/24{,}576
-features surviving FDR (best p=4.8x10^{-11}), confirming the null
+(`code/15_sae_feature_gating_utility.py`) finds 331/24,576
+features surviving FDR (best p=4.8x10^-11), confirming the null
 above is not a feature-selection bug. Even there, the causal clamp shows
 no specificity at any strength (p=1.000, 0.508, 1.000 at
 eta=10,20,40;
@@ -1041,9 +1233,20 @@ p=0.206, 88.3% retention).
 A gradient-reversal probe attaches a second head predicting the entropy
 proxy from the same shared representation, back-propagating its
 *negative* gradient
-(`code/17_gradient_reversal_adversarial_probe.py`). The
-adversarial pressure works: held-out R^2 for the entropy head is
-negative for both components (-0.71 FFN, -1.44 Attn). Hallucination
+(`code/17_gradient_reversal_adversarial_probe.py`). Held-out
+R^2 for the entropy head is negative for both components (-0.71 FFN,
+-1.44 Attn). **A negative R^2 on its own does not show that the
+adversarial pressure worked** -- it is equally consistent with a head that
+never learned to predict entropy at all -- so we now run the same head
+without the pressure, which an earlier version did not. Training the
+identical architecture at lambda=0 (the entropy head learns, but sends
+no gradient to the encoder) gives R^2 = +0.199 (FFN) and +0.115
+(Attn); training it cooperatively at lambda=-1 (the encoder is
+optimized to *help* predict entropy, an attainable ceiling) gives
++0.542 and +0.362. The head therefore can predict this entropy proxy
+from these representations, and the adversarial condition drives it far
+below its own unopposed baseline. That is what licenses reading the
+negative values as suppression. Hallucination
 AUROC nonetheless survives above chance for both (FFN 0.5944+/-0.0624,
 Attn 0.6134+/-0.0542, both p=0.0050 against a 200-shuffle floor).
 
@@ -1076,7 +1279,7 @@ L9.
 
 Three of the six are weaker than "converges" implies. The dense probe's
 L9 peak is a near-tie: 0.5827275 at L9 against 0.5826826 at L12, a
-margin of 4.5x10^{-5} AUROC, about a thousandth of that layer's own
+margin of 4.5x10^-5 AUROC, about a thousandth of that layer's own
 cross-validation standard deviation (0.0497), with L10 (0.5805) and
 L11 (0.5791) also within 0.004 -- so "dense probe peaks at L9" is an
 argmax over noise in the same sense as the steering result below.
@@ -1163,62 +1366,107 @@ that the 16 usable real categories are simply an unusual subset.
 controls, LOGO on pseudo-categories recovers approximately the standard-CV
 AUROC rather than chance:
 
-*Leave-one-category-out AUROC on real TruthfulQA categories versus two permuted-pseudo-category nulls (100 draws each), GPT-2, judge label. Empirical two-sided p is computed against the corresponding null; 0.020 is the attainable floor at 100 permutations.*
+- Cell | standard 5-fold CV | real LOGO | size-matched null | size+class-matched null
 
-- Cell | standard 5-fold CV | real LOGO | size-matched null (p) | size+class-matched null (p)
+- |                    |           | (p; Holm)       | (p; Holm)
 
-- L8 FFN | 0.6215 | 0.4788 | 0.6160+/-0.0405 (0.020) | 0.6152+/-0.0407 (0.020)
+- L8 FFN  | 0.6215 | 0.4788 | 0.6163+/-0.0410 (0.006; 0.018) | 0.6153+/-0.0402 (0.004; 0.008)
 
-- L8 Attn | 0.6318 | 0.4907 | 0.5869+/-0.0461 (0.079) | 0.5812+/-0.0423 (0.059)
+- L8 Attn | 0.6318 | 0.4907 | 0.5820+/-0.0412 (0.040; 0.040) | 0.5816+/-0.0408 (0.022; 0.022)
 
-- L9 FFN | 0.6157 | 0.4816 | 0.6135+/-0.0355 (0.020) | 0.6107+/-0.0411 (0.020)
+- L9 FFN  | 0.6157 | 0.4816 | 0.6140+/-0.0395 (0.002; 0.008) | 0.6121+/-0.0406 (0.002; 0.008)
 
-- L9 Attn | 0.6632 | 0.4891 | 0.6160+/-0.0418 (0.020) | 0.6180+/-0.0413 (0.040)
+- L9 Attn | 0.6632 | 0.4891 | 0.6167+/-0.0413 (0.006; 0.018) | 0.6192+/-0.0404 (0.002; 0.008)
+
+*Leave-one-category-out AUROC on real TruthfulQA categories versus two permuted-pseudo-category nulls (1,000 draws each), GPT-2, judge label. Empirical two-sided p is computed against the corresponding null; 0.002 is the attainable floor at 1,000 permutations. "Holm" is the Holm-Bonferroni adjusted p across the four cells within each control family, the same correction used in §4.4 and §4.7. An earlier version ran 100 permutations, whose p floor (0.0198) is coarser than the smallest Holm threshold (0.0125), so no cell could have survived correction at any effect size.*
 
 The per-category-averaging estimand is therefore *not* biased
 downward at this sample size: on random groupings of identical size and
 class composition it returns 0.58-0.62, within noise of the
 standard-CV values. The real-category LOGO value sits below that null at
-every cell, and outside it at three of four (0, 0, and 1 of 100
-size- and class-matched draws fall at or below the real value at L8 FFN,
-L9 FFN, and L9 Attn; L8 Attn is the exception at 2/100, empirical
-p=0.059). **The collapse is specific to real topic structure, not
-an artifact of the estimator.** We report this having expected, and
-initially predicted, the opposite outcome.
+every cell and outside it at all four: 1, 10, 0 and 0 of 1,000
+size- and class-matched draws fall at or below the real value (L8 FFN, L8
+Attn, L9 FFN, L9 Attn). All four survive Holm-Bonferroni correction across
+the four cells, under both controls (adjusted p=0.008-0.040).
+**The collapse is specific to real topic structure, not an artifact
+of the estimator.** We report this having expected, and initially
+predicted, the opposite outcome. One process note, since this paper is
+about verification: an earlier draft ran only 100 permutations, at
+which the smallest attainable two-sided p (0.0198) already exceeds
+the smallest Holm threshold across four tests (0.05/4), so the four
+nominal p-values it reported could not have survived correction no
+matter how large the effect was. Permutations are cheap; running enough
+of them that the floor is not the binding constraint is part of running
+the control at all.
 
 **A second thing LOGO changes, which has to be separated out.**
 Leave-one-category-out alters the protocol in two ways at once, and only
 one of them is about leakage. (i) It changes which pairs enter the AUROC:
 a per-category AUROC compares a positive and a negative drawn from the
 *same* category, whereas standard K-fold CV pools all pairs, of
-which only 4.9% (675 of 13{,}689) are within-category on this pool.
+which only 4.9% (675 of 13,689) are within-category on this pool.
 (ii) It removes same-category items from the training split. We separate
 these by decomposing the *standard* CV's own out-of-fold scores into
 within- and between-category pairs (`code/48`); this holds the
-training protocol fixed and varies only the pair set:
+training protocol fixed and varies only the pair set.
 
-*Where the standard-CV AUROC's discrimination lives. Computed on the identical out-of-fold predicted probabilities from standard 5-fold CV, split by whether the (positive, negative) pair comes from the same TruthfulQA category. "LOGO" repeats the within-category restriction *and* removes same-category items from training.*
+**Separating them requires holding the *estimand* fixed too,
+and an earlier version of this table did not.** A pooled within-topic
+AUROC computed over all 675 within-topic (positive, negative) pairs is
+pair-weighted: a 69-item category contributes many more pairs than a
+4-item one. The LOGO column is an unweighted mean of 16 per-category
+AUROCs, which weights every category equally. Subtracting the second from
+the first does not isolate the effect of removing same-topic training
+data; it also silently swaps one weighting scheme for another. We
+therefore recompute the within-topic column a second way
+(`code/52_estimand_matched_within_topic_auroc.py`): the mean
+of per-category AUROCs computed from the *standard*-CV out-of-fold
+scores, over exactly the 16 categories LOGO uses. That quantity differs
+from the LOGO column in one respect only -- whether same-topic items were
+present in training -- so its difference from LOGO is a decomposition
+rather than an artifact.
 
-- Cell | pooled OOF | between-topic | within-topic | LOGO
+- Cell | pooled OOF | between-topic | within-topic | within-topic | LOGO | matched
 
--  | (13,689 pairs) | (13,014 pairs) | (675 pairs) | (within, disjoint train)
+- | (13,689 pr.) | (13,014 pr.) | pair-wt. (675 pr.) | cat.-avg. (16 cat.) | (16 cat.) | residual (p)
 
-- L8 FFN | 0.6152 | 0.6193 | 0.5363 | 0.4788
+- L8 FFN  | 0.6152 | 0.6193 | 0.5363 | 0.4674 | 0.4788 | -0.011 (0.85)
 
-- L8 Attn | 0.6153 | 0.6163 | 0.5970 | 0.4907
+- L8 Attn | 0.6153 | 0.6163 | 0.5970 | 0.5134 | 0.4907 | +0.023 (0.75)
 
-- L9 FFN | 0.6067 | 0.6094 | 0.5541 | 0.4816
+- L9 FFN  | 0.6067 | 0.6094 | 0.5541 | 0.4408 | 0.4816 | -0.041 (0.62)
 
-- L9 Attn | 0.6494 | 0.6475 | 0.6844 | 0.4891
+- L9 Attn | 0.6494 | 0.6475 | 0.6844 | 0.5497 | 0.4891 | +0.061 (0.15)
 
-Pair composition explains part of the gap but not most of it, and at one
-cell none of it: within-topic AUROC on the same scores is 0.536-0.684,
-and at L9 Attn it is *higher* than the between-topic value. The
-remaining drop -- from 0.54-0.68 with same-topic items in training to
-0.48-0.49 without them -- is the part attributable to training-set
-topic overlap, i.e. to what "category leakage" should have meant. It is
-substantial (0.06 to 0.20 AUROC depending on cell, largest at L9
-Attn) and, per the permutation controls above, not estimator noise.
+*Where the standard-CV AUROC's discrimination lives, and the estimand-matched training-overlap residual. Columns 2--5 are all computed on the identical out-of-fold predicted probabilities from standard 5-fold CV. "within-topic (pair-wt.)" pools all 675 within-topic (positive, negative) pairs; "within-topic (cat.-avg.)" instead averages per-category AUROCs over the same 16 categories LOGO uses, which is LOGO's own averaging convention. Only the latter is estimand-matched to the LOGO column, so only those two form a valid subtraction. The residual is (cat.-avg.) - LOGO, i.e. what adding same-topic items back into training is worth; p is a paired two-sided t-test across the 16 categories (exact Wilcoxon signed-rank gives 0.16-0.70, the same conclusion).*
+
+**Held at a fixed estimand, the training-overlap residual is
+indistinguishable from zero.** It is -0.011, +0.023, -0.041 and
++0.061 across the four cells -- negative in two of them -- and no cell
+is close to significant (paired p=0.15-0.85). Removing same-topic
+items from the probe's training data does not measurably degrade its
+within-topic discrimination, because that discrimination was already at
+chance with them present: the estimand-matched within-topic AUROC is
+0.441-0.550. An earlier version of this subsection subtracted the
+pair-weighted within-topic column (0.536-0.684) from the LOGO column
+and reported a "remaining drop" of 0.06-0.20 AUROC "attributable
+to training-set topic overlap." That entire quantity was the mechanical
+difference between pair-weighted pooling and per-category averaging, not
+an effect of training composition. We state the corrected reading
+plainly, because it is both simpler and stronger than the one it
+replaces: *this probe's within-topic discrimination is at chance
+regardless of whether same-topic items are in its training data.* There
+was no cross-topic signal to lose.
+
+What the pair decomposition does establish is where the pooled AUROC's
+discrimination lives: essentially all of it is carried by between-topic
+pairs (0.609-0.648, on 95.1% of the pairs), not within-topic ones.
+This is consistent with -- though it does not establish -- the
+topic-correlated-feature account discussed below, and it is why the
+permutation controls above still matter: they show that this within-topic
+deficit tracks real topic structure rather than the estimator, since
+random groupings of identical size and class composition do not produce
+it.
 
 **But we cannot name the mechanism, and the original naming was
 wrong.** The originally claimed mechanism -- the probe reading off each
@@ -1249,12 +1497,14 @@ transfer.
 **What survives, stated narrowly.** Both readings we started from
 overreach. What the evidence supports is: *a standard random
 K-fold AUROC for this probe on TruthfulQA overstates its performance on
-an unseen topic, by roughly 0.13-0.17 AUROC, and cross-topic
+an unseen topic, by roughly 0.13-0.17 AUROC, and within-topic
 performance at the two layers tested is at chance.* The drop is specific
 to real topic structure rather than to the estimator (permutation
-controls), is only partly explained by the change in which pairs are
-compared (Table~the table below), and is not attributable to any single
-mechanism we can identify.
+controls); at a fixed estimand it is attributable entirely to which pairs
+are being discriminated -- within-topic rather than between-topic -- and
+not at all, within our resolution, to whether same-topic items were in
+training (Table~the table below); and the feature-level mechanism behind
+the within-topic deficit is not identified by any experiment we ran.
 
 **Consequences for this paper's other numbers.** Every passive AUROC
 in §4.5, §4.6 and §4.9 should be read as a *within-distribution*
@@ -1289,8 +1539,13 @@ size- and class-matched, which separates estimator behavior from real
 group structure; (b) a group-variable-only ceiling under the same CV
 protocol, which tests whether the group variable could carry the claimed
 effect at all; and (c) an explicit statement of which estimand each
-protocol computes. We ran none of the three before first making the
-claim, and each of the three changed our conclusion.
+protocol computes -- and, if two numbers are going to be *subtracted*
+to decompose a collapse, a check that they use the same weighting, since
+a pair-weighted pooled AUROC and a mean of per-group AUROCs differ by an
+amount (0.06-0.20 here) that can be mistaken for the entire effect
+being decomposed. We ran none of the three before first making the claim;
+each of the three changed our conclusion, and the last one changed it
+twice.
 
 ## 5. The Causal-Patching Validity Checklist (and Two Checks for Passive Probing)
 
@@ -1322,16 +1577,22 @@ references point to where.
 -  **Is the estimated direction validated on held-out data before
  any intervention, with a stated minimum detectable effect?** Do not
  report "n is small." The exact null distribution of a held-out
- AUROC is enumerable over all n_++n_{-}{n_+} label
+ AUROC is enumerable over all C(n_++n_-, n_+) label
  arrangements; report the resulting MDE, the attainable alpha, and
- the false-accept rate of the gate rule actually used
- (Table~the table below). At this paper's own n=11 the gate cannot
+ the false-accept rate of the gate rule actually used, *as a
+ function of both class counts*
+ (Tables~the table below and the table below). At this paper's own
+ 3:8 holdout the gate cannot
  call any *observed* AUROC below 0.875 significant (true
-  effects below it can clear the gate, just rarely -- power 0.31 at a
-  true AUROC of 0.75), and a pure-noise direction
- passes plausible gates 6.7%-46.1% of the time. A patching
+ effects below it can clear the gate, just rarely -- power 0.31 at a
+ true AUROC of 0.75), and a pure-noise direction
+ passes plausible gates 6.7%-46.1% of the time. Check
+ separately which class is actually scarce: our own 8 negatives
+ were a per-class training cap, not a data limit, and using the 475
+ unused ones would have moved the MDE to 0.779 and halved the
+ false-accept rates for free (§4.3). A patching
  result whose direction has not cleared such a gate is uninformative
- about the mechanism in either direction (§4.3).
+ about the mechanism in either direction.
 
 -  **Is the "control" direction genuinely from a different
  source?** A control that is the treatment direction relabeled, or
@@ -1405,7 +1666,14 @@ Two further checks belong to passive probing rather than patching.
  between-group pairs; grouped CV silently restricts the AUROC to
  within-group pairs, which on our data are only 4.9% of the pairs
  the pooled estimate is built from, so part of any "collapse" is a
- change of estimand rather than a change of performance. (c) A
+ change of estimand rather than a change of performance. If you then
+ *subtract* that within-group number from the grouped-CV number
+ to isolate the training-overlap component, first make the two
+ *weighting conventions* match -- a pair-weighted pooled AUROC
+ and a mean of per-group AUROCs differ by an amount that on our data
+ (0.06-0.20 AUROC) exceeded the entire effect we were trying to
+ decompose, and produced a headline claim we had to retract (§4.10,
+ Appendix A). (c) A
  group-variable-only ceiling under the same CV protocol tests whether
  the group variable could carry the claimed effect at all -- and
  report both its in-sample and its cross-validated value, since the
@@ -1516,7 +1784,7 @@ outperform a mechanism-agnostic confidence signal.
 early-exit, routing, or compute-saving mechanism, and none of its AUROCs
 are strong enough to gate anything at usable precision. We tested this
 directly on the strongest passively-significant signal this project produced
-(the SAE feature from §4.7's positive control, p=4.8x10^{-11}):
+(the SAE feature from §4.7's positive control, p=4.8x10^-11):
 thresholding it as a single-feature classifier reaches AUROC =0.5614,
 but the feature's raw activation is at or near zero for nearly every
 sample, so no threshold above zero clears even 50% recall at any of the
@@ -1556,11 +1824,17 @@ emphasis: the validity checks first, the mechanism experiments second.
 
 - **Direction-validity gate: exact MDE/power table** (§4.3, §5) `code/51_direction_validity_mde_table.py` -> `results/direction_validity_mde_table.json`
 
+- **Direction-validity gate at the available negative count** (§4.3) `code/54_enlarged_negative_holdout_gate.py` -> `results/enlarged_negative_holdout_gate.json`
+
 - **Direction-validity gate, 200-resplit diagnostic** (§4.3) `code/46_direction_validity_resplit_diagnostic.py` -> `results/direction_validity_resplit_diagnostic.json`
+
+- **Label-permutation null for the 200-resplit diagnostic** (§4.3) `code/53_resplit_permutation_null.py` -> `results/resplit_permutation_null.json`
 
 - **Direction-validity gate, alternative estimators; one-/two-sided power** (§4.3) `code/44_alternative_direction_estimators.py`, `code/43_direction_validity_power_analysis.py` -> `results/alternative_direction_estimators.json`, `results/direction_validity_power_analysis.json`
 
 - **Permuted-pseudo-category control and topic-only AUROC ceiling** (§4.10) `code/48_permuted_pseudocategory_control.py` -> `results/permuted_pseudocategory_control.json`
+
+- **Estimand-matched within-topic AUROC and training-overlap residual** (§4.10) `code/52_estimand_matched_within_topic_auroc.py` -> `results/estimand_matched_within_topic_auroc.json`
 
 - **Original LOGO-CV diagnostic (interpretation revised by the controls above)** (§4.10) `code/47_category_leakage_diagnostic.py` -> `results/category_leakage_diagnostic.json`
 
@@ -1569,6 +1843,7 @@ emphasis: the validity checks first, the mechanism experiments second.
 - **Causal patching, base runs** (§4.4) `code/01_ffn_causal_patch.py`, `code/10_ffn_causal_patch_scaled.py` -> `results/ffn_causal_patch_results.json`, `results/ffn_causal_patch_scaled_results.json`
 
 - **Causal patching under the validated label** (§4.4) `kaggle_kernels/paper1-causal-patch-judge-label/` -> `results/causal_patch_judge_label_results.json`
+
 - **Causal patching beyond GPT-2 (Pythia, Qwen0.5B-chat)** (§4.4) `code/07_multi_arch_causal_patch.py` -> `results/multi_arch_causal_patch.json`
 
 - **Component-specificity test with a real Attention direction** (§4.4) `kaggle_kernels/paper1-causal-patch-real-attn-direction/` -> `results/causal_patch_real_attn_direction_results.json`
@@ -1596,10 +1871,12 @@ emphasis: the validity checks first, the mechanism experiments second.
 - **Layer localization (7 methods), Jaccard and validated label** (§4.9) `code/00_verify_vendored_mechint_numbers.py`, `code/29_gpt2_full_validated_relabel_rerun.py` -> `results/vendored_mech_int/`, `results/gpt2_full_validated_relabel_rerun.json`
 
 - **Surface-feature baseline under the Jaccard label (the 6 features, and the 0.531/0.576 figures)** (§4.8, §6) `code/05_run_surface_baseline.py`, `code/05_surface_baseline_classifier.py` -> `results/surface_baseline/`
+
 - **Label-validity audit and surface baselines** (§6) `code/16_llm_judge_label_noise.py`, `code/23_regenerate_completions_for_judge.py`, `code/24_llm_judge_score_all_architectures.py` (run as `kaggle_kernels/paper1-llm-judge-relabel/`), `code/32_surface_baseline_vs_judge_label.py`, `code/41_cheap_baselines.py` -> `results/llm_judge_label_noise.json`, `results/llm_judge_relabel_summary.json`, `results/surface_baseline_vs_judge_label.json`, `results/cheap_baselines.json`
 
 - **GPT-2 full-534 judge relabel** (§6) `kaggle_kernels/paper1-gpt2-full-judge-relabel/`, `code/28_judge_label_all_gpt2_534.py` -> `results/gpt2_full_534_judge_labels.json`
-- **Figure 1** (§4.6) `code/20_generate_ffn_attn_figure.py` -> `draft/latex/figures/ffn-attn-comparison.pdf` (plots already-reported numbers; no new computation)
+
+- **Figure~the table below** (§4.6) `code/20_generate_ffn_attn_figure.py` -> `draft/latex/figures/ffn-attn-comparison.pdf` (plots already-reported numbers; no new computation)
 
 ## 7. Conclusion
 
@@ -1618,10 +1895,20 @@ regardless of class) are degenerate repetition loops rather than
 confabulations, near-balanced across label classes, so the outcome events
 that do occur are confounded with loop-breaking. And the difference-of-means direction the causal test
 injects never cleared a held-out validity check -- one which, at the
-n=11 holdout this testbed supports, cannot declare any *observed*
+3:8 holdout the causal kernel used, cannot declare any *observed*
 AUROC below 0.875 significant, has power 0.31 against a true AUROC of
 0.75, and passes a pure-noise direction 6.7%-46.1% of the time
-depending on where its threshold is set.
+depending on where its threshold is set. That holdout was set by a
+per-class cap rather than by the data: re-scoring the same directions
+against the 475 negatives the testbed had all along moves the gate's
+minimum detectable observable AUROC to 0.779 and its false-accept rates
+to 7.1%/3.7%, and shows the directions to be uninformative rather
+than anti-informative (all four exact p>=0.056). The scarce class is
+the positives: 27 judge-correct items exist in the entire pool. A
+label-permutation null for the 200-resplit version of the same check
+confirms it too: the resplit means are not significantly above chance
+(permutation p=0.085-0.215), though the naive independent-samples
+reading of the same numbers would have said the opposite.
 
 We therefore do *not* report the causal null as surviving scrutiny.
 The causal instrument does not provide interpretable evidence either way,
@@ -1640,9 +1927,14 @@ determines the answer. And a leave-one-category-out re-test, with two
 permutation controls, a pair-type decomposition, and a
 group-variable-only ceiling calculation, establishes that a standard
 random K-fold AUROC for this probe on TruthfulQA overstates
-unseen-topic performance by 0.13-0.17 AUROC, with cross-topic
+unseen-topic performance by 0.13-0.17 AUROC, with within-topic
 performance at the two layers tested at chance -- while leaving the mechanism
-behind that gap unidentified (§4.10).
+behind that gap unidentified (§4.10). Holding the averaging convention
+fixed, removing same-topic items from the probe's training data
+contributes nothing measurable to that gap (residual -0.041 to
++0.061, paired p=0.15-0.85): the probe's discrimination lives
+almost entirely in between-topic pairs, and was at chance within a topic
+whether or not that topic was in training.
 
 What we offer instead is transferable: two validity checks (a competence
 ceiling measurement and a degeneracy pre-filter) that are cheap,
@@ -1702,10 +1994,10 @@ number.
 -  **Dosage-mismatch diagnostic, corrected twice.** An earlier
 version of `code/26_ffn_attn_dosage_diagnostic.py` (a) measured
 on bare TruthfulQA questions rather than the
-`"Q: {question} nA:"` prompts the causal test
+`"Q: questionbackslash nA:"` prompts the causal test
 patches, and (b) normalized alpha against each sublayer's own raw
 output norm -- the wrong denominator, since the patching hook replaces
-that output with (out + alpha * direction) and the block's
+that output with (out+alphacdotdirection) and the block's
 own forward code then adds the combined value into the residual stream.
 The uncorrected version reported a 2-3x dosage asymmetry between
 arms; correcting only the prompt format shrinks it to 1.3-1.5x;
@@ -1789,9 +2081,9 @@ readings turned out to be wrong, in different directions.
 (a) Two permutation controls (size-matched, and size- and class-matched)
 show random groupings recover 0.58-0.62, not chance, so the estimator
 is not biased downward at this n and the collapse is specific to real
-topic structure (0-2 of 100 matched draws fall at or below the real
-value across the four cells). We predicted the artifact outcome before
-running this control and were wrong.
+topic structure (0-10 of 1,000 matched draws fall at or below the
+real value across the four cells; all four survive Holm correction). We
+predicted the artifact outcome before running this control and were wrong.
 (b) A group-variable-only ceiling calculation shows the originally claimed
 mechanism cannot be demonstrated: topic identity alone yields AUROC
 0.7938 in-sample but 0.5054 leave-one-out and 0.4863/0.4789 under
@@ -1803,15 +2095,80 @@ demonstration that topic base rates carry no signal. The text now says
 only that the account cannot be tested here.
 (c) A third check, added last, decomposes the standard CV's own
 out-of-fold scores by pair type and shows that LOGO silently changes the
-estimand: only 4.9% of standard-CV pairs are within-topic, and
-within-topic AUROC on the same scores is 0.536-0.684 rather than
-chance. Part of the "collapse" is therefore this change of estimand and
-part is the removal of same-topic training data; §4.10 separates them.
+estimand: only 4.9% of standard-CV pairs are within-topic.
+(d) **That third check was then reported wrongly, in a way an
+external reviewer caught, and its correction is the largest single change
+in this revision.** We wrote that "the remaining drop -- from
+0.54-0.68 with same-topic items in training to 0.48-0.49 without
+them -- is the part attributable to training-set topic overlap," and
+called it "substantial (0.06 to 0.20 AUROC)." That subtraction was
+invalid: the 0.54-0.68 figure is a *pair-weighted* pooled AUROC
+over 675 within-topic pairs
+(`code/48::within_between_topic_auroc`), while the
+0.48-0.49 figure is an *unweighted mean of 16 per-category*
+AUROCs (`code/47::probe_leave_one_category_out`). Differencing
+them mixes the effect of removing same-topic training data with the
+mechanical effect of changing the weighting. Recomputing the within-topic
+column under LOGO's own averaging convention, from the same standard-CV
+out-of-fold scores
+(`code/52_estimand_matched_within_topic_auroc.py`), gives
+0.4674, 0.5134, 0.4408 and 0.5497, so the estimand-matched
+training-overlap residual is -0.011, +0.023, -0.041, +0.061 --
+negative in two of four cells and not significant in any (paired
+p=0.15-0.85). The claimed 0.06-0.20 "training overlap" effect
+was entirely the estimand mismatch. The corrected statement is stronger
+than the one it replaces: this probe's within-topic discrimination is at
+chance whether or not same-topic items are in training, so no
+training-overlap effect could have been observed. The abstract, §4.10 and
+the checklist's item 10 are rewritten accordingly.
+(e) The permutation controls in (a) were run at 100 draws, whose
+attainable two-sided p floor (0.0198) is coarser than the smallest
+Holm threshold across the four cells (0.0125), so no cell could have
+survived correction regardless of the data. They are rerun at 1,000
+draws and Holm-corrected across the four cells; §4.10 reports what
+survives.
 The surviving claim is that standard random K-fold CV overstates
 unseen-topic performance for this probe by 0.13-0.17 AUROC, with the
 mechanism unidentified. The cross-architecture extension is removed
 regardless, being confounded by three simultaneous protocol differences
 aliased with architecture.
+
+-  **"The n=11 holdout this testbed supports" was a design
+choice described as a data property.** The abstract, §4.3, §5 item 3 and
+the Conclusion all characterized the direction-validity gate's 3:8
+holdout as what the testbed could supply. It is what
+`TRAIN_N_PER_CLASS`=40 in
+`kaggle_kernels/paper1-causal-patch-tier1-validated/` supplies:
+the training pool is capped at 40 items per class and the holdout is
+the last 20% of each class, giving 8 negatives, while the
+judge-labeled pool holds 507 hallucinated items of which only 40 are
+used at all and only 32 are spent on fitting the direction. Re-scoring
+the identical directions against all 475 eligible negatives
+(`code/54_enlarged_negative_holdout_gate.py`, verified to
+reproduce the kernel's 3:8 values first) improves every reported gate
+characteristic at zero data cost and, materially, changes a substantive
+reading: the four held-out AUROCs move from 0.083/0.083/0.0/0.125 (three
+nominally significant in the anti-predictive direction) to
+0.393/0.304/0.277/0.183 with all four exact two-sided p>=0.056. The
+directions are uninformative, not anti-predictive. §4.3 now reports the
+exact power calculation along both class axes
+(Table~the table below), and states that positives -- 27 in the entire
+pool -- are the binding constraint.
+
+-  **A conclusion asserted without its test: the 200-resplit
+diagnostic.** §4.3 previously described the resplit means as "0.54-0.58
+ldots centered at or slightly above chance" and drew a conclusion from
+that without testing it. Because the 200 resplits reuse the same 27
+positives, a reader computing a naive independent-samples z from the
+reported mean and SD would obtain z=2.65-5.62 and conclude the
+opposite of what the paper claims. We now run the correct test -- a
+label-permutation null that reruns the entire 200-resplit procedure
+under 2,000 permutations of the judge labels
+(`code/53_resplit_permutation_null.py`) -- and report it in
+§4.3 (Table~the table below). It supports the paper's conclusion
+(no cell reaches p<0.05; p=0.085-0.215) and shows the correct
+standard error to be 3.4-3.6x the naive one. The conclusion did
+not change; it went from asserted to demonstrated.
 
 -  **Small numeric and labeling corrections made in this round.**
 (a) The GPT-2 534-item judge-vs-Jaccard kappa was stated as 0.03 in
@@ -1838,6 +2195,67 @@ was described as "nearly double the power" at n=750 versus n=467;
 the ratio is 1.61x, and (per §4.1) discordant-pair counts, not n,
 determine resolution.
 
+-  **Further corrections made in this revision.**
+(a) **A leakage instance in our own code.**
+`code/37_paired_component_delta_auroc.py` fit its
+`StandardScaler` on the full dataset before
+`cross_val_predict`, rather than inside a per-fold
+`Pipeline` as `code/02`, `code/47`, `code/49`
+and `code/50` all do. It is a real leak in the script that
+produces §4.5's paired-Delta and BCa results. It is now fixed and
+`code/37` rerun; the effect is -5.6x10^-5 AUROC at the
+GPT-2 L8 FFN cell, every Delta and BCa interval is unchanged at the
+precision printed, no interval changes whether it covers zero, and two
+naive-peak values move in the third decimal (0.632->0.633 GPT-2 Attn,
+0.563->0.562 Qwen0.5B FFN), which §4.5 now reports. Separately, §4.5
+had described the `code/02`-vs-`code/37` gap as decomposing
+into exactly two terms (fold seed and aggregation convention); there are
+three, and the third is this scaler placement. The decomposition is now
+stated with all three.
+(b) **An undisclosed selection rule.** §4.1 reported "0 of 283"
+newly-judged items correct without noting that those 283 were exactly
+the items whose completions scored >=0.12 Jaccard overlap against
+*every* correct and *every* incorrect reference answer, which
+is why the older filter could not label them. That pre-selection makes
+0/283 much less surprising than it reads unqualified. §4.1, the
+abstract and the Introduction now state the rule.
+(c) **"Only prompt construction changed" was false.** §4.6's
+Qwen0.5B bare-versus-chat comparison spans different samples (N=513 vs
+N=433, only 298 questions shared), because the labeling filter
+depends on the completion. About half the base-rate difference is sample
+composition (49.3% vs 57.5% overall; 53.7% vs 58.1% on the
+shared 298). §4.6 now discloses this and downgrades the
+template-reversal claim accordingly.
+(d) **A leftover fragment of the abandoned mechanistic thesis.**
+§4.5 contained a sentence reading a single L8 direct-logit-attribution
+difference (5.08 vs 4.85, in-sample, no SDs, 1 of 24 cells, with a
+larger opposite-signed same-layer Attention effect) as "suggestive of an
+over-retrieval signature." That is precisely the cherry-picked
+single-cell inference this paper argues against. The sentence is removed.
+(e) **Related work asserted without citations, and five references
+without authors.** The paragraph naming this paper's closest relatives
+("protocol audits") cited nothing; it now engages Hewitt and Liang
+(2019), Janiak et al. (2025) and Hussain and Kantarcioglu (2026)
+specifically. Five bibliography entries previously appeared by title
+only; all now carry verified author lists. One entry asserted a venue we
+could not verify ("ParamMute, NeurIPS 2025"); it is cited as a preprint.
+(f) **An uncontrolled negative R^2.** §4.8 read the entropy head's
+negative held-out R^2 under gradient reversal as evidence that "the
+adversarial pressure works," with no non-adversarial baseline to
+distinguish that from the head never having learned to predict entropy at
+all. `code/17` now trains the identical head at
+lambda=0 (no pressure, R^2=+0.199/+0.115) and lambda=-1
+(cooperative, R^2=+0.542/+0.362), and §4.8 reports all three. The
+original reading survives the control; it just had not been earned.
+(g) **Checklist item count stated two ways.** The abstract said
+"eight-item" and the Contributions said "ten-item ldots eight
+causal-patching, two passive-probing." Both were literally true of
+different subsets; the abstract now uses the ten-item phrasing.
+(h) **A de-anonymization vector in the supplement.** The anonymized
+supplementary archive contained a plain-text file with this project's git
+commit hash, which would identify the repository the moment it became
+public. It is removed from the archive.
+
 -  **Correction confessions relocated.** Earlier drafts narrated
 several of the above corrections inline in the results sections. All are
 now collected here, and the main text states final numbers directly; where
@@ -1851,26 +2269,37 @@ final number alone, is the transferable result.
 
 ## 9. References
 
-Full citations below, compiled from exactly the bibliographic detail
-already verified in-text or in `related_work/related_work_notes.md`;
-entries with no author list recorded anywhere in this project are cited
-by title only rather than inventing names.
+Full citations below. Author lists, titles and dates were re-verified
+against each work's arXiv or ACL Anthology record for this revision; an
+earlier version listed five entries by title alone because no author list
+had been recorded in this project, and one entry carried an unverified
+venue ("ParamMute, NeurIPS 2025"), which is corrected to a preprint
+citation here.
 
 Sun, Y., et al. (2025). ReDeEP: Detecting Hallucination in
 Retrieval-Augmented Generation via Mechanistic Interpretability. *ICLR
 2025*. arXiv 2410.11414.
 
-ParamMute. *NeurIPS 2025*. arXiv 2502.15543.
+Huang, P., Liu, Z., Yan, Y., Zhao, H., Yi, X., Chen, H., Liu, Z., Sun,
+M., Xiao, T., Yu, G., & Xiong, C. (2025). ParamMute: Suppressing
+Knowledge-Critical FFNs for Faithful Retrieval-Augmented Generation.
+arXiv 2502.15543.
 
-SEReDeEP. arXiv 2505.07528.
+Wang, L. (2025). SEReDeEP: Hallucination Detection in
+Retrieval-Augmented Models via Semantic Entropy and Context-Parameter
+Fusion. arXiv 2505.07528.
 
-FACTUM. arXiv 2601.05866.
+Dassen, M., Kotula, R., Murray, K., Yates, A., Lawrie, D., Kayi, E.,
+Mayfield, J., & Duh, K. (2026). FACTUM: Mechanistic Detection of
+Citation Hallucination in Long-Form RAG. arXiv 2601.05866.
 
-Xiong, et al. RAGLens: Toward Faithful Retrieval-Augmented Generation
-with Sparse Autoencoders. arXiv 2512.08892.
+Xiong, G., He, Z., Liu, B., Sinha, S., & Zhang, A. (2025). Toward
+Faithful Retrieval-Augmented Generation with Sparse Autoencoders. arXiv
+2512.08892.
 
-Detection Without Correction: A Robust Asymmetry in Activation-Based
-Hallucination Probing. arXiv 2604.13068.
+Roy, D., Misra, R., Singh, S. K., & Roy, A. (2026). Detection Without
+Correction: A Robust Asymmetry in Activation-Based Hallucination
+Probing. arXiv 2604.13068.
 
 Meng, K., Bau, D., Andonian, A., & Belinkov, Y. (2022). Locating and
 Editing Factual Associations in GPT. *NeurIPS 2022*. arXiv 2202.05262.
@@ -1882,10 +2311,24 @@ Dai, D., Dong, L., Hao, Y., Sui, Z., Chang, B., & Wei, F. (2022).
 Knowledge Neurons in Pretrained Transformers. *ACL 2022*. arXiv
 2104.08696.
 
-A Single Direction of Truth. arXiv 2507.23221.
+O'Neill, C., Chalnev, S., Zhao, C. C., Kirkby, M., & Jayasekara, M.
+(2025). A Single Direction of Truth: An Observer Model's Linear Residual
+Probe Exposes and Steers Contextual Hallucinations. arXiv 2507.23221.
 
-Kantamneni, et al. Are Sparse Autoencoders Useful? A Case Study in
-Sparse Probing. arXiv 2502.16681.
+Kantamneni, S., Engels, J., Rajamanoharan, S., Tegmark, M., & Nanda, N.
+(2025). Are Sparse Autoencoders Useful? A Case Study in Sparse Probing.
+arXiv 2502.16681.
+
+Hewitt, J., & Liang, P. (2019). Designing and Interpreting Probes with
+Control Tasks. *Proceedings of EMNLP-IJCNLP 2019*, 2733--2743.
+
+Janiak, D., Binkowski, J., Sawczyn, A., Gabrys, B., Shwartz-Ziv, R., &
+Kajdanowicz, T. (2025). The Illusion of Progress: Re-evaluating
+Hallucination Detection in LLMs. *EMNLP 2025*. arXiv 2508.08285.
+
+Hussain, K., & Kantarcioglu, M. (2026). PARALLAX: Separating Genuine
+Hallucination Detection from Benchmark Construction Artifacts. arXiv
+2605.17028.
 
 Li, K., Patel, O., Viégas, F., Pfister, H., & Wattenberg, M. (2023).
 Inference-Time Intervention: Eliciting Truthful Answers from a Language

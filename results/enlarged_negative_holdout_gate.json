@@ -1,0 +1,103 @@
+{
+  "n_items": 534,
+  "n_judge_correct": 27,
+  "n_judge_hallucinated": 507,
+  "kernel_seed": 42,
+  "train_n_per_class_cap": 40,
+  "n_direction_fit": 47,
+  "n_holdout_positives": 3,
+  "n_holdout_negatives_kernel": 8,
+  "n_holdout_negatives_eligible": 475,
+  "note": "The direction is identical in both columns -- fit on the same 47 items. Only the set of negatives it is scored against changes. The 8-negative holdout was a consequence of TRAIN_N_PER_CLASS=40, not of data availability.",
+  "n_resplits": 200,
+  "cells": {
+    "L8_ffn": {
+      "kernel_holdout_3_8": {
+        "n_pos": 3,
+        "n_neg": 8,
+        "auroc": 0.08333333333333333,
+        "p_one_sided_lower": 0.024242424242424242,
+        "p_one_sided_upper": 0.987878787878788,
+        "p_two_sided": 0.048484848484848485,
+        "resplit_mean": 0.57875,
+        "resplit_sd": 0.19804098845944598
+      },
+      "enlarged_holdout_all_eligible_negatives": {
+        "n_pos": 3,
+        "n_neg": 475,
+        "auroc": 0.3929824561403509,
+        "p_one_sided_lower": 0.2717907799418813,
+        "p_one_sided_upper": 0.7295672670268072,
+        "p_two_sided": 0.5435815598837626,
+        "resplit_mean": 0.5941263157894737,
+        "resplit_sd": 0.1633947644078116
+      }
+    },
+    "L8_attn": {
+      "kernel_holdout_3_8": {
+        "n_pos": 3,
+        "n_neg": 8,
+        "auroc": 0.08333333333333333,
+        "p_one_sided_lower": 0.024242424242424242,
+        "p_one_sided_upper": 0.987878787878788,
+        "p_two_sided": 0.048484848484848485,
+        "resplit_mean": 0.5660416666666667,
+        "resplit_sd": 0.2097014333860265
+      },
+      "enlarged_holdout_all_eligible_negatives": {
+        "n_pos": 3,
+        "n_neg": 475,
+        "auroc": 0.303859649122807,
+        "p_one_sided_lower": 0.12771435249713695,
+        "p_one_sided_upper": 0.8731613984505934,
+        "p_two_sided": 0.2554287049942739,
+        "resplit_mean": 0.5638350877192982,
+        "resplit_sd": 0.17094301620268051
+      }
+    },
+    "L9_ffn": {
+      "kernel_holdout_3_8": {
+        "n_pos": 3,
+        "n_neg": 8,
+        "auroc": 0.0,
+        "p_one_sided_lower": 0.006060606060606061,
+        "p_one_sided_upper": 1.0000000000000002,
+        "p_two_sided": 0.012121212121212121,
+        "resplit_mean": 0.5525,
+        "resplit_sd": 0.20798714956224157
+      },
+      "enlarged_holdout_all_eligible_negatives": {
+        "n_pos": 3,
+        "n_neg": 475,
+        "auroc": 0.2771929824561403,
+        "p_one_sided_lower": 0.0971785019368133,
+        "p_one_sided_upper": 0.903551244449781,
+        "p_two_sided": 0.1943570038736266,
+        "resplit_mean": 0.5541684210526315,
+        "resplit_sd": 0.17324322085353258
+      }
+    },
+    "L9_attn": {
+      "kernel_holdout_3_8": {
+        "n_pos": 3,
+        "n_neg": 8,
+        "auroc": 0.125,
+        "p_one_sided_lower": 0.04242424242424242,
+        "p_one_sided_upper": 0.9757575757575759,
+        "p_two_sided": 0.08484848484848484,
+        "resplit_mean": 0.5408333333333334,
+        "resplit_sd": 0.21777034963801403
+      },
+      "enlarged_holdout_all_eligible_negatives": {
+        "n_pos": 3,
+        "n_neg": 475,
+        "auroc": 0.1824561403508772,
+        "p_one_sided_lower": 0.02809401963990776,
+        "p_one_sided_upper": 0.9722246362822387,
+        "p_two_sided": 0.05618803927981552,
+        "resplit_mean": 0.5335684210526316,
+        "resplit_sd": 0.18011762388565639
+      }
+    }
+  }
+}
