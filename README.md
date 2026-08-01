@@ -1,7 +1,8 @@
 # FFN Mechanism Audit
 
-Code, cached results, and paper source for "Two Failure Modes That Make
-Interpretability Intervention Nulls Uninterpretable: A Closed-Book Case Study."
+Code, cached results, and paper source for "Uninterpretable Nulls in
+Interpretability Intervention Studies: A Closed-Book Case Study and a Validity
+Checklist."
 
 The paper's thesis is methodological. It reports that a closed-book test of an
 FFN-vs-Attention hallucination asymmetry (analogous to ReDeEP's RAG-scoped
@@ -12,7 +13,12 @@ contamination of the flip-rate outcome metric (~52-54% of nominally
 hallucinated completions are repetition loops), and a held-out
 direction-validity gate that cannot pass at the available number of positives
 (with an exact minimum-detectable-effect table, reported as a function of both
-class counts). It also reports, in full, a leave-one-category-out diagnostic
+class counts). A fold-seed sensitivity sweep on the passive side shows the
+peak-versus-peak FFN-vs-Attention margins (0.003-0.011 AUROC) are an order of
+magnitude smaller than the spread a single cross-validation fold seed
+produces. The constructive output is a ten-item validity checklist (eight
+items for causal-patching studies, two for passive probing), written to be
+used independently of anything about FFNs. It also reports, in full, a leave-one-category-out diagnostic
 whose interpretation changed three times under scrutiny: two permutation
 controls show the collapse is specific to real topic structure (not an
 estimator artifact); a topic-only ceiling calculation rules out the originally
