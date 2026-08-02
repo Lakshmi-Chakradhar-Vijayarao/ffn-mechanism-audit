@@ -12,6 +12,15 @@ deviations in results/vendored_mech_int/component_results.npy (GPT-2:
 0.0557/0.0427) and results/cross_arch_component_probe_qwen05.json
 (Qwen-bare: 0.0628/0.0423). Fixed to read the real values; Pythia and
 Qwen0.5B-chat's hardcoded values were already correct and are unchanged.
+
+CORRECTION (second review round): the embedded title read "consistently
+close, and the only architecture with a clear leader reverses under
+template correction". That asserted some architecture had a clear leader,
+contradicting both this figure's own caption ("the margin between
+components is within one CV SD of overlap in all four conditions") and
+the fold-seed analysis, which shows every margin here (0.0032-0.0284) is
+smaller than the fold-seed SD band (0.013-0.022). Retitled to state the
+paper's actual conclusion.
 """
 import matplotlib
 matplotlib.use("Agg")
@@ -36,7 +45,7 @@ ax.set_ylim(0.45, 0.68)
 ax.set_xticks(x)
 ax.set_xticklabels(conditions, fontsize=9)
 ax.legend(loc="upper right", fontsize=8, ncol=1)
-ax.set_title("FFN vs. Attention peak AUROC: consistently close, and the\nonly architecture with a clear leader reverses under template correction", fontsize=9.5)
+ax.set_title("FFN vs. Attention peak AUROC: in all four conditions the margin\nbetween components is smaller than the fold-seed noise band", fontsize=9.5)
 fig.tight_layout()
 fig.savefig("../draft/latex/figures/ffn-attn-comparison.pdf")
 print("Saved.")
