@@ -299,16 +299,21 @@ def main():
         i += 1
     flush()
 
+    def wrap_line(line):
+        if line.startswith("#") or line.startswith("!") or not line.strip() \
+           or len(line) <= 78:
+            return line
+        if line.startswith("-  "):
+            return "\n".join(textwrap.wrap(line, 78, subsequent_indent="   ", break_on_hyphens=False, break_long_words=False))
+        if line.startswith("- "):
+            return "\n".join(textwrap.wrap(line, 78, subsequent_indent="  ", break_on_hyphens=False, break_long_words=False))
+        return "\n".join(textwrap.wrap(line, 78, break_on_hyphens=False, break_long_words=False))
+
     wrapped = []
     for blk in out:
-        if blk.startswith("#") or blk.startswith("!") or not blk.strip() \
-           or len(blk) <= 78:
-            wrapped.append(blk)
-        elif blk.startswith("-  "):
-            wrapped.append("\n".join(textwrap.wrap(
-                blk, 78, subsequent_indent="   ")))
-        else:
-            wrapped.append("\n".join(textwrap.wrap(blk, 78)))
+        # wrap each physical line separately so table rows stay on their own
+        # lines (a block may already contain newlines from a tabular).
+        wrapped.append("\n".join(wrap_line(l) for l in blk.split("\n")))
     txt = "\n".join(wrapped)
     txt = re.sub(r"\n{3,}", "\n\n", txt).rstrip() + "\n"
     open(a.out, "w", encoding="utf-8").write(txt)
