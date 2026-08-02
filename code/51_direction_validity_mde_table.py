@@ -48,7 +48,7 @@ from scipy.stats import norm
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "results" / "direction_validity_mde_table.json"
-N_MC = 20000
+N_MC = 2000000
 TRUE_AUROCS = [0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
 RNG = np.random.default_rng(7)
 
@@ -90,11 +90,23 @@ def auroc_grid(n_pos, n_neg):
 
 def mc_auroc(n_pos, n_neg, true_auroc, n_mc=N_MC):
     mu = sqrt(2.0) * norm.ppf(true_auroc)
-    pos = RNG.normal(mu, 1.0, size=(n_mc, n_pos))
-    neg = RNG.normal(0.0, 1.0, size=(n_mc, n_neg))
-    # U = number of (pos, neg) pairs with pos > neg (ties measure-zero)
-    u = (pos[:, :, None] > neg[:, None, :]).sum(axis=(1, 2))
-    return u / (n_pos * n_neg)
+    # Chunked over draws so peak memory is bounded regardless of n_mc: the
+    # naive (n_mc, n_pos, n_neg) broadcast tensor is infeasible for the
+    # larger Table C cells (e.g. n_pos=10, n_neg=475 at n_mc=2e6 is ~9.5e9
+    # elements). Cap each chunk's element count instead of its draw count.
+    max_elems_per_chunk = 200_000_000
+    chunk = max(1, min(n_mc, max_elems_per_chunk // max(1, n_pos * n_neg)))
+    out = np.empty(n_mc, dtype=np.float64)
+    start = 0
+    while start < n_mc:
+        end = min(n_mc, start + chunk)
+        pos = RNG.normal(mu, 1.0, size=(end - start, n_pos))
+        neg = RNG.normal(0.0, 1.0, size=(end - start, n_neg))
+        # U = number of (pos, neg) pairs with pos > neg (ties measure-zero)
+        u = (pos[:, :, None] > neg[:, None, :]).sum(axis=(1, 2))
+        out[start:end] = u / (n_pos * n_neg)
+        start = end
+    return out
 
 
 def characterize(n_pos, n_neg):
@@ -197,7 +209,7 @@ def main():
                    "rows": rows,
                    "negative_sweep_note":
                        "n_pos fixed at 3 (the binding constraint: only 27 judge-correct items "
-                       "exist in the whole pool, and 24 of them are spent on direction-fitting). "
+                       "exist in the whole pool, and 15 of them are spent on direction-fitting). "
                        "n_neg is NOT a data limit: the pool has 507 judge-hallucinated items, of "
                        "which the tier-1 kernel uses only 40 (TRAIN_N_PER_CLASS=40), leaving 475 "
                        "eligible for the holdout after the 32 spent on direction-fitting.",

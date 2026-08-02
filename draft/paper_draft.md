@@ -473,12 +473,16 @@ at n_+=3, n_-=8 finds three of the four nominally significant in the
 *anti-predictive* direction (exact two-sided p=0.0485, 0.0485, 0.0121; L9 Attn
 p=0.0848 is not; under Bonferroni only L9 FFN survives, and on a consistently
 two-sided convention the two L8 cells sit just under 0.05 rather than
-comfortably below it, Appendix A item 5). **Re-scoring the identical direction
--- fit on exactly the same 47 items -- against all 475 eligible negatives
-instead of 8 removes that anti-predictive appearance entirely**
+comfortably below it. L9 FFN's own survival is itself a convention call:
+doubling the one-sided tail gives p=0.0121 (just under the Bonferroni
+threshold of 0.0125), but the (3,8) null is flat at its extremes, so the
+minimum-likelihood two-sided convention instead gives p=0.0242, which would
+not survive, Appendix A item 5). **Re-scoring the identical direction -- fit
+on exactly the same 47 items -- against all 475 eligible negatives instead of
+8 removes that anti-predictive appearance entirely**
 (`code/54_enlarged_negative_holdout_gate.py`, which first reproduces the
 kernel's 3:8 values exactly): the held-out AUROCs become 0.393 (L8 FFN), 0.304
-(L8 Attn), 0.277 (L9 FFN) and 0.183 (L9 Attn), exact two-sided p=0.544, 0.255,
+(L8 Attn), 0.277 (L9 FFN) and 0.182 (L9 Attn), exact two-sided p=0.544, 0.255,
 0.194 and 0.056 -- *none* significant. The directions are uninformative, not
 anti-informative; the earlier anti-predictive appearance was an artifact of an
 8-negative holdout the data never required.
@@ -486,7 +490,7 @@ anti-informative; the earlier anti-predictive appearance was an artifact of an
 **The single split is also an unlucky draw.** Redrawing which items land in
 the fit and holdout roles at 200 random seeds on the identical 534-item
 judge-labeled pool (`code/46_direction_validity_resplit_diagnostic.py`), the
-held-out AUROC has mean 0.54-0.58 and SD 0.20-0.22, range [0.083,1.0] at L8
+held-out AUROC has mean 0.54-0.58 and SD 0.198-0.218, range [0.083,1.0] at L8
 and [0.0,1.0] at L9. The kernel's single seed sits in the extreme low tail:
 only 1.5% (L8 FFN), 1.5% (L8 Attn), 0.5% (L9 FFN) and 4% (L9 Attn) of resplits
 land at or below it. A second, independent draw from a differently-ordered
@@ -550,11 +554,11 @@ equiprobable arrangements and the AUROC takes just 25 attainable values
 (spacing 1/24), so the smallest *observable* AUROC that could ever be called
 significant at one-sided alpha=0.05 is 0.875 (exact size 0.0424); a pure-noise
 direction passes a ">= 0.75" gate 13.9% of the time and a ">= 0.80" gate 6.7%;
-and power is 0.31 against a true AUROC of 0.75 and 0.72 against 0.90. **Every
+and power is 0.31 against a true AUROC of 0.75 and 0.73 against 0.90. **Every
 one of those numbers improves at zero data cost once the available negatives
 are used**: at 3:475 the MDE falls to 0.779, the exact size rises to 0.0496
 (the discreteness penalty essentially disappears), the false-accept rates fall
-to 7.1% and 3.7%, and power rises to 0.47 at a true 0.75 and 0.90 at a true
+to 7.1% and 3.7%, and power rises to 0.46 at a true 0.75 and 0.90 at a true
 0.90. The one number that does not improve is the naive "AUROC >0.5" rule,
 46.1% to 50.0% -- it was never a gate, and at 3:8 it only looked better
 because discreteness put mass exactly at 0.5.
@@ -575,15 +579,15 @@ and direction quality that 27 of them cannot satisfy simultaneously.**
 - n | n_+ | arrangements | MDE | exact alpha | FA >0.5 | FA >=0.75 | pow.
   @0.75 | pow. @0.90
 
-- 11 | 3 | 1.65x10^2 | 0.875 | 0.0424 | 0.461 | 0.139 | 0.31 | 0.72
+- 11 | 3 | 1.65x10^2 | 0.875 | 0.0424 | 0.461 | 0.139 | 0.31 | 0.73
 
-- 18 | 5 | 8.57x10^3 | 0.769 | 0.0473 | 0.500 | 0.059 | 0.51 | 0.93
+- 18 | 5 | 8.57x10^3 | 0.769 | 0.0473 | 0.500 | 0.059 | 0.50 | 0.93
 
 - 29 | 8 | 4.29x10^6 | 0.708 | 0.0464 | 0.490 | 0.021 | 0.69 | 0.99
 
 - 37 | 10 | 3.48x10^8 | 0.681 | 0.0488 | 0.493 | 0.010 | 0.79 | 1.00
 
-- 55 | 15 | 1.19x10^13 | 0.647 | 0.0493 | 0.496 | 0.002 | 0.92 | 1.00
+- 55 | 15 | 1.19x10^13 | 0.647 | 0.0493 | 0.496 | 0.002 | 0.91 | 1.00
 
 - 73 | 20 | 4.30x10^17 | 0.626 | 0.0495 | 0.498 | 0.000 | 0.97 | 1.00
 
@@ -596,21 +600,21 @@ alpha=0.05 under the exact null -- a property of the statistic, not a bound on
 the true effect; the power columns give the chance a given true effect clears
 it. "exact alpha" is that test's true size (discreteness makes it smaller than
 0.05); "false-accept" columns give the exact probability that a pure-noise
-direction passes the stated gate rule; power is Monte Carlo (20,000 draws)
+direction passes the stated gate rule; power is Monte Carlo (2,000,000 draws)
 under a binormal alternative. The first row is this paper's own gate.*
 
 - n_- | n | arrangements | MDE | exact alpha | FA >=0.75 | FA >=0.80 | pow.
   @0.75 | pow. @0.90
 
-- 8 | 11 | 1.65x10^2 | 0.875 | 0.0424 | 0.139 | 0.067 | 0.31 | 0.72
+- 8 | 11 | 1.65x10^2 | 0.875 | 0.0424 | 0.139 | 0.067 | 0.31 | 0.73
 
 - 20 | 23 | 1.77x10^3 | 0.817 | 0.0469 | 0.098 | 0.058 | 0.40 | 0.84
 
-- 60 | 63 | 3.97x10^4 | 0.789 | 0.0499 | 0.080 | 0.043 | 0.44 | 0.88
+- 60 | 63 | 3.97x10^4 | 0.789 | 0.0499 | 0.080 | 0.043 | 0.45 | 0.88
 
-- 200 | 203 | 1.37x10^6 | 0.782 | 0.0492 | 0.073 | 0.038 | 0.45 | 0.89
+- 200 | 203 | 1.37x10^6 | 0.782 | 0.0492 | 0.073 | 0.038 | 0.46 | 0.89
 
-- 475 | 478 | 1.81x10^7 | 0.779 | 0.0496 | 0.071 | 0.037 | 0.47 | 0.90
+- 475 | 478 | 1.81x10^7 | 0.779 | 0.0496 | 0.071 | 0.037 | 0.46 | 0.90
 
 *The same exact calculation with *positives held at 3* and only the negative
 count varied. The first row is the gate this paper actually ran; the last is
@@ -656,7 +660,7 @@ found-vs-random at L9/alpha=20 gives p=0.0264 with the found direction ahead
 (0.424 vs. 0.373). Under Holm-Bonferroni across the eight cells only the
 p=0.0043 cell survives, and it runs against the found direction. We do not
 read any of this as a mechanism -- the Jaccard label is the one §4.2 shows
-credits repetition loops as correct, and these flip rates (0.33-0.42) are
+credits repetition loops as correct, and these flip rates (0.33-0.44) are
 largely loop-breaking -- but reporting only the FFN-vs-Attention row would
 have implied the whole label-swap check was clean.
 
@@ -772,7 +776,7 @@ peak-versus-peak margins.
 **The paired same-layer difference, by contrast, is sign-stable.** Because
 both components are fit on the same folds, the *sign* of their difference
 reproduces across seeds far better than either component's level does. Its
-magnitude is not less variable: the paired Delta's SD is 0.016-0.023 across
+magnitude is not less variable: the paired Delta's SD is 0.015-0.023 across
 cells, slightly *above* a single component's 0.013-0.022, so nothing is
 cancelled on the variance scale -- what the pairing buys is that the two
 components move together, leaving the ordering intact. At GPT-2 L8,
@@ -812,7 +816,7 @@ sweep mean of -0.0569, and Qwen0.5B L8 gives -0.032 against +0.0118 -- a sign
 flip. The sweep is a mean over 50 fold seeds at `code/02`'s aggregation;
 `code/37` is one seed at pooled-OOF aggregation. So the "stable" claim for the
 paired difference is within-protocol: at a fixed aggregation, Delta varies
-little across fold seeds (SD 0.016-0.023). It is not a claim that two
+little across fold seeds (SD 0.015-0.023). It is not a claim that two
 different protocols agree on Delta at a given layer, and at two of four shared
 cells they do not.
 
@@ -1094,12 +1098,13 @@ small to produce the collapse, though not a negligible one at every cell: on
 random groupings of identical size and class composition it returns 0.58-0.62,
 below the corresponding standard-CV value at all four cells -- by 0.006 (L8
 FFN) and 0.004 (L9 FFN), well inside the nulls' own +/-0.040 SD, but by 0.050
-(L8 Attn) and 0.044 (L9 Attn), which are 1.3 and 1.1 SD and therefore
+(L8 Attn) and 0.044 (L9 Attn), which are 1.2 and 1.1 SD and therefore
 *outside* it. Measured against the 0.134-0.174 LOGO drops, the estimator bias
 is 23x and 37x too small at the FFN cells but only 2.8x and 4.0x too small at
-the Attention cells. So at its worst cell the estimator accounts for about a
-quarter of the collapse and at its best for a few percent; it cannot produce
-the collapse anywhere, but the margin is comfortable only for FFN. The
+the Attention cells. So at its worst cell (L8 Attention, 2.8x) the estimator
+accounts for about a third of the collapse, at the other Attention cell (4.0x)
+about a quarter, and at its best for a few percent; it cannot produce the
+collapse anywhere, but the margin is comfortable only for FFN. The
 real-category LOGO value sits below that null at every cell and outside it at
 all four: 1, 10, 0 and 0 of 1,000 size- and class-matched draws fall at or
 below the real value (L8 FFN, L8 Attn, L9 FFN, L9 Attn), and all four survive
@@ -1290,7 +1295,7 @@ correctly.
    peaks take 3 and 5 distinct values, and Qwen0.5B's take 4 and 6. A claim
    that rests on which layer peaks needs a seed sweep before it can be made at
    all. A paired same-layer difference is the better estimand where the
-   question allows it -- not because its SD is smaller (ours was 0.016-0.023
+   question allows it -- not because its SD is smaller (ours was 0.015-0.023
    against a single component's 0.013-0.022) but because its *sign*
    reproduces: FFN led in 50/50, 98% and 70% of seeds at the three cells where
    it led at all.
@@ -1727,7 +1732,13 @@ directly; nothing below is required to verify them.
    observed AUROCs, which motivated the 200-resplit diagnostic
    (`code/46_direction_validity_resplit_diagnostic.py`) in §4.3; that
    diagnostic showed the original seed's anti-predictive result to be an
-   atypical low-tail draw, not a stable property of these directions.
+   atypical low-tail draw, not a stable property of these directions. (c) A
+   further check found that L9 FFN's reported Bonferroni survival depends on
+   which two-sided convention is used: the (3,8) null distribution is flat at
+   its two extreme values, so doubling the one-sided tail (p=0.0121) and the
+   minimum-likelihood convention (p=0.0242) disagree on whether this single
+   cell clears 0.05/4=0.0125. §4.3 now states the convention explicitly rather
+   than reporting survival as unqualified.
 
 -  **Random-direction-ensemble percentiles, misread as informative.** An
    earlier version described the random-direction ensemble as "the strongest
@@ -1823,7 +1834,7 @@ directly; nothing below is required to verify them.
    reported gate characteristic at zero data cost and changes a substantive
    reading: the four held-out AUROCs move from 0.083/0.083/0.0/0.125 (three
    nominally significant in the anti-predictive direction) to
-   0.393/0.304/0.277/0.183 with all four exact two-sided p>=0.056 --
+   0.393/0.304/0.277/0.182 with all four exact two-sided p>=0.056 --
    uninformative, not anti-predictive. §4.3 now reports the exact power
    calculation along both class axes (Table 3) and states that positives (27
    in the entire pool) are the binding constraint.
